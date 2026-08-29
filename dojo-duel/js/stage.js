@@ -679,37 +679,56 @@ window.DD = window.DD || {};
   // ================================================================ Verwaltung
 
   const stages = [makeTokyo(), makeNeon(), makeTemple()];
-  const bgImgs = stages.map(() => ({ img: null, ok: false }));
+  const bgImgs = stages.map(() => ({ img: null, ok: false, canvas: null }));
+
+  const MAX_IMG_WORLD = 832; // ≈ 2.6 Bildschirmbreiten
+
+  function imgWorldW(slot) {
+    const w = Math.round(slot.img.width * (H / slot.img.height));
+    return Math.max(W, Math.min(MAX_IMG_WORLD, w));
+  }
+
+  // Panorama einmalig sauber auf Weltgrösse herunterrechnen (mit Glättung).
+  // Danach wird jeden Frame nur noch 1:1 geblittet – scharf und flimmerfrei.
+  function prerender(slot) {
+    const world = imgWorldW(slot);
+    const scaledW = Math.round(slot.img.width * (H / slot.img.height));
+    const cropWorld = Math.max(0, (scaledW - world) / 2);
+    const cropSrc = cropWorld * (slot.img.height / H);
+    const cv = document.createElement('canvas');
+    cv.width = world; cv.height = H;
+    const c = cv.getContext('2d');
+    c.imageSmoothingEnabled = true;
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(
+      slot.img,
+      cropSrc, 0, slot.img.width - 2 * cropSrc, slot.img.height,
+      0, 0, world, H,
+    );
+    slot.canvas = cv;
+  }
 
   function init() {
     stages.forEach((s, i) => {
       s.init();
       const slot = bgImgs[i];
       slot.img = new Image();
-      slot.img.onload = () => { slot.ok = true; };
+      slot.img.onload = () => { prerender(slot); slot.ok = true; };
       slot.img.onerror = () => { slot.ok = false; };
-      slot.img.src = `assets/stage-${i + 1}.png`;
+      // DD.ASSETS erlaubt eingebettete Bilder (Single-File-Build/Artifact)
+      slot.img.src = (DD.ASSETS && DD.ASSETS[i + 1]) || `assets/stage-${i + 1}.png`;
     });
-  }
-
-  function imgWorldW(slot) {
-    const w = Math.round(slot.img.width * (H / slot.img.height));
-    return Math.max(W, Math.min(768, w));
   }
 
   function worldW(index) {
     const slot = bgImgs[index];
-    return slot.ok ? imgWorldW(slot) : stages[index].worldW;
+    return slot.ok ? slot.canvas.width : stages[index].worldW;
   }
 
   function draw(ctx, index, t, cam) {
     const slot = bgImgs[index];
     if (slot.ok) {
-      // Nutzer-Panorama: auf Bildhöhe skalieren, als scrollende Welt nutzen.
-      // Ist das Bild breiter als die 768px-Welt, wird mittig beschnitten.
-      const w = Math.round(slot.img.width * (H / slot.img.height));
-      const crop = Math.max(0, Math.round((w - 768) / 2));
-      ctx.drawImage(slot.img, -(Math.round(cam) + crop) + Math.max(0, Math.round((W - w) / 2)), 0, w, H);
+      ctx.drawImage(slot.canvas, -Math.round(cam), 0);
       return;
     }
     stages[index].draw(ctx, t, cam || 0);
