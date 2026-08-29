@@ -1,0 +1,45 @@
+/* Dojo Duel – Grundlayout: schwarzer Screen, Canvas mittig, knackige Pixel */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#stagebox {
+  position: relative;
+  /* 16:9 – so groß wie möglich, ohne das Seitenverhältnis zu verlieren */
+  width: min(100vw, calc(100vh * (16 / 9)));
+  aspect-ratio: 16 / 9;
+}
+
+#screen {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Der wichtigste Retro-Trick: keine Glättung beim Hochskalieren */
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #000;
+}
+
+/* Dezenter CRT-Scanline-Effekt. Wer ihn nicht mag: diesen Block löschen. */
+#scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.16) 2px,
+    rgba(0, 0, 0, 0.16) 3px
+  );
+}
