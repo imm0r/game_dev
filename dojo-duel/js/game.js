@@ -26,20 +26,34 @@ window.DD = window.DD || {};
       this.seqLabel = '';
       DD.sprites.buildAll();
       DD.stage.init();
+      this.cam = 0;
+      this.worldW = DD.stage.worldW(this.stageIndex);
       this.spawnTitleFighters();
+    }
+
+    refreshWorld() {
+      this.worldW = DD.stage.worldW(this.stageIndex);
+    }
+
+    // Kamera folgt der Mitte zwischen beiden Kämpfern, sanft gedämpft
+    updateCamera() {
+      const [p1, p2] = this.fighters;
+      const target = Math.max(0, Math.min(this.worldW - DD.C.VIEW_W,
+        (p1.x + p2.x) / 2 - DD.C.VIEW_W / 2));
+      this.cam += (target - this.cam) * 0.12;
     }
 
     // Nur fürs Titelbild – echte Kämpfer entstehen bei Spielstart
     spawnTitleFighters() {
       this.fighters = [
-        new DD.Fighter(0, 'p1', C().P1_NAME, null),
-        new DD.Fighter(1, 'p2', C().P2_NAME, null),
+        new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null),
+        new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null),
       ];
     }
 
     startMatch(mode) {
-      const p1 = new DD.Fighter(0, 'p1', C().P1_NAME, null);
-      const p2 = new DD.Fighter(1, 'p2', C().P2_NAME, null);
+      const p1 = new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null);
+      const p2 = new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null);
       p1.controller = new HumanController(Input.P1_KEYS);
       p2.controller = mode === 1
         ? new HumanController(Input.P2_KEYS)
@@ -51,10 +65,13 @@ window.DD = window.DD || {};
     }
 
     startRound() {
+      this.refreshWorld();
+      const cx = this.worldW / 2;
       const [p1, p2] = this.fighters;
       const w1 = p1.wins, w2 = p2.wins;
-      p1.reset(100, 1); p1.wins = w1;
-      p2.reset(220, -1); p2.wins = w2;
+      p1.reset(cx - 60, 1); p1.wins = w1;
+      p2.reset(cx + 60, -1); p2.wins = w2;
+      this.cam = Math.max(0, Math.min(this.worldW - DD.C.VIEW_W, cx - DD.C.VIEW_W / 2));
       p1.state = 'intro'; p2.state = 'intro';
       this.projectiles = [];
       this.particles = [];
@@ -125,6 +142,9 @@ window.DD = window.DD || {};
     }
 
     updateTitle() {
+      // langsamer Kameraschwenk über die Stage als lebendiger Hintergrund
+      this.refreshWorld();
+      this.cam = ((1 - Math.cos(this.t / 300)) / 2) * (this.worldW - DD.C.VIEW_W);
       if (Input.wasPressed('ArrowUp') || Input.wasPressed('KeyW')
         || Input.wasPressed('ArrowDown') || Input.wasPressed('KeyS')) {
         this.menuMode = 1 - this.menuMode;
@@ -144,6 +164,7 @@ window.DD = window.DD || {};
     }
 
     updateIntro() {
+      this.updateCamera();
       this.seqT++;
       if (this.seqT === 66) DD.audio.play('round');
       if (this.seqT >= 110) {
@@ -169,6 +190,7 @@ window.DD = window.DD || {};
       this.checkAttacks(p2, p1);
       this.updateProjectiles();
       this.updateParticles();
+      this.updateCamera();
 
       if (this.state !== 'fight') return; // K.O. hat die Phase gewechselt
 
@@ -185,10 +207,9 @@ window.DD = window.DD || {};
       if (dist >= C().PUSH_DIST) return;
       const push = (C().PUSH_DIST - dist) / 2;
       const dir = d >= 0 ? 1 : -1;
-      a.x -= dir * push;
-      b.x += dir * push;
-      a.x = Math.max(C().WALL_L, Math.min(C().WALL_R, a.x));
-      b.x = Math.max(C().WALL_L, Math.min(C().WALL_R, b.x));
+      const m = C().WALL_MARGIN, wr = this.worldW - m;
+      a.x = Math.max(m, Math.min(wr, a.x - dir * push));
+      b.x = Math.max(m, Math.min(wr, b.x + dir * push));
     }
 
     checkAttacks(att, def) {
@@ -225,7 +246,7 @@ window.DD = window.DD || {};
         if (p.dead) continue;
         p.t++;
         p.x += p.vx;
-        if (p.x < -30 || p.x > 350) { p.dead = true; continue; }
+        if (p.x < -30 || p.x > this.worldW + 30) { p.dead = true; continue; }
         const box = { x0: p.x - F.w / 2, y0: p.y - F.h / 2, x1: p.x + F.w / 2, y1: p.y + F.h / 2 };
         // Feuerball gegen Feuerball: beide lösen sich auf
         for (const q of this.projectiles) {
@@ -304,13 +325,18 @@ window.DD = window.DD || {};
         );
       }
 
-      DD.stage.draw(ctx, this.stageIndex, this.t);
+      const cam = Math.round(this.cam);
+      DD.stage.draw(ctx, this.stageIndex, this.t, cam);
 
       if (this.state === 'title') {
         DD.ui.drawTitle(ctx, this, this.t);
         ctx.restore();
         return;
       }
+
+      // Welt-Ebene: alles hier scrollt mit der Kamera
+      ctx.save();
+      ctx.translate(-cam, 0);
 
       // Schatten, Kämpfer (der zuletzt Getroffene liegt "oben"), Projektile
       for (const f of this.fighters) f.drawShadow(ctx);
@@ -319,7 +345,7 @@ window.DD = window.DD || {};
 
       for (const p of this.projectiles) {
         const frame = ((p.t / 4 | 0) % 2) ? 'fireballA' : 'fireballB';
-        DD.sprites.draw(ctx, p.owner.pal, frame, p.vx >= 0 ? 1 : -1, p.x, p.y + 8, 0);
+        DD.sprites.draw(ctx, p.owner.char, p.owner.skin, frame, p.vx >= 0 ? 1 : -1, p.x, p.y + 8, 0);
       }
 
       for (const s of this.particles) {
@@ -328,6 +354,11 @@ window.DD = window.DD || {};
         ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
       }
       ctx.globalAlpha = 1;
+
+      ctx.restore();
+
+      // Vordergrund-Silhouetten (ziehen schneller vorbei als die Kämpfer)
+      DD.stage.drawFg(ctx, this.stageIndex, this.t, cam);
 
       DD.ui.drawHUD(ctx, this);
 

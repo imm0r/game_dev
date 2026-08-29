@@ -7,8 +7,7 @@ DD.C = {
   VIEW_H: 180,
 
   GROUND_Y: 158,      // Fusslinie der Kämpfer (Strassenniveau)
-  WALL_L: 16,         // linke/rechte Begrenzung der Arena
-  WALL_R: 304,
+  WALL_MARGIN: 16,    // Abstand der Kämpfer zum Weltrand (Weltbreite je Stage)
 
   SCALE: 2,           // ein Sprite-Pixel = 2 Bildschirm-Pixel
 
@@ -29,8 +28,10 @@ DD.C = {
 
   HITSTOP: 6,         // kurzes Einfrieren bei Treffern ("Impact-Gefühl")
 
-  P1_NAME: 'HANZO',
-  P2_NAME: 'KAITO',
+  // Roster: welcher Charakter mit welchem Farbschema antritt.
+  // Verfügbar: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
+  P1_CHAR: 'klaus', P1_SKIN: 'gold', P1_NAME: 'KLAUS',
+  P2_CHAR: 'antoine', P2_SKIN: 'olive', P2_NAME: 'ANTOINE',
 };
 
 // Frame-Daten der Angriffe: startup = Anlauf, active = Trefferfenster,

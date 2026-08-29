@@ -67,8 +67,8 @@ window.DD = window.DD || {};
     F().drawText(ctx, 'RETRO PIXEL FIGHTING', 160, 54, 1, '#59f8e8', 'center');
 
     // Kämpfer-Vorschau
-    DD.sprites.draw(ctx, 'p1', 'idle', 1, 92, 150, (t / 32 | 0) % 2);
-    DD.sprites.draw(ctx, 'p2', 'idle', -1, 228, 150, ((t + 16) / 32 | 0) % 2);
+    DD.sprites.draw(ctx, DD.C.P1_CHAR, DD.C.P1_SKIN, 'idle', 1, 92, 150, (t / 32 | 0) % 2);
+    DD.sprites.draw(ctx, DD.C.P2_CHAR, DD.C.P2_SKIN, 'idle', -1, 228, 150, ((t + 16) / 32 | 0) % 2);
     F().drawTextShadow(ctx, DD.C.P1_NAME, 92, 154, 1, '#f8f8f8', 'center');
     F().drawTextShadow(ctx, DD.C.P2_NAME, 228, 154, 1, '#f8f8f8', 'center');
 
