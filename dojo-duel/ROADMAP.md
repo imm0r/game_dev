@@ -26,11 +26,28 @@ Jeder Meilenstein endet mit einem spielbaren Stand.
 - [ ] **Offen: Original-Panoramen als PNG in `assets/` hochladen** (siehe assets/README.md)
 - [ ] Feintuning nach Spieltest
 
-### M2 – Charakter-Grafik-Upgrade
-- [x] Erste Fassungen von Klaus & Antoine nach Referenz (28x36-Grids)
-- [ ] Sprites auf ~48x72 vergrössern, mehr Farben, Licht-/Schattenkanten
-- [ ] Mehr Animationsphasen: Atmung, Antizipation, Follow-Through
-- [ ] Details aus den Referenzen: Tattoos, Narbe, Frisuren-Feinschliff
+### M2 – Charakter-Grafik-Upgrade  *(in Arbeit)*
+
+Entschieden: Handarbeit in Testpixel-Qualität, Ziel „flüssig modern"
+(4–6 Frames pro Aktion, wird paketweise aufgestockt).
+
+**Paket 1 (geliefert): Klaus v2**
+- [x] Neues Animationssystem: Frame-Sequenzen, Phasen-Frames für Angriffe,
+      geschwindigkeitsbasierte Sprung-Frames, pro Charakter eigene Pixeldichte
+- [x] Klaus komplett neu: 42x68 in 1x-Dichte, 20 Farben, Anatomie-Schattierung,
+      Bart-Textur, Tattoo, Flaggen-Patch — 20 Frames
+- [x] 4-Frame-Laufzyklus, 4-phasige Idle-Atmung, Angriffe mit
+      Ausholen/Treffen/Zurückziehen, eigenes Energie-Projektil
+- [x] Übergangsweise Standard-Kampf als Klaus-Spiegelmatch (gold vs. crimson)
+
+**Paket 2 (nächstes): Antoine v2**
+- [ ] Antoine in derselben Qualitätsstufe (Uniform, Vollbart, Narbe, Stiefel)
+- [ ] Granaten-Projektil im neuen Stil, danach Roster zurück auf Klaus vs. Antoine
+
+**Paket 3: Aufstockung**
+- [ ] Laufzyklus auf 6 Frames, Idle auf 4 echte Posen
+- [ ] Angriffe auf 4-5 Phasen (Impact-Frames, Follow-Through)
+- [ ] Treffer-Reaktion ausbauen (2 Stufen), Narbe/Detail-Pass nach Referenz
 
 ### M3 – Effekte & Gamefeel („Grafik-Gewitter")
 - [ ] Superblitz, Zeitlupen-K.O., Bewegungs-Trails, Landestaub

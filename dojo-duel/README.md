@@ -41,12 +41,17 @@ kann aber (anders als beim grossen Vorbild) kein K.O. erzielen.
 
 - **Das Roster** (nach den Charakter-Referenzen des Projekt-Besitzers,
   umgesetzt im Hybrid-Workflow — Referenz-Sheet rein, Grid-Sprite raus):
-  - **KLAUS VÖLKER** (MMA, Deutschland): nackter Oberkörper, schwarz-goldene
-    Shorts mit Flaggen-Patch, graue Handschuhe — und Heterochromie: von
-    rechts sieht man sein blaues, von links sein braunes Auge
+  - **KLAUS VÖLKER** (MMA, Deutschland) — seit M2 in der **neuen
+    Sprite-Generation**: 42x68 Pixel in 1x-Dichte, 20 Farben mit echter
+    Licht/Schatten-Modellierung, Bart-Textur, Tattoo, Flaggen-Patch,
+    4-Frame-Laufzyklus, Atmungs-Idle und Angriffs-Phasen
+    (Ausholen/Treffen/Zurückziehen). Und Heterochromie: von rechts sieht
+    man sein blaues, von links sein braunes Auge.
+    ![Klaus-Frames](docs/screenshots/klaus-frames.png)
   - **ANTOINE MOREAU** (Judo/GIGN, Frankreich): bullig, Vollbart,
-    Oliv-Uniform mit Frankreich-Patch, Stiefel — seine Spezialattacke ist
-    eine **Granate**
+    Oliv-Uniform mit Frankreich-Patch, Stiefel, **Granaten**-Projektil —
+    noch in der alten Sprite-Generation, sein v2-Upgrade ist das nächste
+    Paket. Bis dahin läuft der Standard-Kampf als Klaus-Spiegelmatch.
   - der Karate-Kämpfer **HANZO** aus dem ersten Prototyp bleibt als
     Bonus-Set (Roster-Zuordnung in `js/constants.js` umstellbar)
 - **1-Spieler-Modus gegen CPU** (die KI hält Distanz, blockt, weicht

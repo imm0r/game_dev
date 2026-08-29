@@ -1,19 +1,20 @@
 // Kämpfer-Sprites als Text-Grids – jedes Zeichen ist ein Pixel.
-// Legende:  .  transparent      K  Umriss (fast schwarz)
-//           S  Haut             T  Haut-Schatten (Muskeln)
-//           H  Haar/Bart        E  Auge (pro Blickrichtung eigene Farbe!)
-//           R  Handschuhe/Akzent
-//           G  Anzug/Shorts     D  Anzug-Schatten bzw. Gold-Streifen
-//           B  Gürtel/Bund      Y+F  Flaggen-Patch (gelb/rot)
-//           O C W  Projektil (Outline, Kern, Weiss)
 //
-// Es gibt zwei Charakter-Sets:
-//   klaus – MMA-Kämpfer nach der Referenz des Projekt-Besitzers
-//           (Klaus Völker: Bart, nackter Oberkörper, schwarz-goldene
-//           Shorts mit Deutschland-Patch, graue Handschuhe – und
-//           Heterochromie: von rechts blau, von links braun!)
-//   hanzo – der Karate-Kämpfer aus dem ersten Prototyp
-// Alle Grids sind 28 Zeichen breit und 36 Zeilen hoch. Blickrichtung: rechts.
+// Seit Meilenstein 2 gibt es zwei Qualitätsstufen:
+//   klaus  – NEUE Generation: 42x68 in 1x-Pixeldichte (scale 1), 20 Farben,
+//            echte Licht/Schatten-Modellierung, Frame-Sequenzen.
+//   antoine, hanzo – alte Generation (28x36, scale 2), wird paketweise
+//            auf die neue Stufe gehoben.
+//
+// Legende neue Generation (klaus):
+//   K Umriss · A Haut-Licht · S Haut · T Haut-Schatten · U Haut-Tief
+//   L Haar-Licht · H Haar · J Haar-Dunkel (Bart-Textur)
+//   G Shorts · g Shorts-Schatten · D Gold · d Gold-Dunkel
+//   R Handschuh-Licht · r Handschuh · q Handschuh-Dunkel
+//   E Auge (pro Blickrichtung eigene Farbe!) · W Augenweiss
+//   M Tattoo · F/Y Flaggen-Patch · O/C/X Projektil
+//
+// Legende alte Generation: K S T H R G D B Y F U E O C W (wie bisher).
 window.DD = window.DD || {};
 
 (function () {
@@ -23,22 +24,28 @@ window.DD = window.DD || {};
     klaus: {
       gold: {
         colors: {
-          K: '#181020', S: '#e8b088', T: '#c68c5c', H: '#6e4420',
-          R: '#9a9aa4', G: '#17171d', D: '#c8a030', B: '#c8a030',
-          Y: '#f8d838', F: '#d82818',
-          O: '#a03808', C: '#f8a030', W: '#f8f0d8',
+          K: '#1a1220',
+          A: '#f2c49a', S: '#dda274', T: '#b97e4e', U: '#8d5731',
+          L: '#96662f', H: '#6e4420', J: '#452a12',
+          G: '#282833', g: '#15151d', D: '#d9ad39', d: '#a87c24',
+          R: '#c2c2ce', r: '#8f8f9b', q: '#5c5c68',
+          W: '#f2f2f2', M: '#5f4630', F: '#d82818', Y: '#f8d838',
+          O: '#a03808', C: '#f8a030', X: '#f8f0d8',
         },
-        eyeR: '#58c8f8',   // blaues Auge (sichtbar bei Blick nach rechts)
-        eyeL: '#8a5a14',   // braunes Auge (sichtbar bei Blick nach links)
+        eyeR: '#4fc4f5',   // blaues Auge (Blick nach rechts)
+        eyeL: '#8a5a14',   // braunes Auge (Blick nach links)
       },
       crimson: {
         colors: {
-          K: '#181020', S: '#d8a070', T: '#b07848', H: '#2e1c10',
-          R: '#c03028', G: '#6e1216', D: '#e8e8e8', B: '#e8e8e8',
-          Y: '#f8d838', F: '#d82818',
-          O: '#5a1080', C: '#c060f8', W: '#f8f0ff',
+          K: '#1a1220',
+          A: '#e0ac84', S: '#c68a5c', T: '#a06840', U: '#7a4a26',
+          L: '#4a3418', H: '#31220f', J: '#1d1408',
+          G: '#7a1418', g: '#4a0c0e', D: '#e8e8e8', d: '#b0b0b8',
+          R: '#d86868', r: '#b03434', q: '#7a1a1a',
+          W: '#f2f2f2', M: '#4a3624', F: '#d82818', Y: '#f8d838',
+          O: '#5a1080', C: '#c060f8', X: '#f8f0ff',
         },
-        eyeR: '#58c8f8',
+        eyeR: '#4fc4f5',
         eyeL: '#8a5a14',
       },
     },
@@ -84,7 +91,592 @@ window.DD = window.DD || {};
     },
   };
 
-  // ------------------------------------------------- Karate-Grids (hanzo) --
+  // Varianten = Basis-Grid + ersetzte Zeilen
+  function patch(base, ...editLists) {
+    const g = base.slice();
+    for (const edits of editLists) {
+      for (const e of edits) g[e[0]] = e[1];
+    }
+    return g;
+  }
+
+  function withLegs(base, legs) {
+    return base.slice(0, 23).concat(legs, base.slice(23 + legs.length));
+  }
+
+  // ================================================= KLAUS v2 (42x68, 1x) --
+
+  const K2_IDLE0 = [
+    '..........................................',
+    '...............KKKKKKK....................',
+    '..............KLLHHHHHK...................',
+    '.............KLLHHHHHHHK..................',
+    '.............KLHHHHHHHHK..................',
+    '.............KJHHHHHHHHK..................',
+    '.............KJHSSSSSAAK..................',
+    '.............KJHSUUUUSAK..................',
+    '.............KJHSSWESSAK..................',
+    '.............KJHSSSSSAAK...KKKKK..........',
+    '.............KJHSSSSATSK..KRRRRRK.........',
+    '.............KJHSJJJJJSK..KRRRRRrK........',
+    '.............KJHJJHHJJK..KRrrrrrrK........',
+    '..............KJJHHHHJK..KRrrrrrqK........',
+    '..............KKJHHHJK...KrrrrqqK.........',
+    '...............KJJJJK....KqrqqqK..........',
+    '................KTSSK....KKqSTKK..........',
+    '...............KTTSSAK....KSSTK...........',
+    '..........KKKKTTSSSSAAKK..KSSTK...........',
+    '.........KTSSSTSSSSSSAAAKKSSSTK...........',
+    '........KTSSSSTSSSSSSSAAASSSSTK...........',
+    '........KTSSSTSSSSSSSSSAASSSTKK...........',
+    '........KTSSTSSSSSSSMMSAASSTK.............',
+    '........KTSSTSSAASSSMMSSASTK..............',
+    '........KTSSTSSSSSSSSSSSKKK...............',
+    '........KTSSTSUUUUUUUSSAK.................',
+    '........KTSSTSSSSSSSSSAAK.................',
+    '........KTSSTSSSSSSSSSAKKKKK..............',
+    '........KTSSTSSTUTSSSSAKSTRRRK............',
+    '........KTSSTSSSSSSSSAKSKRrrrrrK..........',
+    '........KTSSTSSTUTSSSAKSKRrrrrqK..........',
+    '.........KTSSTSSSSSSAKTSKrrqqK............',
+    '.........KTSSTSTUTSSAK.KSqqqKK............',
+    '.........KTSSTSSSSSAAKKSSTK...............',
+    '..........KTSTSSSSSAK.....................',
+    '..........KTSTSSSSSAK.....................',
+    '..........KTSSTSSSAK......................',
+    '...........KTSSSSSAK......................',
+    '...........KddDDDDDDDDddK.................',
+    '...........KdDDDDDDDDDDdK.................',
+    '..........KgGGGGGGGGGGGgK.................',
+    '..........KgGGGGGGGGGGGGgK................',
+    '..........KdGGGGGGGGGGGGgK................',
+    '..........KdGGGGGGGGGFYGgK................',
+    '..........KdGGGGGGGGGFYGgK................',
+    '..........KdGGGGGGGGGGGGgK................',
+    '.........KgGGGGgKKgGGGGGgK................',
+    '.........KgGGGGgK.KgGGGGgK................',
+    '.........KgGGGGgK.KgGGGGgK................',
+    '.........KggGGggK.KggGGggK................',
+    '.........KKgggKK...KgggKK.................',
+    '..........KTSSTK...KSSTAK.................',
+    '..........KTSSTK...KSSTAK.................',
+    '..........KTSSTK...KSSTAK.................',
+    '..........KTSSK.....KSTAK.................',
+    '..........KTSSK.....KSTAK.................',
+    '..........KTSTK.....KSTAK.................',
+    '..........KUSTK.....KSTUK.................',
+    '..........KTSSTK...KSSTAK.................',
+    '..........KTSSTK...KSSTAK.................',
+    '..........KTSSK.....KSTAK.................',
+    '..........KTSSK.....KSTAK.................',
+    '..........KTSK.......KSTK.................',
+    '..........KTSK.......KSTK.................',
+    '.........KTSSK......KSSTAK................',
+    '.........KTSSSK....KSSSTTK................',
+    '........KTTSSSK...KSSSSTTTK...............',
+    '........KKKKKK....KKKKKKKK................',
+  ];
+
+  // Atmung: Schultern schwellen, Brust-Licht wandert
+  const K2_IDLE1 = patch(K2_IDLE0, [
+    [19, '.........KTSSSTSSSSSAAAAKKSSSTK...........'],
+    [24, '........KTSSTSSAASSSSSSSKKK...............'],
+    [25, '........KTSSTSSUUUUUSSAAK.................'],
+  ]);
+
+  // ---- Laufzyklus: 4 Bein-Blöcke (Zeilen 44-67) ----
+
+  const K2_LEGS_CONTACT = [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '..........KdGGGGGGGGGGGGgK................'],
+    [46, '.........KgGGGGGgKgGGGGGgK................'],
+    [47, '........KgGGGGgK..KgGGGGgK................'],
+    [48, '........KgGGGgK....KgGGGgK................'],
+    [49, '........KggGggK....KggGggK................'],
+    [50, '........KKggKK......KggKK.................'],
+    [51, '........KTSSTK......KSSTAK................'],
+    [52, '.......KTSSTK.......KSSTAK................'],
+    [53, '.......KTSSTK........KSSTAK...............'],
+    [54, '.......KTSTK.........KSSTAK...............'],
+    [55, '......KTSSTK..........KSTAK...............'],
+    [56, '......KTSSK...........KSTAK...............'],
+    [57, '......KUSTK...........KSTUK...............'],
+    [58, '.....KTSSTK...........KSSTAK..............'],
+    [59, '.....KTSSK.............KSTAK..............'],
+    [60, '.....KTSSK.............KSTAK..............'],
+    [61, '.....KTSK...............KSTK..............'],
+    [62, '.....KTSK...............KSTK..............'],
+    [63, '....KTSSK...............KSTAK.............'],
+    [64, '....KTSK.................KSTK.............'],
+    [65, '....KUSSK...............KSSTAK............'],
+    [66, '...KTSSSK..............KSSSTTAK...........'],
+    [67, '...KKKKK...............KKKKKKKK...........'],
+  ];
+
+  const K2_LEGS_PASS = [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '..........KdGGGGGGGGGGGGgK................'],
+    [46, '.........KgGGGGGGGGGGGGgK.................'],
+    [47, '..........KgGGGGGGGGGGgK..................'],
+    [48, '..........KgGGGGGGGGGgK...................'],
+    [49, '..........KggGGGGGGggK....................'],
+    [50, '...........KKgggggKK......................'],
+    [51, '...........KTSSTSSTK......................'],
+    [52, '...........KTSSTSSTAK.....................'],
+    [53, '...........KTSSKSSTAK.....................'],
+    [54, '...........KTSSKSSTAK.....................'],
+    [55, '...........KTSTKKSTAK.....................'],
+    [56, '...........KTSTK.KSTAK....................'],
+    [57, '...........KUSK..KSTUK....................'],
+    [58, '...........KTSK..KSSTK....................'],
+    [59, '...........KTSK...KSTK....................'],
+    [60, '..........KTSSK...KSTK....................'],
+    [61, '..........KTSK....KSTK....................'],
+    [62, '..........KTSK....KSTAK...................'],
+    [63, '..........KTSK....KSTAK...................'],
+    [64, '..........KUSK....KSTK....................'],
+    [65, '.........KTSSK....KSSTK...................'],
+    [66, '.........KTSSSK..KSSSTTK..................'],
+    [67, '.........KKKKK...KKKKKKK..................'],
+  ];
+
+  // vorderes Bein schwingt gestreckt nach vorn (noch in der Luft)
+  const K2_LEGS_REACH = [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '..........KdGGGGGGGGGGGGgK................'],
+    [46, '.........KgGGGGGgKgGGGGGgK................'],
+    [47, '.........KgGGGGgK.KgGGGGgK................'],
+    [48, '.........KgGGGgK...KgGGGgK................'],
+    [49, '.........KggGggK...KggGggK................'],
+    [50, '.........KKggKK.....KggKK.................'],
+    [51, '.........KTSSTK.....KSSTAK................'],
+    [52, '.........KTSSTK......KSSTAK...............'],
+    [53, '........KTSSTK........KSSTAK..............'],
+    [54, '........KTSTK.........KSSTAK..............'],
+    [55, '........KTSTK..........KSTAK..............'],
+    [56, '........KTSSK...........KSTAK.............'],
+    [57, '........KUSTK...........KSTUK.............'],
+    [58, '........KTSSK...........KSSTAK............'],
+    [59, '........KTSK.............KSTAK............'],
+    [60, '........KTSK.............KSTAK............'],
+    [61, '........KTSK.............KSTAK............'],
+    [62, '........KTSK.............KSTAK............'],
+    [63, '........KTSK..............KSTK............'],
+    [64, '........KUSK..............KSTAK...........'],
+    [65, '.......KTSSK..............KSSTAK..........'],
+    [66, '.......KTSSSK............KSSSTTK..........'],
+    [67, '.......KKKKK..............KKKKKK..........'],
+  ];
+
+  // hinteres Bein streckt sich beim Abstoss nach hinten
+  const K2_LEGS_PUSH = [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '..........KdGGGGGGGGGGGGgK................'],
+    [46, '.........KgGGGGgKKgGGGGgK.................'],
+    [47, '........KgGGGGgK..KgGGGGgK................'],
+    [48, '.......KgGGGgK....KgGGGGgK................'],
+    [49, '.......KggGggK....KggGGggK................'],
+    [50, '.......KKggKK......KKgggKK................'],
+    [51, '......KTSSTK........KTSSTK................'],
+    [52, '......KTSSTK........KTSSTK................'],
+    [53, '.....KTSSTK.........KTSSTAK...............'],
+    [54, '.....KTSTK..........KTSSTAK...............'],
+    [55, '....KTSSTK...........KTSTAK...............'],
+    [56, '....KTSSK............KTSTAK...............'],
+    [57, '....KUSTK............KTSUK................'],
+    [58, '......KTSSTK........KTSTK.................'],
+    [59, '......KTSSK.........KTSTK.................'],
+    [60, '.....KTSK...........KTSTK.................'],
+    [61, '.....KTSK...........KTSTK.................'],
+    [62, '.....KTSK...........KTSTK.................'],
+    [63, '....KTSK............KTSTK.................'],
+    [64, '....KUSK............KTSTK.................'],
+    [65, '...KTSSK...........KTSSTK.................'],
+    [66, '...KTSSK..........KTSSSTK.................'],
+    [67, '...KKKKK..........KKKKKK..................'],
+  ];
+
+  const K2_WALK0 = patch(K2_IDLE0, K2_LEGS_REACH);
+  const K2_WALK1 = patch(K2_IDLE0, K2_LEGS_CONTACT);
+  const K2_WALK2 = patch(K2_IDLE0, K2_LEGS_PASS);
+  const K2_WALK3 = patch(K2_IDLE0, K2_LEGS_PUSH);
+
+  // ---- Schlag: Ausholen / Strecken / Zurückziehen ----
+
+  // vordere Faust weg (wird pro Pose neu gesetzt)
+  const K2_EDIT_ARM_CLEAR = [
+    [9, '.............KJHSSSSSAAK..................'],
+    [10, '.............KJHSSSSATSK..................'],
+    [11, '.............KJHSJJJJJSK..................'],
+    [12, '.............KJHJJHHJJK...................'],
+    [13, '..............KJJHHHHJK...................'],
+    [14, '..............KKJHHHJK....................'],
+    [15, '...............KJJJJK.....................'],
+    [16, '................KTSSK.....................'],
+    [17, '...............KTTSSAK....................'],
+  ];
+
+  const K2_PUN0 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
+    [11, '.............KJHSJJJJJSKRRRK..............'],
+    [12, '.............KJHJJHHJJKKRRRrK.............'],
+    [13, '..............KJJHHHHJKKrrrqK.............'],
+    [14, '..............KKJHHHJKKSqqK...............'],
+    [15, '...............KJJJJKKSTK.................'],
+    [16, '................KTSSKKSTK.................'],
+    [17, '...............KTTSSAKSTK.................'],
+  ]);
+
+  // Arm voll gestreckt, Ausfallschritt
+  const K2_PUN1 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
+    [18, '..........KKKKTTSSSSAAKKKKKKK.............'],
+    [19, '.........KTSSSTSSSSSSAAASSSSSSSSSKRRRRK...'],
+    [20, '........KTSSSSTSSSSSSSAAASSSSSSSSSKRrrrrK.'],
+    [21, '........KTSSSTSSSSSSSSSAATTTTTTTTTKrrrqK..'],
+    [22, '........KTSSTSSSSSSSMMSAAKKKKKKKKKKqqKK...'],
+  ], K2_LEGS_CONTACT);
+
+  // halb zurückgezogen
+  const K2_PUN2 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
+    [19, '.........KTSSSTSSSSSSAAASSSSKRRRK.........'],
+    [20, '........KTSSSSTSSSSSSSAAASSSSKRrrrK.......'],
+    [21, '........KTSSSTSSSSSSSSSAATTTTKrrqK........'],
+    [22, '........KTSSTSSSSSSSMMSAAKKKKKKqKK........'],
+  ]);
+
+  // ---- Tritt: Knie hoch / Bein gestreckt ----
+
+  const K2_KICK0 = patch(K2_IDLE0, [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '..........KdGGGGGGGGGGGGgKKK..............'],
+    [46, '.........KgGGGGGgKgGGGGGGGgK..............'],
+    [47, '.........KgGGGGgK.KgGGGGGgKK..............'],
+    [48, '.........KgGGGgK...KgggggKK...............'],
+    [49, '.........KggGggK....KSSTAK................'],
+    [50, '.........KKggKK.....KSSTAK................'],
+    [51, '..........KTSSTK....KSTAK.................'],
+    [52, '..........KTSSTK....KSTUK.................'],
+    [53, '..........KTSSTK....KSTK..................'],
+    [54, '..........KTSSK.....KSTAK.................'],
+    [55, '..........KTSSK.....KSSTAK................'],
+    [56, '..........KTSTK.....KKKKK.................'],
+    [57, '..........KUSTK...........................'],
+    [58, '..........KTSSTK..........................'],
+    [59, '..........KTSSTK..........................'],
+    [60, '..........KTSSK...........................'],
+    [61, '..........KTSSK...........................'],
+    [62, '..........KTSK............................'],
+    [63, '..........KTSK............................'],
+    [64, '..........KTSK............................'],
+    [65, '.........KTSSK............................'],
+    [66, '.........KTSSSK...........................'],
+    [67, '.........KKKKKK...........................'],
+  ]);
+
+  const K2_KICK1 = patch(K2_IDLE0, [
+    [38, '...........KddDDDDDDDDddK.................'],
+    [39, '...........KdDDDDDDDDDDdKKKKK.............'],
+    [40, '..........KgGGGGGGGGGGGgGGGKKKKKK.........'],
+    [41, '..........KgGGGGGGGGGGGGGGGSSSSSSKK.......'],
+    [42, '..........KdGGGGGGGGGGGGGGSSSSSSSSAK......'],
+    [43, '..........KdGGGGGGGGGFYGgKKSSSSSSTAAK.....'],
+    [44, '..........KdGGGGGGGGGGGGgK.KKKKKKKKK......'],
+    [45, '..........KdGGGGGGGGGGGGgK................'],
+    [46, '.........KgGGGGGgKKgggggK.................'],
+    [47, '.........KgGGGGgK..KKKKK..................'],
+    [48, '.........KgGGGgK..........................'],
+    [49, '.........KggGggK..........................'],
+    [50, '.........KKggKK...........................'],
+    [51, '..........KTSSTK..........................'],
+    [52, '..........KTSSTK..........................'],
+    [53, '..........KTSSTK..........................'],
+    [54, '..........KTSSK...........................'],
+    [55, '..........KTSSK...........................'],
+    [56, '..........KTSTK...........................'],
+    [57, '..........KUSTK...........................'],
+    [58, '..........KTSSTK..........................'],
+    [59, '..........KTSSTK..........................'],
+    [60, '..........KTSSK...........................'],
+    [61, '..........KTSSK...........................'],
+    [62, '..........KTSK............................'],
+    [63, '..........KTSK............................'],
+    [64, '..........KTSK............................'],
+    [65, '.........KTSSK............................'],
+    [66, '.........KTSSSK...........................'],
+    [67, '.........KKKKKK...........................'],
+  ]);
+
+  // ---- Spezial: Energie-Stoss mit beiden Händen ----
+
+  const K2_SP0 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
+    [28, '........KTSSTSSTUTSSSSAK..................'],
+    [29, '........KTSSTSSSSSSSSAK...................'],
+    [30, '........KTSSTSSTUTSSSAKKKK................'],
+    [31, '.........KTSSTSSSSSSAKSSAK................'],
+    [32, '.........KTSSTSTUTSSAKSSAK................'],
+    [33, '.........KTSSTSSSSSAAKKKK.................'],
+  ]);
+
+  const K2_SP1 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
+    [19, '.........KTSSSTSSSSSSAAASSSSSSKKK.........'],
+    [20, '........KTSSSSTSSSSSSSAAASSSSSSSAAK.......'],
+    [21, '........KTSSSTSSSSSSSSSAATTTSSSSSAK.......'],
+    [22, '........KTSSTSSSSSSSMMSAAKKKSSSSSAK.......'],
+    [23, '........KTSSTSSAASSSMMSSASTKKSSSAAK.......'],
+    [24, '........KTSSTSSSSSSSSSSSKKK.KKKKKK........'],
+    [28, '........KTSSTSSTUTSSSSAK..................'],
+    [29, '........KTSSTSSSSSSSSAK...................'],
+    [30, '........KTSSTSSTUTSSSAK...................'],
+    [31, '.........KTSSTSSSSSSAK....................'],
+    [32, '.........KTSSTSTUTSSAK....................'],
+    [33, '.........KTSSTSSSSSAAK....................'],
+  ], K2_LEGS_CONTACT);
+
+  // ---- Sprung: Absprung / Tuck / Fallen ----
+
+  const K2_JMP_TUCK = [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '.........KdGGGGGGGGGGGGGgK................'],
+    [46, '........KgGGGGGGGGGGGGGGgK................'],
+    [47, '........KgGGGGGKKKKGGGGGgK................'],
+    [48, '........KggGGKKSSTKKGGggK.................'],
+    [49, '.........KKKKTSSSSTKKKK...................'],
+    [50, '..........KTSSTKKSSTAK....................'],
+    [51, '..........KUSSTK.KSSTUK...................'],
+    [52, '.........KTSSSTK.KSSSTAK..................'],
+    [53, '.........KTTSSK...KSSTTK..................'],
+    [54, '..........KKKKK...KKKKK...................'],
+    [55, '..........................................'],
+    [56, '..........................................'],
+    [57, '..........................................'],
+    [58, '..........................................'],
+    [59, '..........................................'],
+    [60, '..........................................'],
+    [61, '..........................................'],
+    [62, '..........................................'],
+    [63, '..........................................'],
+    [64, '..........................................'],
+    [65, '..........................................'],
+    [66, '..........................................'],
+    [67, '..........................................'],
+  ];
+
+  const K2_JMP0 = patch(K2_IDLE0, K2_LEGS_PUSH);
+  const K2_JMP1 = patch(K2_IDLE0, K2_JMP_TUCK);
+  const K2_JMP2 = patch(K2_IDLE0, K2_LEGS_REACH);
+
+  // ---- Ducken ----
+
+  const K2_CROUCH = [
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '...............KKKKKKK....................',
+    '..............KLLHHHHHK...................',
+    '.............KLLHHHHHHHK..................',
+    '.............KJHHHHHHHHK..................',
+    '.............KJHSSSSSAAK..................',
+    '.............KJHSUUUUSAK..................',
+    '.............KJHSSWESSAK..................',
+    '.............KJHSSSSSAAK...KKKKK..........',
+    '.............KJHSJJJJJSK..KRRRRRK.........',
+    '.............KJHJJHHJJK..KRrrrrrrK........',
+    '..............KJJHHHHJK..KRrrrrrqK........',
+    '..............KKJHHHJK....KrrrqqK.........',
+    '...............KJJJJK.....KqSTKK..........',
+    '..............KKTSSAKK....KSSTK...........',
+    '..........KKKTTSSSSAAAKK.KSSSTK...........',
+    '.........KTSSTSSSSSSSAAAKKSSTK............',
+    '........KTSSSTSSSSSSSSAAASSTK.............',
+    '........KTSSTSSSSSSMMSSAASTK..............',
+    '........KTSSTSUUUUUUUSSAAKK...............',
+    '........KTSSTSSSSSSSSSSAK.................',
+    '........KddDDDDDDDDDDddAK.................',
+    '.......KgGGGGGGGGGGGGGGdK.................',
+    '.......KgGGGGGGGGGGGGGGGgK................',
+    '.......KdGGGGGGGGGGGFYGGgK................',
+    '......KgGGGGGGgKKKgGGGGGgK................',
+    '......KgGGGGGgK..KggGGGggK................',
+    '......KggGGggK....KKgggKK.................',
+    '......KKgggKK......KTSSTK.................',
+    '......KTSSTK.......KTSSTAK................',
+    '.....KTSSTK........KTSSTAK................',
+    '.....KTSSTK.........KTSSTK................',
+    '.....KUSSK..........KTSSUK................',
+    '.....KTSSK..........KTSSTK................',
+    '....KTSSK...........KTSSTK................',
+    '....KTSK.............KTSTK................',
+    '....KTSK.............KTSTK................',
+    '...KTSSK............KTSSTK................',
+    '...KTSSSK..........KTSSSTK................',
+    '..KTTSSSK.........KSSSSTTK................',
+    '..KKKKKK..........KKKKKKKK................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+    '..........................................',
+  ];
+
+  // ---- Block: Doppel-Deckung ----
+
+  const K2_BLOCK = patch(K2_IDLE0, [
+    [9, '.............KJHSSSSSAAKKKKK..............'],
+    [10, '.............KJHSSSSATSKKRRRK.............'],
+    [11, '.............KJHSJJJJJSKKRRRrK............'],
+    [12, '.............KJHJJHHJJKKRrrrrK............'],
+    [13, '..............KJJHHHHJKKRrrrqK............'],
+    [14, '..............KKJHHHJKKKrrrqK.............'],
+    [15, '...............KJJJJKKSKqqqK..............'],
+    [16, '................KTSSKKSTKKK...............'],
+    [17, '...............KTTSSAKSTK.................'],
+    [28, '........KTSSTSSTUTSSSSAKKKKK..............'],
+    [29, '........KTSSTSSSSSSSSAKKRRRrK.............'],
+    [30, '........KTSSTSSTUTSSSAKKRrrrqK............'],
+    [31, '.........KTSSTSSSSSSAKKKrrqqK.............'],
+    [32, '.........KTSSTSTUTSSAKKSqqKK..............'],
+    [33, '.........KTSSTSSSSSAAKKSTK................'],
+  ]);
+
+  // ---- Treffer-Reaktion: Kopf und Oberkörper zurück ----
+
+  const K2_HURT = patch(K2_IDLE0, [
+    [1, '.............KKKKKKK......................'],
+    [2, '............KLLHHHHHK.....................'],
+    [3, '...........KLLHHHHHHHK....................'],
+    [4, '...........KLHHHHHHHHK....................'],
+    [5, '...........KJHHHHHHHHK....................'],
+    [6, '...........KJHSSSSSAAK....................'],
+    [7, '...........KJHSUUUUSAK....................'],
+    [8, '...........KJHSSKKSSAK....................'],
+    [9, '...........KJHSSSSSAAK....KKKKK...........'],
+    [10, '...........KJHSSSSATSK...KRRRRRK..........'],
+    [11, '...........KJHSJJJJJSK...KRRRRRrK.........'],
+    [12, '...........KJHJJHHJJK...KRrrrrrrK.........'],
+    [13, '............KJJHHHHJK...KRrrrrrqK.........'],
+    [14, '............KKJHHHJK.....KrrrrqqK.........'],
+    [15, '.............KJJJJK......KqrqqqK..........'],
+    [16, '..............KTSSK......KKqSTKK..........'],
+    [17, '.............KTTSSAK......KSSTK...........'],
+  ]);
+
+  // ---- K.O.: rücklings fliegen + liegen ----
+
+  const K2_KOFALL = patch(K2_HURT, [
+    [44, '..........KdGGGGGGGGGFYGgK................'],
+    [45, '.........KdGGGGGGGGGGGGGgK................'],
+    [46, '........KgGGGGGGgKKgGGGGgKK...............'],
+    [47, '........KgGGGGGgK..KgGGGGggK..............'],
+    [48, '........KggGGggK....KggGGggK..............'],
+    [49, '........KKgggKK......KKggggKK.............'],
+    [50, '........KTSSTK.........KTSSTK.............'],
+    [51, '.......KTSSTK...........KTSSTAK...........'],
+    [52, '.......KTSSTK...........KTSSTAK...........'],
+    [53, '......KTSSTK.............KTSSTK...........'],
+    [54, '......KUSSK..............KTSSUK...........'],
+    [55, '......KTSSK..............KTSSTK...........'],
+    [56, '.....KTSSK................KTSTK...........'],
+    [57, '.....KTSK.................KTSTK...........'],
+    [58, '....KTSSK................KTSSTK...........'],
+    [59, '....KTSSSK..............KTSSSTK...........'],
+    [60, '...KTTSSSK.............KSSSSTTK...........'],
+    [61, '...KKKKKK..............KKKKKKKK...........'],
+    [62, '..........................................'],
+    [63, '..........................................'],
+    [64, '..........................................'],
+    [65, '..........................................'],
+    [66, '..........................................'],
+    [67, '..........................................'],
+  ]);
+
+  const K2_KO = (() => {
+    const g = [];
+    for (let i = 0; i < 68; i++) g.push('..........................................');
+    g[57] = '......KKKK................................';
+    g[58] = '.....KLHHK.....KKKKKKKKKKKKKKKK...........';
+    g[59] = '....KLHHHKKKKKSSSSSSSSSSSSSSSSKKKKKK......';
+    g[60] = '....KJHSSKSSTTSSSSSSSSSSSSSTTSSGGGGKKKK...';
+    g[61] = '....KJHSWKSSSSSSSSMMSSSSSSSSSSGGFYGGSSTK..';
+    g[62] = '....KJJHHKTSSSSSSSSSSSSSSSSSTGGGGGGSSSTAK.';
+    g[63] = '.....KJJKKTTTTTTTTTTTTTTTTTTKggggggTTTTK..';
+    g[64] = '......KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK...';
+    return g;
+  })();
+
+  // ---- Siegerpose: Faust in den Himmel ----
+
+  const K2_WIN = patch(K2_IDLE0, [
+    [0, '..........................KKKK............'],
+    [1, '...............KKKKKKK...KRRRRK...........'],
+    [2, '..............KLLHHHHHK..KRRRRrK..........'],
+    [3, '.............KLLHHHHHHHK.KRrrrrK..........'],
+    [4, '.............KLHHHHHHHHK.KrrrqK...........'],
+    [5, '.............KJHHHHHHHHK.KqSTK............'],
+    [6, '.............KJHSSSSSAAK.KSSTK............'],
+    [7, '.............KJHSUUUUSAK.KSSTK............'],
+    [8, '.............KJHSSWESSAK.KSTK.............'],
+    [9, '.............KJHSSSSSAAK.KSTK.............'],
+    [10, '.............KJHSSSSATSK.KSTK.............'],
+    [11, '.............KJHSJJJJJSKKSTK..............'],
+    [12, '.............KJHJJHHJJKKSSTK..............'],
+    [13, '..............KJJHHHHJKKSTK...............'],
+    [14, '..............KKJHHHJKKSSTK...............'],
+    [15, '...............KJJJJKKSSTK................'],
+    [16, '................KTSSKKSTK.................'],
+    [17, '...............KTTSSAKSTK.................'],
+  ]);
+
+  // Energie-Stoss-Projektil der neuen Generation (18x12)
+  const K2_FB_A = [
+    '......OOOOOO......',
+    '....OOCCCCCCOO....',
+    '..OOCCXXXXXXCCO...',
+    '.OCCXXXXXXXXXCCO..',
+    'OCCXXXXXXXXXXXCCO.',
+    'OCXXXXXXXXXXXXCCOO',
+    'OCXXXXXXXXXXXXCCOO',
+    'OCCXXXXXXXXXXXCCO.',
+    '.OCCXXXXXXXXXCCO..',
+    '..OOCCXXXXXXCCO...',
+    '....OOCCCCCCOO....',
+    '......OOOOOO......',
+  ];
+
+  const K2_FB_B = [
+    '.....OOOOOO.......',
+    '...OOCCCCCCOO.....',
+    '..OCCXXXXXXCCOO...',
+    '.OCCXXXXXXXXXCCO..',
+    'OCCXXXXXXXXXXXCOO.',
+    'OCXXXXXXXXXXXXCCO.',
+    'OCXXXXXXXXXXXXCCO.',
+    'OCCXXXXXXXXXXXCOO.',
+    '.OCCXXXXXXXXXCCO..',
+    '..OCCXXXXXXCCOO...',
+    '...OOCCCCCCOO.....',
+    '.....OOOOOO.......',
+  ];
+
+  // ============================================ ALTE GENERATION (28x36, 2x)
 
   const KA_IDLE = [
     '............................',
@@ -154,10 +746,6 @@ window.DD = window.DD || {};
     '.........KSSSKSSSK..........',
     '.........KKKKKKKKK..........',
   ];
-
-  function withLegs(base, legs) {
-    return base.slice(0, 23).concat(legs, base.slice(23 + legs.length));
-  }
 
   const KA_WALK_A = withLegs(KA_IDLE, KA_LEGS_APART);
   const KA_WALK_B = withLegs(KA_IDLE, KA_LEGS_PASS);
@@ -459,386 +1047,6 @@ window.DD = window.DD || {};
     '........KKKKK.KKKKKK........',
     '............................',
   ];
-
-  // ---------------------------------------------------- MMA-Grids (klaus) --
-  // Kopf: kurzes braunes Haar, Vollbart, ein sichtbares Auge (E).
-  // Körper: nackter Oberkörper mit Muskel-Schatten (T), Gold-Bund,
-  // schwarze Shorts mit Gold-Streifen (D) und Flaggen-Patch (F/Y vorn).
-
-  const KL_IDLE = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSK.........',
-    '.........KSTSSSSSKSSK.......',
-    '.........KSTSSSSSKSKRRK.....',
-    '.........KSTSSTSSKKRRRK.....',
-    '.........KSTSSTSSK.KKK......',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '........KSSSK.KSSSSK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
-  ];
-
-  const KL_LEGS_APART = [
-    '........KGGGK.KGGGK.........',
-    '........KGGK...KGGK.........',
-    '........KSSK...KSSK.........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '......KSSSK.....KSSSSK......',
-    '......KKKKK.....KKKKKK......',
-  ];
-
-  const KL_LEGS_PASS = [
-    '.........KGGGGGGGK..........',
-    '..........KGGGGGK...........',
-    '..........KSSSSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '..........KSSKSSK...........',
-    '.........KSSSKSSSK..........',
-    '.........KKKKKKKKK..........',
-  ];
-
-  const KL_WALK_A = withLegs(KL_IDLE, KL_LEGS_APART);
-  const KL_WALK_B = withLegs(KL_IDLE, KL_LEGS_PASS);
-
-  const KL_PUNCH = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSKK........',
-    '.........KSTSSSSSSSSSSRRK...',
-    '.........KSTSSSSSSSSSRRRK...',
-    '.........KSTSSTSSKKKKKRRK...',
-    '.........KSTSSTSSK..KKKK....',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-  ].concat(KL_LEGS_APART, ['............................']);
-
-  const KL_KICK = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSK.........',
-    '.........KSTSSSSSKSK........',
-    '.........KSTSSSSSKRRK.......',
-    '.........KSTSSTSSKKKK.......',
-    '.........KSTSSTSSK..........',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGKKKKKKKK...',
-    '.........KDGGGGGGSSSSSSSSK..',
-    '.........KDGGGGKKKKKKKKKKK..',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '..........KSSK..............',
-    '.........KSSSK..............',
-    '.........KKKKK..............',
-    '............................',
-  ];
-
-  const KL_SPECIAL = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSKK........',
-    '.........KSTSSSSSSSSSSK.....',
-    '.........KSTSSSSSKKSSSK.....',
-    '.........KSTSSTSSSSSSSK.....',
-    '.........KSTSSTSSKKKKKK.....',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-  ].concat(KL_LEGS_APART, ['............................']);
-
-  const KL_JUMP = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSK.........',
-    '.........KSTSSSSSKSSK.......',
-    '.........KSTSSSSSKRRK.......',
-    '.........KSTSSSSSK.KK.......',
-    '..........KBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '........KGGGGGGGGGK.........',
-    '........KSSKKKKSSK..........',
-    '........KSSK..KSSK..........',
-    '........KKKK..KKKK..........',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-  ];
-
-  const KL_CROUCH = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSK.........',
-    '.........KSTSSSSSKSSK.......',
-    '.........KSTSSSSSKRRK.......',
-    '.........KSTSSSSSKKKK.......',
-    '.........KSTSSSSSK..........',
-    '..........KBBBBBK...........',
-    '........KGGGGGGGGGK.........',
-    '.......KGGGGGGGGGGGK........',
-    '.......KGGKKKKKKKGGK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '.......KSSK.....KSSK........',
-    '......KSSSK.....KSSSSK......',
-    '......KKKKK.....KKKKKK......',
-    '............................',
-  ];
-
-  const KL_BLOCK = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHHSSK..........',
-    '...........KSSSESSK.........',
-    '...........KHSSSSHK.........',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSKRRK.......',
-    '.........KSTSSSSSSKRRK......',
-    '.........KSTSSSSSKKSSK......',
-    '.........KSTSSSSSKKSSK......',
-    '.........KSTSSTSSKRRKK......',
-    '.........KSTSSTSSKKKK.......',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '........KSSSK.KSSSSK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
-  ];
-
-  const KL_HURT = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '..........KHHHK.............',
-    '.........KHHHHHK............',
-    '........KHHHHSSK............',
-    '.........KSSKSSK............',
-    '.........KHSSSSK............',
-    '..........KHHHK.............',
-    '...........KSSK.............',
-    '.........KSSSSSSK...........',
-    '........KSTSSSSSSK..........',
-    '.......KSSKSTSSSSK..........',
-    '......KRRKSTSSSSSK..........',
-    '......KRRKSTSSSSSKSSK.......',
-    '......KKKKSTSSSSSKKKK.......',
-    '.........KSTSSSSK...........',
-    '..........KSTSSSK...........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-  ].concat(KL_LEGS_APART, ['............................']);
-
-  const KL_KO = [
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................',
-    '....KHHK........KRRK........',
-    '...KHSSKSSSSGGGGGKSSK.......',
-    '...KSSSKSSTSSGBGSSTSSSSSK...',
-    '....KKKKKKKKKKKKKKKKKKKK....',
-    '............................',
-    '............................',
-    '............................',
-  ];
-
-  const KL_WIN = [
-    '..................KKK.......',
-    '.................KRRK.......',
-    '.................KRRK.......',
-    '.................KSSK.......',
-    '............KHHHK.KSK.......',
-    '...........KHHHHHKKSK.......',
-    '..........KHHHHSSKKSK.......',
-    '...........KSSSESSKSK.......',
-    '...........KHSSSSHKKK.......',
-    '............KHHHHK..........',
-    '.............KSSK...........',
-    '..........KSSSSSSK..........',
-    '.........KSTSSSSSSK.........',
-    '.........KSTSSSSSK..........',
-    '.........KSTSSSSSK..........',
-    '.........KSTSSTSSK..........',
-    '.........KSTSSTSSK..........',
-    '.........KSTSSSSSK..........',
-    '..........KSTSSSSK..........',
-    '..........KBBBBBK...........',
-    '.........KDGGGGGGK..........',
-    '.........KDGGGGFYK..........',
-    '.........KDGGGGGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '.........KSSK.KSSK..........',
-    '........KSSSK.KSSSSK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
-  ];
-
-  // ----------------------------------------------- GIGN-Grids (antoine) --
-  // Bulliger als Klaus: breite Schultern, olivgrüne Uniform mit
-  // Frankreich-Patch (U/Y/F) am Ärmel, hochgekrempelte Ärmel, schwarze
-  // fingerlose Handschuhe, Stiefel. Schwarzer Vollbart. Wirft Granaten.
 
   const AN_IDLE = [
     '............................',
@@ -1210,7 +1418,6 @@ window.DD = window.DD || {};
     '............................',
   ];
 
-  // Antoines Projektil: eine Granate mit rotem Hebel
   const GRENADE_A = [
     '...OOOF.....',
     '..OCCCOF....',
@@ -1232,8 +1439,6 @@ window.DD = window.DD || {};
     '....OOO.....',
     '............',
   ];
-
-  // ------------------------------------------------ gemeinsame Projektile --
 
   const FIREBALL_A = [
     '...OOOO.....',
@@ -1257,17 +1462,51 @@ window.DD = window.DD || {};
     '....OOOO....',
   ];
 
+  // Animations-Tabellen der alten Generation (1-2 Frames pro Aktion)
+  const LEGACY_ANIMS = {
+    idle: { seq: [['idle', 16, 0], ['idle', 16, 1]] },
+    walk: { seq: [['walkA', 9, 0], ['walkB', 9, 0]] },
+    win: { seq: [['win', 16, 0], ['win', 16, 1]] },
+    punch: { atk: ['punch', 'punch', 'punch'] },
+    kick: { atk: ['kick', 'kick', 'kick'] },
+    special: { atk: ['special', 'special', 'special'] },
+    airkick: { atk: ['kick', 'kick', 'kick'] },
+    jump: { vel: ['jump', 'jump', 'jump'] },
+    kofall: { vel2: ['hurt', 'hurt'] },
+    crouch: 'crouch', block: 'block',
+    hurt: { two: ['hurt', 'hurt'] }, ko: 'ko',
+  };
+
   const CHARS = {
     klaus: {
+      scale: 1,
       grids: {
-        idle: KL_IDLE, walkA: KL_WALK_A, walkB: KL_WALK_B,
-        punch: KL_PUNCH, kick: KL_KICK, special: KL_SPECIAL,
-        jump: KL_JUMP, crouch: KL_CROUCH, block: KL_BLOCK,
-        hurt: KL_HURT, ko: KL_KO, win: KL_WIN,
-        fireballA: FIREBALL_A, fireballB: FIREBALL_B,
+        idle0: K2_IDLE0, idle1: K2_IDLE1,
+        walk0: K2_WALK0, walk1: K2_WALK1, walk2: K2_WALK2, walk3: K2_WALK3,
+        pun0: K2_PUN0, pun1: K2_PUN1, pun2: K2_PUN2,
+        kick0: K2_KICK0, kick1: K2_KICK1,
+        sp0: K2_SP0, sp1: K2_SP1,
+        jmp0: K2_JMP0, jmp1: K2_JMP1, jmp2: K2_JMP2,
+        crouch0: K2_CROUCH, block0: K2_BLOCK,
+        hurt0: K2_HURT, kof0: K2_KOFALL, ko0: K2_KO, win0: K2_WIN,
+        fireballA: K2_FB_A, fireballB: K2_FB_B,
+      },
+      anims: {
+        idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
+        walk: { seq: [['walk0', 6, 0], ['walk1', 6, 1], ['walk2', 6, 0], ['walk3', 6, 0]] },
+        win: { seq: [['win0', 14, 0], ['win0', 12, 1]] },
+        punch: { atk: ['pun0', 'pun1', 'pun2'] },
+        kick: { atk: ['kick0', 'kick1', 'kick0'] },
+        special: { atk: ['sp0', 'sp1', 'sp1'] },
+        airkick: { atk: ['kick1', 'kick1', 'kick1'] },
+        jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+        kofall: { vel2: ['hurt0', 'kof0'] },
+        crouch: 'crouch0', block: 'block0',
+        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },
     antoine: {
+      scale: 2,
       grids: {
         idle: AN_IDLE, walkA: AN_WALK_A, walkB: AN_WALK_B,
         punch: AN_PUNCH, kick: AN_KICK, special: AN_SPECIAL,
@@ -1275,8 +1514,10 @@ window.DD = window.DD || {};
         hurt: AN_HURT, ko: AN_KO, win: AN_WIN,
         fireballA: GRENADE_A, fireballB: GRENADE_B,
       },
+      anims: LEGACY_ANIMS,
     },
     hanzo: {
+      scale: 2,
       grids: {
         idle: KA_IDLE, walkA: KA_WALK_A, walkB: KA_WALK_B,
         punch: KA_PUNCH, kick: KA_KICK, special: KA_SPECIAL,
@@ -1284,6 +1525,7 @@ window.DD = window.DD || {};
         hurt: KA_HURT, ko: KA_KO, win: KA_WIN,
         fireballA: FIREBALL_A, fireballB: FIREBALL_B,
       },
+      anims: LEGACY_ANIMS,
     },
   };
 
@@ -1303,7 +1545,7 @@ window.DD = window.DD || {};
         const ch = rows[y][x];
         if (ch === '.') continue;
         const col = pal[ch];
-        if (!col) throw new Error(`Sprite "${name}": unbekanntes Zeichen "${ch}"`);
+        if (!col) throw new Error(`Sprite "${name}": unbekanntes Zeichen "${ch}" in Zeile ${y}`);
         ctx.fillStyle = col;
         ctx.fillRect(x, y, 1, 1);
       }
@@ -1321,7 +1563,6 @@ window.DD = window.DD || {};
     return out;
   }
 
-  // unterste belegte Zeile: dort "stehen" die Füße auf dem Boden
   function bottomRow(rows) {
     for (let y = rows.length - 1; y >= 0; y--) {
       if (/[^.]/.test(rows[y])) return y + 1;
@@ -1350,7 +1591,6 @@ window.DD = window.DD || {};
           const rows = char.grids[name];
           frames[charKey][skinKey][name] = {
             right: buildCanvas(rows, palR, `${charKey}:${name}`),
-            // links = eigener Build mit dem "linken" Auge, dann gespiegelt
             left: flipCanvas(buildCanvas(rows, palL, `${charKey}:${name}`)),
           };
         }
@@ -1362,12 +1602,16 @@ window.DD = window.DD || {};
   function draw(ctx, charKey, skinKey, frameName, facing, x, y, dy) {
     const f = frames[charKey][skinKey][frameName];
     const m = meta[charKey][frameName];
-    const S = DD.C.SCALE;
+    const S = CHARS[charKey].scale;
     const img = facing >= 0 ? f.right : f.left;
     const dx = Math.round(x - (m.w * S) / 2);
     const dyy = Math.round(y - m.bottom * S + (dy || 0));
     ctx.drawImage(img, dx, dyy, m.w * S, m.h * S);
   }
 
-  DD.sprites = { buildAll, draw, frames, meta, SKINS, CHARS };
+  function idleFrame(charKey) {
+    return CHARS[charKey].anims.idle.seq[0][0];
+  }
+
+  DD.sprites = { buildAll, draw, frames, meta, SKINS, CHARS, idleFrame };
 })();

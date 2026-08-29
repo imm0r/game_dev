@@ -30,8 +30,10 @@ DD.C = {
 
   // Roster: welcher Charakter mit welchem Farbschema antritt.
   // Verfügbar: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
+  // Bis Antoine auf die neue Sprite-Generation gehoben ist (Roadmap M2),
+  // läuft der Standard-Kampf als Klaus-Spiegelmatch.
   P1_CHAR: 'klaus', P1_SKIN: 'gold', P1_NAME: 'KLAUS',
-  P2_CHAR: 'antoine', P2_SKIN: 'olive', P2_NAME: 'ANTOINE',
+  P2_CHAR: 'klaus', P2_SKIN: 'crimson', P2_NAME: 'KLAUS',
 };
 
 // Frame-Daten der Angriffe: startup = Anlauf, active = Trefferfenster,
