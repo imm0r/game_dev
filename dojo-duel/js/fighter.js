@@ -6,9 +6,10 @@ window.DD = window.DD || {};
   const A = () => DD.ATTACKS;
 
   class Fighter {
-    constructor(id, palName, name, controller) {
+    constructor(id, charKey, skinKey, name, controller) {
       this.id = id;
-      this.pal = palName;
+      this.char = charKey;
+      this.skin = skinKey;
       this.name = name;
       this.controller = controller;
       this.wins = 0;
@@ -161,8 +162,9 @@ window.DD = window.DD || {};
           break;
       }
 
-      // Arena-Begrenzung
-      this.x = Math.max(C().WALL_L, Math.min(C().WALL_R, this.x));
+      // Arena-Begrenzung (Weltbreite kommt von der aktuellen Stage)
+      const m = C().WALL_MARGIN;
+      this.x = Math.max(m, Math.min(game.worldW - m, this.x));
     }
 
     applyGravity() {
@@ -267,7 +269,7 @@ window.DD = window.DD || {};
       let dy = 0;
       if (this.state === 'idle' || this.state === 'intro') dy = (t / 32 | 0) % 2;
       if (this.state === 'win') dy = (t / 16 | 0) % 2;
-      DD.sprites.draw(ctx, this.pal, this.frameName(t), this.facing, this.x, this.y, dy);
+      DD.sprites.draw(ctx, this.char, this.skin, this.frameName(t), this.facing, this.x, this.y, dy);
     }
 
     drawShadow(ctx) {

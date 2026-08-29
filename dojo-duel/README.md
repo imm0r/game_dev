@@ -39,13 +39,23 @@ kann aber (anders als beim grossen Vorbild) kein K.O. erzielen.
 
 ## Was schon drin ist
 
-- **2 Kämpfer:** HANZO (weisser Gi) und KAITO (roter Gi) — klassischer
-  Palette-Swap wie anno 1991
+- **Das Roster** (nach den Charakter-Referenzen des Projekt-Besitzers,
+  umgesetzt im Hybrid-Workflow — Referenz-Sheet rein, Grid-Sprite raus):
+  - **KLAUS VÖLKER** (MMA, Deutschland): nackter Oberkörper, schwarz-goldene
+    Shorts mit Flaggen-Patch, graue Handschuhe — und Heterochromie: von
+    rechts sieht man sein blaues, von links sein braunes Auge
+  - **ANTOINE MOREAU** (Judo/GIGN, Frankreich): bullig, Vollbart,
+    Oliv-Uniform mit Frankreich-Patch, Stiefel — seine Spezialattacke ist
+    eine **Granate**
+  - der Karate-Kämpfer **HANZO** aus dem ersten Prototyp bleibt als
+    Bonus-Set (Roster-Zuordnung in `js/constants.js` umstellbar)
 - **1-Spieler-Modus gegen CPU** (die KI hält Distanz, blockt, weicht
-  Feuerbällen aus — und ist absichtlich nicht perfekt) sowie **lokaler
+  Projektilen aus — und ist absichtlich nicht perfekt) sowie **lokaler
   2-Spieler-Modus** an einer Tastatur
-- **3 Stages** nach den Referenzbildern des Projekt-Besitzers, alle mit
-  animierten Details:
+- **3 scrollende Stages** nach den Referenzbildern des Projekt-Besitzers:
+  640px breite Arenen, eine Kamera, die den Kämpfern folgt, und echte
+  Parallax-Ebenen (fern/mitte/nah plus Vordergrund-Silhouetten, die VOR den
+  Kämpfern vorbeiziehen), alle mit animierten Details:
 
   | Stage | Hommage | Animationen |
   | ----- | ------- | ----------- |
@@ -64,14 +74,13 @@ kann aber (anders als beim grossen Vorbild) kein K.O. erzielen.
 ![Neon Crossing](docs/screenshots/doc-stage2.png)
 ![Wind Temple](docs/screenshots/doc-stage3.png)
 
-## Eigene Stage-Hintergründe
+## Eigene Stage-Panoramen
 
-Die drei Stages sind prozedural im Code gezeichnet. Du kannst sie jederzeit
-durch eigene Pixel-Art ersetzen: Lege einfach `assets/stage-1.png`,
-`assets/stage-2.png` oder `assets/stage-3.png` ab. Das Bild wird auf 180px
-Höhe skaliert und mittig beschnitten — bei sehr breiten Panoramen also am
-besten vorher einen Ausschnitt im Verhältnis 16:9 wählen. Die Kampffläche
-(Fusslinie) liegt bei y = 158 von 180.
+Die drei Stages sind prozedural im Code gezeichnet — gedacht als
+Platzhalter für die Original-Panoramen: Lege sie als `assets/stage-1.png`
+bis `stage-3.png` ab, dann werden sie automatisch als **scrollende Welt**
+verwendet (auf 180px Höhe skaliert, Weltbreite bis 768px aus der
+Bildbreite). Details und Upload-Anleitung: [`assets/README.md`](assets/README.md).
 
 ## Projektstruktur
 
@@ -137,15 +146,10 @@ npm install playwright   # einmalig, irgendwo ausserhalb des Repos ok
 node tools/smoke-test.js
 ```
 
-## Roadmap-Ideen
+## Roadmap
 
-- [ ] Spezial-Eingaben wie ↓↘→ + Schlag statt eigener Taste
-- [ ] Kombos & Cancels (Frame-Daten sind schon da)
-- [ ] Zweiter Charakter mit eigenem Move-Set (neue Grids in `sprites.js`)
-- [ ] Scrollende, breitere Stages mit Kamera
-- [ ] Gamepad-Unterstützung (Gamepad API)
-- [ ] Chiptune-Musik (WebAudio-Sequencer)
-- [ ] Online-Duell via WebRTC (ambitioniert — Rollback-Netcode ist ein eigenes Abenteuer)
+Das Projekt wächst in Meilensteinen — Plan, Entscheidungen und Status
+stehen in [`ROADMAP.md`](ROADMAP.md).
 
 ## Rechtliches
 

@@ -1,20 +1,33 @@
 // Die Stages von Dojo Duel – prozedural gezeichnete Pixel-Hommagen an die
-// Referenzbilder des Projekt-Besitzers:
-//   1 TOKYO STREET  – Abendhimmel, roter Funkturm, Bahnviadukt, Neon, Menge
-//   2 NEON CROSSING – Cyberpunk-Boulevard, Mech-Statuen, Glassteg über Verkehr
-//   3 WIND TEMPLE   – Bergkloster, Gebetsfahnen, Mönche, Gong, Steinplatz
+// Referenzbilder des Projekt-Besitzers, seit Meilenstein 1 als scrollende
+// Arenen mit Parallax-Ebenen:
+//   fern  (Faktor 0.35) Himmel, Berge, Skyline
+//   mitte (Faktor 0.65) Viadukt, Tempel, Stadt
+//   nah   (Faktor 1.0)  Läden, Menge, Kampf-Boden
+//   vorn  (Faktor 1.15) Silhouetten VOR den Kämpfern – verkauft die Tiefe
 //
-// Eigenes Hintergrundbild verwenden? PNG unter assets/stage-1.png (bzw.
-// stage-2/stage-3) ablegen – wird automatisch geladen, auf 180px Höhe
-// skaliert und mittig beschnitten.
+// Eigenes Panorama verwenden? PNG unter assets/stage-1.png (bzw. stage-2/
+// stage-3) ablegen – es wird auf 180px Höhe skaliert und als scrollende
+// Arena benutzt (Weltbreite = Bildbreite, gedeckelt bei 768px ≈ 2.4 Screens).
 window.DD = window.DD || {};
 
 (function () {
-  const W = 320, H = 180;
+  const W = 320, H = 180;       // Viewport
+  const WORLD = 640;            // Weltbreite der prozeduralen Stages
+  const F_FAR = 0.35, F_MID = 0.65, F_FG = 1.15;
+  const FAR_W = W + Math.ceil((WORLD - W) * F_FAR);   // 432
+  const MID_W = W + Math.ceil((WORLD - W) * F_MID);   // 528
+  const FG_W = W + Math.ceil((WORLD - W) * F_FG);     // 688
 
   function rect(c, x, y, w, h, col) {
     c.fillStyle = col;
     c.fillRect(x, y, w, h);
+  }
+
+  function layer(w) {
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = H;
+    return cv;
   }
 
   // einfacher Pixel-Berg: Spitze (px,py), Halbbreite hw, Fuss bei baseY
@@ -31,27 +44,28 @@ window.DD = window.DD || {};
 
   // ======================================================== 1: TOKYO STREET
   function makeTokyo() {
-    let farCv, nearCv, crowd;
+    let farCv, midCv, nearCv, crowd;
 
     function buildFar() {
-      farCv = document.createElement('canvas');
-      farCv.width = W; farCv.height = H;
+      farCv = layer(FAR_W);
       const c = farCv.getContext('2d');
 
       const sky = ['#1c0f2e', '#33132f', '#54182c', '#7c2526', '#a2381d', '#c04c1a'];
-      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, W, 12, sky[i]);
-      rect(c, 0, 72, W, H - 72, '#c04c1a');
+      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, FAR_W, 12, sky[i]);
+      rect(c, 0, 72, FAR_W, H - 72, '#c04c1a');
 
       [18, 26, 39].forEach((y, i) => {
-        rect(c, 20 + i * 90, y, 70 - i * 12, 2, '#42152a');
-        rect(c, 180 + i * 40, y + 4, 46, 2, '#42152a');
+        rect(c, 20 + i * 120, y, 70 - i * 12, 2, '#42152a');
+        rect(c, 230 + i * 60, y + 4, 46, 2, '#42152a');
       });
 
+      // ferne Skyline über die ganze Ebenen-Breite
       const bld = [
         [0, 52, 26], [22, 44, 16], [40, 56, 22], [66, 48, 14],
         [84, 58, 26], [112, 42, 18], [132, 54, 24], [158, 46, 14],
         [174, 58, 30], [206, 50, 18], [226, 58, 18], [262, 46, 20],
-        [284, 54, 20], [304, 48, 16],
+        [284, 54, 20], [320, 50, 24], [346, 44, 18], [366, 56, 26],
+        [394, 46, 20], [414, 56, 18],
       ];
       for (const [x, y, w] of bld) {
         rect(c, x, y, w, 72 - y, '#231230');
@@ -64,7 +78,7 @@ window.DD = window.DD || {};
       }
 
       // roter Funkturm
-      const tx = 248;
+      const tx = 306;
       rect(c, tx, 22, 2, 6, '#e8503a');
       rect(c, tx - 1, 28, 4, 8, '#c83c28');
       rect(c, tx - 2, 36, 6, 8, '#e8503a');
@@ -75,22 +89,27 @@ window.DD = window.DD || {};
       rect(c, tx - 1, 54, 4, 6, '#7c2526');
       rect(c, tx - 2, 40, 6, 1, '#f8d848');
       rect(c, tx - 3, 48, 8, 1, '#f8d848');
+    }
 
-      // Bahnviadukt
-      rect(c, 0, 74, W, 3, '#5a666e');
-      rect(c, 0, 77, W, 16, '#39434a');
-      rect(c, 0, 91, W, 3, '#22282c');
-      for (let x = 4; x < W; x += 12) rect(c, x, 79, 2, 12, '#2c343a');
-      rect(c, 138, 79, 44, 10, '#2e7d46');
-      rect(c, 139, 80, 42, 8, '#1e5c32');
-      rect(c, 142, 83, 36, 2, '#e8f0e8');
+    function buildMid() {
+      midCv = layer(MID_W);
+      const c = midCv.getContext('2d');
 
-      rect(c, 0, 94, W, 44, '#241b28');
-      for (const px of [24, 100, 178, 256]) {
+      // Bahnviadukt über die volle Mittel-Ebene
+      rect(c, 0, 74, MID_W, 3, '#5a666e');
+      rect(c, 0, 77, MID_W, 16, '#39434a');
+      rect(c, 0, 91, MID_W, 3, '#22282c');
+      for (let x = 4; x < MID_W; x += 12) rect(c, x, 79, 2, 12, '#2c343a');
+      rect(c, 210, 79, 44, 10, '#2e7d46');
+      rect(c, 211, 80, 42, 8, '#1e5c32');
+      rect(c, 214, 83, 36, 2, '#e8f0e8');
+
+      rect(c, 0, 94, MID_W, 44, '#241b28');
+      for (const px of [24, 100, 178, 256, 334, 412, 490]) {
         rect(c, px, 94, 8, 44, '#2e3438');
         rect(c, px + 1, 94, 2, 44, '#3c454c');
       }
-      for (const gx of [40, 116, 194, 272]) {
+      for (const gx of [40, 116, 194, 272, 350, 428]) {
         rect(c, gx, 100, 46, 38, '#33222a');
         rect(c, gx + 6, 106, 34, 32, '#4a2c20');
         rect(c, gx + 14, 112, 18, 26, '#6a3c22');
@@ -98,65 +117,77 @@ window.DD = window.DD || {};
       }
     }
 
+    // Laden-Modul A: Marquee + vertikales Neon + warmes Fenster (96px breit)
+    function shopMarquee(c, x, v) {
+      const neon = v ? '#40e8f8' : '#ff40c8';
+      const glyph = v ? '#ff6ad0' : '#40e8f8';
+      rect(c, x, 50, 96, 88, '#241a2c');
+      rect(c, x, 50, 96, 3, '#3a3046');
+      rect(c, x + 93, 50, 3, 88, '#160e1c');
+      rect(c, x + 24, 58, 64, 24, v ? '#f8a03e' : '#f8d23e');
+      rect(c, x + 26, 60, 60, 20, '#2a1030');
+      rect(c, x + 30, 63, 52, 5, glyph);
+      for (let i = x + 32; i < x + 80; i += 6) rect(c, i, 64, 3, 3, '#2a1030');
+      rect(c, x + 30, 71, 52, 5, '#59f8e8');
+      for (let i = x + 33; i < x + 80; i += 7) rect(c, i, 72, 3, 3, '#2a1030');
+      rect(c, x + 6, 56, 14, 56, neon);
+      rect(c, x + 8, 58, 10, 52, '#1a0f22');
+      for (let i = 0; i < 4; i++) {
+        rect(c, x + 10, 62 + i * 12, 6, 8, glyph);
+        rect(c, x + 12, 64 + i * 12, 2, 2, '#1a0f22');
+        rect(c, x + 10, 66 + i * 12, 2, 2, '#1a0f22');
+      }
+      rect(c, x + 28, 92, 58, 34, '#170f1c');
+      rect(c, x + 30, 94, 54, 30, '#4a2c1c');
+      rect(c, x + 34, 98, 20, 22, '#7a4522');
+      rect(c, x + 58, 98, 22, 22, '#8a5426');
+      for (let i = 0; i < 5; i++) {
+        rect(c, x + 32 + i * 12, 88, 4, 5, '#e83828');
+        rect(c, x + 33 + i * 12, 87, 2, 1, '#f8d838');
+      }
+    }
+
+    // Laden-Modul B: blaues Schild + rotes Banner + Fenster (96px breit)
+    function shopBlue(c, x, v) {
+      const sign = v ? '#8af838' : '#38c8f8';
+      rect(c, x, 50, 96, 88, '#201826');
+      rect(c, x, 50, 96, 3, '#363048');
+      rect(c, x, 50, 3, 88, '#140d1a');
+      rect(c, x + 8, 62, 56, 22, sign);
+      rect(c, x + 10, 64, 52, 18, '#101828');
+      rect(c, x + 14, 68, 44, 4, '#f8d848');
+      for (let i = x + 17; i < x + 56; i += 6) rect(c, i, 69, 3, 2, '#101828');
+      rect(c, x + 14, 75, 30, 4, '#ff6a5a');
+      rect(c, x + 74, 54, 14, 60, '#a01818');
+      rect(c, x + 76, 56, 10, 56, '#d82818');
+      for (let i = 0; i < 5; i++) rect(c, x + 79, 60 + i * 11, 4, 6, '#f8e8d0');
+      rect(c, x + 8, 92, 58, 34, '#150e1a');
+      rect(c, x + 10, 94, 54, 30, '#3c2c40');
+      rect(c, x + 14, 98, 20, 22, '#6a3c50');
+      rect(c, x + 38, 98, 22, 22, '#7a4522');
+    }
+
     function buildNear() {
-      nearCv = document.createElement('canvas');
-      nearCv.width = W; nearCv.height = H;
+      nearCv = layer(WORLD);
       const c = nearCv.getContext('2d');
 
-      // Ladenzeile links
-      rect(c, 0, 50, 96, 88, '#241a2c');
-      rect(c, 0, 50, 96, 3, '#3a3046');
-      rect(c, 93, 50, 3, 88, '#160e1c');
-      rect(c, 24, 58, 64, 24, '#f8d23e');
-      rect(c, 26, 60, 60, 20, '#2a1030');
-      rect(c, 30, 63, 52, 5, '#ff6ad0');
-      for (let x = 32; x < 80; x += 6) rect(c, x, 64, 3, 3, '#2a1030');
-      rect(c, 30, 71, 52, 5, '#59f8e8');
-      for (let x = 33; x < 80; x += 7) rect(c, x, 72, 3, 3, '#2a1030');
-      rect(c, 6, 56, 14, 56, '#ff40c8');
-      rect(c, 8, 58, 10, 52, '#1a0f22');
-      for (let i = 0; i < 4; i++) {
-        rect(c, 10, 62 + i * 12, 6, 8, '#40e8f8');
-        rect(c, 12, 64 + i * 12, 2, 2, '#1a0f22');
-        rect(c, 10, 66 + i * 12, 2, 2, '#1a0f22');
-      }
-      rect(c, 28, 92, 58, 34, '#170f1c');
-      rect(c, 30, 94, 54, 30, '#4a2c1c');
-      rect(c, 34, 98, 20, 22, '#7a4522');
-      rect(c, 58, 98, 22, 22, '#8a5426');
-      for (let i = 0; i < 5; i++) {
-        rect(c, 32 + i * 12, 88, 4, 5, '#e83828');
-        rect(c, 33 + i * 12, 87, 2, 1, '#f8d838');
-      }
+      // Läden mit Lücken dazwischen, damit Viadukt und Skyline durchscheinen
+      shopMarquee(c, 0, 0);
+      shopBlue(c, 160, 0);
+      shopMarquee(c, 352, 1);
+      shopBlue(c, 512, 1);
 
-      // Ladenzeile rechts
-      rect(c, 224, 50, 96, 88, '#201826');
-      rect(c, 224, 50, 96, 3, '#363048');
-      rect(c, 224, 50, 3, 88, '#140d1a');
-      rect(c, 232, 62, 56, 22, '#38c8f8');
-      rect(c, 234, 64, 52, 18, '#101828');
-      rect(c, 238, 68, 44, 4, '#f8d848');
-      for (let x = 241; x < 280; x += 6) rect(c, x, 69, 3, 2, '#101828');
-      rect(c, 238, 75, 30, 4, '#ff6a5a');
-      rect(c, 298, 54, 14, 60, '#a01818');
-      rect(c, 300, 56, 10, 56, '#d82818');
-      for (let i = 0; i < 5; i++) rect(c, 303, 60 + i * 11, 4, 6, '#f8e8d0');
-      rect(c, 232, 92, 58, 34, '#150e1a');
-      rect(c, 234, 94, 54, 30, '#3c2c40');
-      rect(c, 238, 98, 20, 22, '#6a3c50');
-      rect(c, 262, 98, 22, 22, '#7a4522');
-
-      // Gehweg + Strasse
-      rect(c, 0, 152, W, 3, '#8a8090');
-      rect(c, 0, 155, W, 3, '#565060');
-      rect(c, 0, 158, W, 22, '#46424e');
-      for (let i = 0; i < 60; i++) {
-        const x = (i * 53) % W;
+      // Gehweg + Strasse über die volle Welt
+      rect(c, 0, 152, WORLD, 3, '#8a8090');
+      rect(c, 0, 155, WORLD, 3, '#565060');
+      rect(c, 0, 158, WORLD, 22, '#46424e');
+      for (let i = 0; i < 120; i++) {
+        const x = (i * 53) % WORLD;
         const y = 160 + ((i * 31) % 18);
         rect(c, x, y, 2, 1, (i % 3 === 0) ? '#3c3844' : '#514c5a');
       }
-      for (const x of [46, 130, 214, 292]) rect(c, x, 166, 12, 2, '#3a3642');
-      rect(c, 0, 176, W, 4, '#302c38');
+      for (const x of [46, 130, 214, 292, 372, 458, 540, 612]) rect(c, x, 166, 12, 2, '#3a3642');
+      rect(c, 0, 176, WORLD, 4, '#302c38');
     }
 
     function buildCrowd() {
@@ -164,7 +195,7 @@ window.DD = window.DD || {};
       const cols = ['#7a5a9a', '#5a7a4a', '#9a5a4a', '#4a6a8a', '#8a7a3a',
                     '#6a4a6a', '#4a8a7a', '#9a7a5a'];
       const skins = ['#e8b080', '#c89060', '#f0c090', '#a87850'];
-      for (let x = 6; x < W - 8; x += 11) {
+      for (let x = 6; x < WORLD - 8; x += 11) {
         crowd.push({
           x: x + ((x * 7) % 5) - 2,
           body: cols[(x / 11 | 0) % cols.length],
@@ -176,8 +207,8 @@ window.DD = window.DD || {};
 
     function drawTrain(c, t) {
       const p = t % 900;
-      if (p > 260) return;
-      const x = Math.round(-140 + (p / 260) * (W + 280));
+      if (p > 300) return;
+      const x = Math.round(-140 + (p / 300) * (MID_W + 280));
       const y = 78;
       rect(c, x, y, 130, 12, '#b9bdc2');
       rect(c, x, y + 8, 130, 3, '#3fae52');
@@ -208,53 +239,79 @@ window.DD = window.DD || {};
 
     return {
       name: 'TOKYO STREET',
-      init() { buildFar(); buildNear(); buildCrowd(); },
-      draw(c, t) {
-        c.drawImage(farCv, 0, 0);
+      worldW: WORLD,
+      init() { buildFar(); buildMid(); buildNear(); buildCrowd(); },
+      draw(c, t, cam) {
+        c.drawImage(farCv, -Math.round(cam * F_FAR), 0);
+        c.save();
+        c.translate(-Math.round(cam * F_MID), 0);
+        c.drawImage(midCv, 0, 0);
         drawTrain(c, t);
+        c.restore();
+        c.save();
+        c.translate(-Math.round(cam), 0);
         c.drawImage(nearCv, 0, 0);
         drawCrowd(c, t);
-        // Absperrgitter VOR der Menge (sie steht dahinter)
-        rect(c, 0, 146, W, 1, '#8a8494');
-        rect(c, 0, 149, W, 1, '#6a6474');
-        for (let x = 4; x < W; x += 14) rect(c, x, 146, 2, 6, '#7a7484');
+        // Absperrgitter VOR der Menge
+        rect(c, 0, 146, WORLD, 1, '#8a8494');
+        rect(c, 0, 149, WORLD, 1, '#6a6474');
+        for (let x = 4; x < WORLD; x += 14) rect(c, x, 146, 2, 6, '#7a7484');
+        // Neon-Puls + Turm-Blinklicht (Turm sitzt in der Fern-Ebene)
         const on = (t % 90) < 60;
         c.globalAlpha = 0.22;
-        if (on) rect(c, 6, 56, 14, 56, '#ff40c8');
-        else rect(c, 232, 62, 56, 22, '#38c8f8');
+        if (on) { rect(c, 6, 56, 14, 56, '#ff40c8'); rect(c, 358, 56, 14, 56, '#ff40c8'); }
+        else { rect(c, 168, 62, 56, 22, '#38c8f8'); rect(c, 520, 62, 56, 22, '#38c8f8'); }
         c.globalAlpha = 1;
-        if ((t % 120) < 60) rect(c, 248, 21, 2, 2, '#ff4030');
+        c.restore();
+        if ((t % 120) < 60) rect(c, 306 - Math.round(cam * F_FAR), 21, 2, 2, '#ff4030');
+      },
+      drawFg(c, t, cam) {
+        // Strommasten ziehen VOR den Kämpfern vorbei
+        c.save();
+        c.translate(-Math.round(cam * F_FG), 0);
+        for (const x of [56, 330, 604]) {
+          rect(c, x, 38, 3, 122, '#100c14');
+          rect(c, x - 8, 50, 19, 2, '#100c14');
+          rect(c, x - 6, 44, 15, 2, '#100c14');
+        }
+        c.restore();
       },
     };
   }
 
   // ======================================================= 2: NEON CROSSING
   function makeNeon() {
-    let cv;
+    let farCv, midCv, nearCv;
 
-    function build() {
-      cv = document.createElement('canvas');
-      cv.width = W; cv.height = H;
-      const c = cv.getContext('2d');
-
-      // kühler Abendhimmel
+    function buildFar() {
+      farCv = layer(FAR_W);
+      const c = farCv.getContext('2d');
       const sky = ['#20203e', '#28284c', '#32325c', '#3e3e6c', '#4a4a7a'];
-      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, W, 12, sky[i]);
-      rect(c, 0, 60, W, H - 60, '#55558a');
-
-      // verschneite Bergketten
+      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, FAR_W, 12, sky[i]);
+      rect(c, 0, 60, FAR_W, H - 60, '#55558a');
       mountain(c, 40, 18, 34, 64, '#5a6690', '#e8ecf6');
       mountain(c, 118, 10, 40, 64, '#5a6690', '#e8ecf6');
       mountain(c, 200, 16, 34, 64, '#5a6690', '#e8ecf6');
       mountain(c, 276, 8, 44, 64, '#5a6690', '#e8ecf6');
+      mountain(c, 352, 14, 38, 64, '#5a6690', '#e8ecf6');
+      mountain(c, 420, 20, 32, 64, '#5a6690', '#e8ecf6');
       mountain(c, 76, 30, 30, 66, '#454e74', '#c8d0e4');
       mountain(c, 158, 26, 34, 66, '#454e74', '#c8d0e4');
       mountain(c, 244, 30, 30, 66, '#454e74', '#c8d0e4');
+      mountain(c, 330, 28, 32, 66, '#454e74', '#c8d0e4');
+      mountain(c, 408, 32, 28, 66, '#454e74', '#c8d0e4');
+    }
 
-      // Stadt-Silhouette mit Neon-Fenstern
+    function buildMid() {
+      midCv = layer(MID_W);
+      const c = midCv.getContext('2d');
+
+      // Neon-Türme über die volle Mittel-Ebene
       const tw = [
         [0, 44, 30], [34, 30, 22], [60, 50, 18], [82, 38, 20],
-        [206, 36, 22], [232, 48, 18], [254, 30, 24], [282, 42, 38],
+        [280, 36, 22], [306, 48, 18], [328, 30, 24], [356, 42, 38],
+        [398, 34, 24], [426, 46, 20], [450, 30, 26], [480, 40, 30],
+        [512, 48, 16],
       ];
       for (const [x, y, w] of tw) {
         rect(c, x, y, w, 130 - y, '#191c34');
@@ -267,98 +324,105 @@ window.DD = window.DD || {};
         }
       }
 
-      // Werbetafel-Turm in der Mitte
-      rect(c, 148, 26, 30, 104, '#20243c');
-      rect(c, 146, 28, 34, 26, '#f84ad8');
-      rect(c, 148, 30, 30, 22, '#160b28');
-      rect(c, 156, 33, 14, 16, '#3ae8f8');       // grosses Leucht-"Zeichen"
-      rect(c, 160, 37, 6, 3, '#160b28');
-      rect(c, 158, 42, 4, 3, '#160b28');
-      rect(c, 146, 58, 34, 16, '#f8a03e');
-      rect(c, 148, 60, 30, 12, '#28122c');
-      rect(c, 151, 63, 24, 3, '#f8d848');
-      rect(c, 151, 68, 16, 2, '#ff6a5a');
-      rect(c, 146, 78, 34, 16, '#3a6af8');
-      rect(c, 148, 80, 30, 12, '#101a34');
-      rect(c, 151, 83, 24, 3, '#6ae8f8');
-      rect(c, 151, 88, 20, 2, '#f84ad8');
+      // Werbetafel-Turm
+      rect(c, 218, 26, 30, 104, '#20243c');
+      rect(c, 216, 28, 34, 26, '#f84ad8');
+      rect(c, 218, 30, 30, 22, '#160b28');
+      rect(c, 226, 33, 14, 16, '#3ae8f8');
+      rect(c, 230, 37, 6, 3, '#160b28');
+      rect(c, 228, 42, 4, 3, '#160b28');
+      rect(c, 216, 58, 34, 16, '#f8a03e');
+      rect(c, 218, 60, 30, 12, '#28122c');
+      rect(c, 221, 63, 24, 3, '#f8d848');
+      rect(c, 221, 68, 16, 2, '#ff6a5a');
+      rect(c, 216, 78, 34, 16, '#3a6af8');
+      rect(c, 218, 80, 30, 12, '#101a34');
+      rect(c, 221, 83, 24, 3, '#6ae8f8');
+      rect(c, 221, 88, 20, 2, '#f84ad8');
 
-      // leuchtende Kugel auf Sockel (Arcade-Globus)
-      rect(c, 92, 88, 16, 4, '#2a3450');
-      rect(c, 95, 74, 10, 14, '#1a4a58');
-      rect(c, 96, 72, 8, 14, '#2a8aa8');
-      rect(c, 97, 73, 6, 10, '#3ae8f8');
-      rect(c, 98, 74, 4, 5, '#c8f8ff');
+      // leuchtende Kugel auf Sockel
+      rect(c, 112, 88, 16, 4, '#2a3450');
+      rect(c, 115, 74, 10, 14, '#1a4a58');
+      rect(c, 116, 72, 8, 14, '#2a8aa8');
+      rect(c, 117, 73, 6, 10, '#3ae8f8');
+      rect(c, 118, 74, 4, 5, '#c8f8ff');
 
-      // Mech-Statuen auf Podesten
-      for (const [mx, eye] of [[212, '#f84a4a'], [240, '#3ae8f8']]) {
-        rect(c, mx - 3, 124, 16, 8, '#343c58');           // Podest
-        rect(c, mx, 100, 10, 6, '#2a3244');               // Kopf
-        rect(c, mx + 2, 102, 5, 2, eye);                  // Visier
-        rect(c, mx - 3, 106, 16, 10, '#323a50');          // Schultern/Torso
+      // Mech-Statuen
+      for (const [mx, eye] of [[140, '#f84a4a'], [170, '#3ae8f8']]) {
+        rect(c, mx - 3, 124, 16, 8, '#343c58');
+        rect(c, mx, 100, 10, 6, '#2a3244');
+        rect(c, mx + 2, 102, 5, 2, eye);
+        rect(c, mx - 3, 106, 16, 10, '#323a50');
         rect(c, mx - 3, 106, 4, 6, '#3e4862');
         rect(c, mx + 9, 106, 4, 6, '#3e4862');
-        rect(c, mx, 116, 4, 8, '#2a3244');                // Beine
+        rect(c, mx, 116, 4, 8, '#2a3244');
         rect(c, mx + 6, 116, 4, 8, '#2a3244');
       }
 
-      // Schrägseilbrücke rechts
-      rect(c, 296, 34, 4, 96, '#4a5570');
-      rect(c, 297, 34, 1, 96, '#6a7694');
+      // Schrägseilbrücke
+      rect(c, 466, 34, 4, 96, '#4a5570');
+      rect(c, 467, 34, 1, 96, '#6a7694');
       for (let i = 0; i < 6; i++) {
-        const x0 = 298, y0 = 38 + i * 4;
-        const x1 = 262 + i * 10, y1 = 118;
-        const steps = 14;
-        for (let s = 0; s < steps; s++) {
-          rect(c, Math.round(x0 + (x1 - x0) * s / steps),
-                  Math.round(y0 + (y1 - y0) * s / steps), 1, 1, '#8a96b4');
+        const x0 = 468, y0 = 38 + i * 4;
+        const x1 = 432 + i * 10, y1 = 118;
+        for (let s = 0; s < 14; s++) {
+          rect(c, Math.round(x0 + (x1 - x0) * s / 14),
+                  Math.round(y0 + (y1 - y0) * s / 14), 1, 1, '#8a96b4');
         }
       }
-      rect(c, 258, 118, 62, 4, '#3a4258');
+      rect(c, 428, 118, 100, 4, '#3a4258');
 
       // Monorail-Trasse
-      rect(c, 0, 108, 258, 2, '#5a6580');
-      for (let x = 10; x < 250; x += 36) rect(c, x, 110, 3, 20, '#2e3650');
+      rect(c, 0, 108, 428, 2, '#5a6580');
+      for (let x = 10; x < 420; x += 36) rect(c, x, 110, 3, 20, '#2e3650');
+    }
 
-      // Zuschauer-Nischen am Rand (hinter Geländern)
-      for (const [px, vis] of [[8, '#3ae8f8'], [24, '#f84ad8'], [286, '#f8d848'], [302, '#3ae8f8']]) {
+    function buildNear() {
+      nearCv = layer(WORLD);
+      const c = nearCv.getContext('2d');
+
+      // Zuschauer-Nischen hinter Geländern, verteilt über die Welt
+      const spect = [
+        [8, '#3ae8f8'], [24, '#f84ad8'], [286, '#f8d848'], [302, '#3ae8f8'],
+        [330, '#f84ad8'], [590, '#f8d848'], [612, '#3ae8f8'],
+      ];
+      for (const [px, vis] of spect) {
         rect(c, px + 1, 138, 3, 3, '#c8a080');
         rect(c, px, 141, 5, 8, '#232c40');
-        rect(c, px + 1, 139, 3, 1, vis);                  // Visier/Brille
+        rect(c, px + 1, 139, 3, 1, vis);
       }
-      rect(c, 0, 148, 44, 2, '#4a5570');
-      rect(c, 276, 148, 44, 2, '#4a5570');
-      for (let x = 2; x < 44; x += 10) rect(c, x, 148, 2, 6, '#3a4258');
-      for (let x = 278; x < 318; x += 10) rect(c, x, 148, 2, 6, '#3a4258');
+      for (const [rx, rw] of [[0, 44], [276, 70], [576, 64]]) {
+        rect(c, rx, 148, rw, 2, '#4a5570');
+        for (let x = rx + 2; x < rx + rw; x += 10) rect(c, x, 148, 2, 6, '#3a4258');
+      }
 
       // Glassteg (Kampffläche)
-      rect(c, 0, 152, W, 2, '#9ab8c8');
-      rect(c, 0, 154, W, 4, '#2a4a56');
-      rect(c, 0, 158, W, 22, '#16323c');
+      rect(c, 0, 152, WORLD, 2, '#9ab8c8');
+      rect(c, 0, 154, WORLD, 4, '#2a4a56');
+      rect(c, 0, 158, WORLD, 22, '#16323c');
     }
 
     function drawTraffic(c, t) {
       // Verkehr UNTER dem Glasboden (gedimmte Lichtstreifen)
       c.globalAlpha = 0.5;
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 13; i++) {
         const lane = i % 2;
         const speed = lane === 0 ? 2.2 : -1.8;
         const y = lane === 0 ? 163 + (i % 3) * 2 : 170 + (i % 3) * 2;
-        let x = ((i * 97) + t * speed) % (W + 60);
-        if (x < 0) x += W + 60;
+        let x = ((i * 97) + t * speed) % (WORLD + 60);
+        if (x < 0) x += WORLD + 60;
         x -= 30;
         rect(c, x, y, 10, 2, lane === 0 ? '#d8e8f0' : '#f85a4a');
       }
       c.globalAlpha = 1;
-      // Panel-Fugen des Glasbodens
-      for (let x = 0; x < W; x += 32) rect(c, x, 158, 1, 22, '#2a5a6a');
-      rect(c, 0, 158, W, 1, '#3a6a7a');
+      for (let x = 0; x < WORLD; x += 32) rect(c, x, 158, 1, 22, '#2a5a6a');
+      rect(c, 0, 158, WORLD, 1, '#3a6a7a');
     }
 
     function drawMonorail(c, t) {
       const p = t % 700;
-      if (p > 200) return;
-      const x = Math.round(W - (p / 200) * (W + 130));
+      if (p > 260) return;
+      const x = Math.round(MID_W - (p / 260) * (MID_W + 130));
       rect(c, x, 100, 64, 8, '#d8e0ea');
       rect(c, x, 105, 64, 2, '#3ae8f8');
       for (let i = 0; i < 5; i++) rect(c, x + 5 + i * 12, 102, 7, 3, '#1c2438');
@@ -366,8 +430,8 @@ window.DD = window.DD || {};
 
     function drawDrone(c, t) {
       const p = t % 1100;
-      if (p > 500) return;
-      const x = Math.round(-10 + (p / 500) * (W + 20));
+      if (p > 600) return;
+      const x = Math.round(-10 + (p / 600) * (FAR_W + 20));
       const y = 22 + Math.round(Math.sin(p / 30) * 3);
       rect(c, x, y, 4, 2, '#1c2438');
       if ((t % 30) < 15) rect(c, x + 1, y - 1, 1, 1, '#f84a4a');
@@ -375,130 +439,145 @@ window.DD = window.DD || {};
 
     return {
       name: 'NEON CROSSING',
-      init() { build(); },
-      draw(c, t) {
-        c.drawImage(cv, 0, 0);
-        drawMonorail(c, t);
+      worldW: WORLD,
+      init() { buildFar(); buildMid(); buildNear(); },
+      draw(c, t, cam) {
+        c.drawImage(farCv, -Math.round(cam * F_FAR), 0);
+        c.save();
+        c.translate(-Math.round(cam * F_FAR), 0);
         drawDrone(c, t);
-        drawTraffic(c, t);
-        // pulsierende Werbetafeln + Mech-Augen blinken
+        c.restore();
+        c.save();
+        c.translate(-Math.round(cam * F_MID), 0);
+        c.drawImage(midCv, 0, 0);
+        drawMonorail(c, t);
+        // pulsierende Werbetafeln + Mech-Augen
         const on = (t % 80) < 50;
         c.globalAlpha = 0.25;
-        if (on) rect(c, 146, 28, 34, 26, '#f84ad8');
-        else rect(c, 146, 78, 34, 16, '#3a6af8');
+        if (on) rect(c, 216, 28, 34, 26, '#f84ad8');
+        else rect(c, 216, 78, 34, 16, '#3a6af8');
         c.globalAlpha = 1;
-        if ((t % 140) < 20) rect(c, 214, 102, 5, 2, '#ff8a8a');
+        if ((t % 140) < 20) rect(c, 142, 102, 5, 2, '#ff8a8a');
+        c.restore();
+        c.save();
+        c.translate(-Math.round(cam), 0);
+        c.drawImage(nearCv, 0, 0);
+        drawTraffic(c, t);
+        c.restore();
+      },
+      drawFg(c, t, cam) {
+        // hängende Holo-Banner ziehen VOR den Kämpfern vorbei
+        c.save();
+        c.translate(-Math.round(cam * F_FG), 0);
+        for (const [x, col] of [[120, '#3ae8f8'], [420, '#f84ad8'], [640, '#f8d848']]) {
+          rect(c, x, 0, 2, 44, '#141828');
+          rect(c, x + 2, 4, 8, 36, '#141828');
+          c.globalAlpha = 0.6;
+          rect(c, x + 3, 6, 6, 32, col);
+          c.globalAlpha = 1;
+          for (let i = 0; i < 4; i++) rect(c, x + 4, 9 + i * 8, 4, 3, '#141828');
+        }
+        c.restore();
       },
     };
   }
 
   // ========================================================= 3: WIND TEMPLE
   function makeTemple() {
-    let cv, monks;
+    let farCv, midCv, nearCv, monks;
 
-    function build() {
-      cv = document.createElement('canvas');
-      cv.width = W; cv.height = H;
-      const c = cv.getContext('2d');
-
-      // Sonnenuntergang über den Bergen
+    function buildFar() {
+      farCv = layer(FAR_W);
+      const c = farCv.getContext('2d');
       const sky = ['#38304a', '#584052', '#8a4e44', '#c47440', '#eda254'];
-      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, W, 12, sky[i]);
-      rect(c, 0, 60, W, H - 60, '#eda254');
+      for (let i = 0; i < sky.length; i++) rect(c, 0, i * 12, FAR_W, 12, sky[i]);
+      rect(c, 0, 60, FAR_W, H - 60, '#eda254');
       [8, 16, 24].forEach((y, i) => {
-        rect(c, 30 + i * 70, y, 60, 2, '#2e2838');
-        rect(c, 190 + i * 30, y + 3, 44, 2, '#2e2838');
+        rect(c, 30 + i * 110, y, 60, 2, '#2e2838');
+        rect(c, 250 + i * 50, y + 3, 44, 2, '#2e2838');
       });
-
-      // Schneeberge, von der Abendsonne angestrahlt
       mountain(c, 50, 14, 40, 68, '#6a5a68', '#eef2f8', '#e8b87a');
       mountain(c, 140, 6, 46, 68, '#6a5a68', '#f4f6fa', '#e8b87a');
       mountain(c, 226, 12, 42, 68, '#6a5a68', '#eef2f8', '#e8b87a');
-      mountain(c, 296, 20, 36, 68, '#6a5a68', '#e8ecf4', '#e8b87a');
+      mountain(c, 310, 10, 44, 68, '#6a5a68', '#f4f6fa', '#e8b87a');
+      mountain(c, 396, 16, 40, 68, '#6a5a68', '#eef2f8', '#e8b87a');
       mountain(c, 96, 34, 30, 70, '#544a58', '#d8dce8');
       mountain(c, 262, 36, 28, 70, '#544a58', '#d8dce8');
+      mountain(c, 404, 36, 30, 70, '#544a58', '#d8dce8');
+    }
+
+    function buildMid() {
+      midCv = layer(MID_W);
+      const c = midCv.getContext('2d');
 
       // Reisterrassen + Fluss links
       for (let i = 0; i < 8; i++) {
-        rect(c, 0, 70 + i * 9, 96 - i * 9, 9, i % 2 ? '#5a7a3a' : '#4c6a30');
-        rect(c, 96 - i * 9 - 2, 70 + i * 9, 2, 9, '#3a5424');
+        rect(c, 0, 70 + i * 9, 140 - i * 12, 9, i % 2 ? '#5a7a3a' : '#4c6a30');
+        rect(c, 140 - i * 12 - 2, 70 + i * 9, 2, 9, '#3a5424');
       }
       for (let i = 0; i < 24; i++) {
-        rect(c, 62 + Math.round(Math.sin(i / 3) * 6), 76 + i * 3, 3, 3, '#58a8c8');
+        rect(c, 92 + Math.round(Math.sin(i / 3) * 6), 76 + i * 3, 3, 3, '#58a8c8');
       }
 
-      // Tempel in der Mitte
-      rect(c, 118, 122, 84, 18, '#8a7a6a');              // Steinbasis
-      rect(c, 118, 122, 84, 2, '#a89884');
-      for (let i = 0; i < 3; i++) rect(c, 130 - i * 4, 134 + i * 2, 60 + i * 8, 2, '#9a8a74'); // Stufen
-      rect(c, 128, 96, 64, 26, '#6a3a34');               // Halle
-      rect(c, 128, 96, 64, 2, '#d8a848');
-      for (const px of [132, 150, 166, 184]) rect(c, px, 98, 4, 24, '#4a2824');
-      rect(c, 152, 104, 16, 18, '#2a1814');              // Tor
-      rect(c, 154, 108, 12, 14, '#8a5426');              // warmes Licht
-      // gestufte Dächer
-      rect(c, 122, 88, 76, 8, '#7a2e28');
-      rect(c, 120, 88, 80, 2, '#d8a848');
-      rect(c, 134, 78, 52, 8, '#7a2e28');
-      rect(c, 132, 78, 56, 2, '#d8a848');
-      rect(c, 146, 68, 28, 8, '#7a2e28');
-      rect(c, 144, 68, 32, 2, '#d8a848');
-      rect(c, 158, 62, 4, 6, '#d8a848');                 // goldene Spitze
-      rect(c, 159, 58, 2, 4, '#f8d848');
+      // Tempel
+      const T = 110; // Versatz gegenüber der alten 320er-Komposition
+      rect(c, 118 + T, 122, 84, 18, '#8a7a6a');
+      rect(c, 118 + T, 122, 84, 2, '#a89884');
+      for (let i = 0; i < 3; i++) rect(c, 130 + T - i * 4, 134 + i * 2, 60 + i * 8, 2, '#9a8a74');
+      rect(c, 128 + T, 96, 64, 26, '#6a3a34');
+      rect(c, 128 + T, 96, 64, 2, '#d8a848');
+      for (const px of [132, 150, 166, 184]) rect(c, px + T, 98, 4, 24, '#4a2824');
+      rect(c, 152 + T, 104, 16, 18, '#2a1814');
+      rect(c, 154 + T, 108, 12, 14, '#8a5426');
+      rect(c, 122 + T, 88, 76, 8, '#7a2e28');
+      rect(c, 120 + T, 88, 80, 2, '#d8a848');
+      rect(c, 134 + T, 78, 52, 8, '#7a2e28');
+      rect(c, 132 + T, 78, 56, 2, '#d8a848');
+      rect(c, 146 + T, 68, 28, 8, '#7a2e28');
+      rect(c, 144 + T, 68, 32, 2, '#d8a848');
+      rect(c, 158 + T, 62, 4, 6, '#d8a848');
+      rect(c, 159 + T, 58, 2, 4, '#f8d848');
 
-      // Stupas rechts
-      rect(c, 222, 112, 18, 16, '#e8e0d0');
-      rect(c, 226, 104, 10, 8, '#d8ccb8');
-      rect(c, 229, 96, 4, 8, '#d8a848');
-      rect(c, 230, 92, 2, 4, '#f8d848');
-      rect(c, 252, 120, 12, 10, '#e8e0d0');
-      rect(c, 255, 114, 6, 6, '#d8ccb8');
-      rect(c, 257, 110, 2, 4, '#d8a848');
+      // Stupas
+      rect(c, 332, 112, 18, 16, '#e8e0d0');
+      rect(c, 336, 104, 10, 8, '#d8ccb8');
+      rect(c, 339, 96, 4, 8, '#d8a848');
+      rect(c, 340, 92, 2, 4, '#f8d848');
+      rect(c, 362, 120, 12, 10, '#e8e0d0');
+      rect(c, 365, 114, 6, 6, '#d8ccb8');
+      rect(c, 367, 110, 2, 4, '#d8a848');
 
-      // Gong rechts
-      rect(c, 278, 108, 3, 30, '#4a3228');
-      rect(c, 299, 108, 3, 30, '#4a3228');
-      rect(c, 276, 104, 28, 4, '#4a3228');
-      rect(c, 283, 110, 14, 14, '#d8a848');
-      rect(c, 286, 113, 8, 8, '#a87828');
-      rect(c, 288, 115, 4, 4, '#d8a848');
+      // Gong
+      rect(c, 388, 108, 3, 30, '#4a3228');
+      rect(c, 409, 108, 3, 30, '#4a3228');
+      rect(c, 386, 104, 28, 4, '#4a3228');
+      rect(c, 393, 110, 14, 14, '#d8a848');
+      rect(c, 396, 113, 8, 8, '#a87828');
+      rect(c, 398, 115, 4, 4, '#d8a848');
 
-      // Boden hinter dem Platz
-      rect(c, 0, 138, W, 14, '#6a5a48');
-      rect(c, 96, 138, 224, 3, '#7a6a54');
+      // kleiner Schrein rechts aussen
+      rect(c, 470, 116, 34, 22, '#8a7a6a');
+      rect(c, 474, 104, 26, 12, '#6a3a34');
+      rect(c, 472, 102, 30, 3, '#7a2e28');
+      rect(c, 478, 96, 18, 6, '#7a2e28');
+      rect(c, 484, 108, 8, 8, '#2a1814');
 
-      // Steinplatz (Kampffläche)
-      rect(c, 0, 152, W, 2, '#b8a888');
-      rect(c, 0, 154, W, 4, '#8a7a64');
-      rect(c, 0, 158, W, 22, '#9a8a74');
-      for (let x = 12; x < W; x += 24) rect(c, x, 158, 1, 22, '#7a6a58');
-      rect(c, 0, 165, W, 1, '#7a6a58');
-      rect(c, 0, 172, W, 1, '#7a6a58');
-      for (let i = 0; i < 40; i++) {
-        rect(c, (i * 67) % W, 159 + ((i * 41) % 20), 2, 1, '#a89884');
-      }
-      rect(c, 0, 176, W, 4, '#6a5a48');
-    }
-
-    function buildMonks() {
-      monks = [];
-      for (const x of [16, 40, 68, 210, 246, 306]) {
-        monks.push({ x, robe: (x % 2) ? '#d87828' : '#b85a20', phase: (x * 7) % 120 });
-      }
+      rect(c, 0, 138, MID_W, 42, '#6a5a48'); // Erde hinter dem Platz
+      rect(c, 140, 138, MID_W - 140, 3, '#7a6a54');
     }
 
     function drawFlags(c, t) {
-      // Gebetsfahnen-Ketten, im Wind flatternd
+      // Gebetsfahnen-Ketten in der Mittel-Ebene, im Wind flatternd
       const cols = ['#4878d8', '#e8e8e8', '#d84838', '#48a858', '#e8c838'];
       const lines = [
-        { x0: 160, y0: 64, x1: 12, y1: 92 },
-        { x0: 160, y0: 64, x1: 308, y1: 88 },
+        { x0: 270, y0: 64, x1: 20, y1: 92 },
+        { x0: 270, y0: 64, x1: 508, y1: 88 },
       ];
       for (const L of lines) {
-        const steps = 22;
+        const steps = 30;
         for (let s = 0; s <= steps; s++) {
           const x = Math.round(L.x0 + (L.x1 - L.x0) * s / steps);
-          const sag = Math.round(Math.sin((s / steps) * Math.PI) * 8);
+          const sag = Math.round(Math.sin((s / steps) * Math.PI) * 9);
           const y = Math.round(L.y0 + (L.y1 - L.y0) * s / steps) + sag;
           rect(c, x, y, 1, 1, '#3a3230');
           if (s % 3 === 1) {
@@ -509,34 +588,90 @@ window.DD = window.DD || {};
       }
     }
 
-    function drawMonks(c, t) {
-      for (const m of monks) {
-        const sway = ((t + m.phase) % 240) < 120 ? 0 : 1;
-        rect(c, m.x + 1, 139 + sway, 4, 3, '#c89060');   // Kopf (rasiert)
-        rect(c, m.x, 142 + sway, 6, 8, m.robe);          // Robe (sitzend)
-        rect(c, m.x + 1, 148 + sway, 4, 2, '#8a4818');
-      }
-    }
-
     function drawSmoke(c, t) {
-      // Räucherwerk neben dem Tor
       for (let i = 0; i < 4; i++) {
         const p = (t * 0.4 + i * 22) % 88;
-        const x = 206 + Math.round(Math.sin((p + i * 9) / 7) * 2);
+        const x = 316 + Math.round(Math.sin((p + i * 9) / 7) * 2);
         c.globalAlpha = Math.max(0, 0.5 - p / 100);
         rect(c, x, 128 - p / 2, 2, 2, '#d8d0c8');
       }
       c.globalAlpha = 1;
     }
 
+    function buildNear() {
+      nearCv = layer(WORLD);
+      const c = nearCv.getContext('2d');
+
+      // Steinplatz über die volle Welt
+      rect(c, 0, 152, WORLD, 2, '#b8a888');
+      rect(c, 0, 154, WORLD, 4, '#8a7a64');
+      rect(c, 0, 158, WORLD, 22, '#9a8a74');
+      for (let x = 12; x < WORLD; x += 24) rect(c, x, 158, 1, 22, '#7a6a58');
+      rect(c, 0, 165, WORLD, 1, '#7a6a58');
+      rect(c, 0, 172, WORLD, 1, '#7a6a58');
+      for (let i = 0; i < 80; i++) {
+        rect(c, (i * 67) % WORLD, 159 + ((i * 41) % 20), 2, 1, '#a89884');
+      }
+      rect(c, 0, 176, WORLD, 4, '#6a5a48');
+
+      // Steinlaternen als Platz-Deko
+      for (const x of [150, 340, 530]) {
+        rect(c, x, 142, 10, 10, '#8a7a6a');
+        rect(c, x + 2, 134, 6, 8, '#9a8a74');
+        rect(c, x + 3, 136, 4, 4, '#f8d848');
+        rect(c, x - 1, 130, 12, 4, '#6a5a48');
+      }
+    }
+
+    function buildMonks() {
+      monks = [];
+      for (const x of [16, 60, 120, 210, 300, 390, 470, 560, 610]) {
+        monks.push({ x, robe: (x % 2) ? '#d87828' : '#b85a20', phase: (x * 7) % 120 });
+      }
+    }
+
+    function drawMonks(c, t) {
+      for (const m of monks) {
+        const sway = ((t + m.phase) % 240) < 120 ? 0 : 1;
+        rect(c, m.x + 1, 139 + sway, 4, 3, '#c89060');
+        rect(c, m.x, 142 + sway, 6, 8, m.robe);
+        rect(c, m.x + 1, 148 + sway, 4, 2, '#8a4818');
+      }
+    }
+
     return {
       name: 'WIND TEMPLE',
-      init() { build(); buildMonks(); },
-      draw(c, t) {
-        c.drawImage(cv, 0, 0);
+      worldW: WORLD,
+      init() { buildFar(); buildMid(); buildNear(); buildMonks(); },
+      draw(c, t, cam) {
+        c.drawImage(farCv, -Math.round(cam * F_FAR), 0);
+        c.save();
+        c.translate(-Math.round(cam * F_MID), 0);
+        c.drawImage(midCv, 0, 0);
         drawFlags(c, t);
-        drawMonks(c, t);
         drawSmoke(c, t);
+        c.restore();
+        c.save();
+        c.translate(-Math.round(cam), 0);
+        c.drawImage(nearCv, 0, 0);
+        drawMonks(c, t);
+        c.restore();
+      },
+      drawFg(c, t, cam) {
+        // eine Fahnen-Kette hoch über dem Platz, VOR den Kämpfern
+        const cols = ['#4878d8', '#e8e8e8', '#d84838', '#48a858', '#e8c838'];
+        c.save();
+        c.translate(-Math.round(cam * F_FG), 0);
+        for (let s = 0; s <= 34; s++) {
+          const x = Math.round((s / 34) * FG_W);
+          const y = 6 + Math.round(Math.sin((s / 34) * Math.PI) * 10);
+          rect(c, x, y, 1, 1, '#3a3230');
+          if (s % 2 === 1) {
+            const flutter = ((t / 7 + s) | 0) % 2;
+            rect(c, x, y + 1, 4, 4 - flutter, cols[s % cols.length]);
+          }
+        }
+        c.restore();
       },
     };
   }
@@ -557,20 +692,40 @@ window.DD = window.DD || {};
     });
   }
 
-  function draw(ctx, index, t) {
+  function imgWorldW(slot) {
+    const w = Math.round(slot.img.width * (H / slot.img.height));
+    return Math.max(W, Math.min(768, w));
+  }
+
+  function worldW(index) {
+    const slot = bgImgs[index];
+    return slot.ok ? imgWorldW(slot) : stages[index].worldW;
+  }
+
+  function draw(ctx, index, t, cam) {
     const slot = bgImgs[index];
     if (slot.ok) {
-      const s = H / slot.img.height;
-      const w = Math.round(slot.img.width * s);
-      ctx.drawImage(slot.img, Math.round((W - w) / 2), 0, w, H);
+      // Nutzer-Panorama: auf Bildhöhe skalieren, als scrollende Welt nutzen.
+      // Ist das Bild breiter als die 768px-Welt, wird mittig beschnitten.
+      const w = Math.round(slot.img.width * (H / slot.img.height));
+      const crop = Math.max(0, Math.round((w - 768) / 2));
+      ctx.drawImage(slot.img, -(Math.round(cam) + crop) + Math.max(0, Math.round((W - w) / 2)), 0, w, H);
       return;
     }
-    stages[index].draw(ctx, t);
+    stages[index].draw(ctx, t, cam || 0);
+  }
+
+  function drawFg(ctx, index, t, cam) {
+    const slot = bgImgs[index];
+    if (slot.ok) return; // Panorama-Stages: keine Zusatz-Ebene davor
+    if (stages[index].drawFg) stages[index].drawFg(ctx, t, cam || 0);
   }
 
   DD.stage = {
     init,
     draw,
+    drawFg,
+    worldW,
     count: stages.length,
     name: (i) => stages[i].name,
   };
