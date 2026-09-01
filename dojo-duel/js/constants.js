@@ -28,10 +28,8 @@ DD.C = {
 
   // Roster: which character enters with which color scheme.
   // Available: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
-  // Until Antoine is lifted to the new sprite generation (roadmap M2),
-  // the default match runs as a Klaus mirror match.
   P1_CHAR: 'klaus', P1_SKIN: 'gold', P1_NAME: 'KLAUS',
-  P2_CHAR: 'klaus', P2_SKIN: 'crimson', P2_NAME: 'KLAUS',
+  P2_CHAR: 'antoine', P2_SKIN: 'olive', P2_NAME: 'ANTOINE',
 };
 
 // Attack frame data: startup = wind-up, active = hit window,

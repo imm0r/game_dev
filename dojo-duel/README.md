@@ -48,10 +48,12 @@ big classics) it cannot score a K.O.
     Plus heterochromia: from the right you see his blue eye, from the
     left his brown one.
     ![Klaus frames](docs/screenshots/klaus-frames.png)
-  - **ANTOINE MOREAU** (judo/GIGN, France): bulky, full beard, olive
-    uniform with a French flag patch, boots, **grenade** projectile —
-    still on the old sprite generation; his v2 upgrade is the next
-    package. Until then the default match runs as a Klaus mirror match.
+  - **ANTOINE MOREAU** (judo/GIGN, France) — also on the **new sprite
+    generation** since M2: 44x68 at 1x density, bulky build, olive
+    uniform with rolled-up sleeves, chest pockets, French flag patch,
+    fingerless gloves, heavy boots, a massive full beard and the scar
+    across his right brow. His special winds up and hurls a **grenade**.
+    ![Antoine frames](docs/screenshots/antoine-frames.png)
   - **HANZO**, the karate fighter from the first prototype, remains as a
     bonus set (roster mapping is configurable in `js/constants.js`)
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges

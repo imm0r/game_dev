@@ -31,7 +31,7 @@ implements. Every milestone ends in a playable build.
 - [x] Original panoramas uploaded and integrated (flicker-free prerender,
       world cap 832px, `--embed` build option)
 
-### M2 – Character art upgrade  *(in progress)*
+### M2 – Character art upgrade  *(packages 1+2 delivered)*
 
 **Package 1 (delivered): Klaus v2**
 - [x] New animation system: frame sequences, phase frames for attacks,
@@ -42,10 +42,12 @@ implements. Every milestone ends in a playable build.
       wind-up/hit/recover, new energy projectile
 - [x] Default match temporarily runs as a Klaus mirror (gold vs. crimson)
 
-**Package 2 (next): Antoine v2**
-- [ ] Antoine at the same quality tier (uniform, full beard, scar, boots)
-- [ ] Grenade projectile in the new style, then roster back to
-      Klaus vs. Antoine
+**Package 2 (delivered): Antoine v2**
+- [x] Antoine at the same quality tier: 44x68 at 1x density, olive
+      uniform, chest pockets, flag patch, fingerless gloves, boots,
+      full beard, scar — 21 frames
+- [x] Grenade projectile in the new style, wind-up/throw special poses
+- [x] Roster back to Klaus vs. Antoine
 
 **Package 3: fleshing out**
 - [ ] Walk cycle to 6 frames, idle to 4 real poses
