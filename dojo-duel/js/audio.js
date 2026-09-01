@@ -1,4 +1,4 @@
-// Chiptune-Soundeffekte, komplett synthetisiert (WebAudio) – keine Dateien nötig.
+// Chiptune sound effects, fully synthesized (WebAudio) – no files needed.
 window.DD = window.DD || {};
 
 (function () {
@@ -13,12 +13,12 @@ window.DD = window.DD || {};
         master = ctx.createGain();
         master.gain.value = 0.13;
         master.connect(ctx.destination);
-      } catch (e) { /* Ohne Audio geht das Spiel trotzdem */ }
+      } catch (e) { /* the game still works without audio */ }
     }
     if (ctx && ctx.state === 'suspended') ctx.resume();
   }
 
-  // Ein einzelner Retro-"Blip": Oszillator mit Frequenz-Rutsche
+  // a single retro "blip": oscillator with a frequency slide
   function blip(type, f0, f1, dur, vol, delay) {
     if (!ctx || muted) return;
     const t = ctx.currentTime + (delay || 0);
@@ -33,7 +33,7 @@ window.DD = window.DD || {};
     o.start(t); o.stop(t + dur + 0.02);
   }
 
-  // Kurzer Rausch-Impuls für "Einschlag"-Sounds
+  // short noise burst for "impact" sounds
   function noise(dur, vol, cutoff) {
     if (!ctx || muted) return;
     const t = ctx.currentTime;

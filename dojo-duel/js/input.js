@@ -1,12 +1,12 @@
-// Tastatur-Eingabe. Es zählt die physische Taste (event.code),
-// damit QWERTZ und QWERTY identisch funktionieren.
+// Keyboard input. We track the physical key (event.code) so QWERTZ
+// and QWERTY layouts behave identically.
 window.DD = window.DD || {};
 
 (function () {
-  const down = new Set();      // aktuell gedrückte Tasten
-  const pressedNow = new Set(); // in diesem Frame neu gedrückt (Flanke)
+  const down = new Set();      // keys currently held
+  const pressedNow = new Set(); // newly pressed this frame (edge)
 
-  // Tasten, bei denen der Browser nichts Eigenes tun soll (Scrollen etc.)
+  // keys the browser must not act on itself (scrolling etc.)
   const SWALLOW = new Set([
     'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space',
     'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH',
@@ -18,7 +18,7 @@ window.DD = window.DD || {};
     if (SWALLOW.has(e.code)) e.preventDefault();
     if (!down.has(e.code)) pressedNow.add(e.code);
     down.add(e.code);
-    DD.audio && DD.audio.unlock(); // AudioContext braucht eine User-Geste
+    DD.audio && DD.audio.unlock(); // the AudioContext needs a user gesture
   });
 
   window.addEventListener('keyup', (e) => {
@@ -31,11 +31,11 @@ window.DD = window.DD || {};
   const Input = {
     isDown: (code) => down.has(code),
     wasPressed: (code) => pressedNow.has(code),
-    // einmal pro Spiel-Frame aufrufen, danach sind Flanken "verbraucht"
+    // call once per game frame; afterwards edges count as "consumed"
     endFrame: () => pressedNow.clear(),
   };
 
-  // Standard-Belegungen
+  // default key bindings
   Input.P1_KEYS = {
     left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS',
     punch: 'KeyF', kick: 'KeyG', special: 'KeyH',
@@ -45,12 +45,12 @@ window.DD = window.DD || {};
     punch: 'KeyK', kick: 'KeyL', special: 'KeyJ',
   };
 
-  // Ein Controller liefert pro Frame denselben einfachen Zustand –
-  // egal ob Mensch (Tastatur) oder KI ihn füllt.
+  // A controller produces the same simple state every frame –
+  // no matter whether a human (keyboard) or the AI fills it.
   function emptyPad() {
     return {
       left: false, right: false, up: false, down: false,
-      punch: false, kick: false, special: false,       // Flanken (frisch gedrückt)
+      punch: false, kick: false, special: false,       // edges (freshly pressed)
       holdPunch: false, holdKick: false,
     };
   }

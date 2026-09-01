@@ -1,44 +1,40 @@
-// Dojo Duel – zentrale Spielkonstanten.
-// Alle Werte in "internen Pixeln" (320x180) bzw. Frames (60 pro Sekunde).
+// Dojo Duel – central game constants.
+// All values are in "internal pixels" (320x180) or frames (60 per second).
 window.DD = window.DD || {};
 
 DD.C = {
   VIEW_W: 320,
   VIEW_H: 180,
 
-  GROUND_Y: 158,      // Fusslinie der Kämpfer (Strassenniveau)
-  WALL_MARGIN: 16,    // Abstand der Kämpfer zum Weltrand (Weltbreite je Stage)
-
-  SCALE: 2,           // ein Sprite-Pixel = 2 Bildschirm-Pixel
+  GROUND_Y: 158,      // the fighters' foot line (street level)
+  WALL_MARGIN: 16,    // fighter margin to the world edge (world width per stage)
 
   GRAVITY: 0.24,
-  JUMP_VY: -4.6,      // ergibt ca. 44px Sprunghöhe
-  JUMP_VX: 1.5,       // horizontale Sprunggeschwindigkeit (in der Luft fixiert)
-  WALK_F: 1.25,       // vorwärts schneller als rückwärts – wie beim Vorbild
+  JUMP_VY: -4.6,      // yields ~44px of jump height
+  JUMP_VX: 1.5,       // horizontal jump speed (locked while airborne)
+  WALK_F: 1.25,       // walking forward beats backing up – like the classics
   WALK_B: 0.95,
 
   MAX_HP: 100,
   ROUND_TIME: 99,
   ROUNDS_TO_WIN: 2,   // Best-of-3
 
-  PUSH_DIST: 24,      // Mindestabstand der Körper (Schiebe-Kollision)
+  PUSH_DIST: 24,      // minimum body distance (push collision)
 
   FIREBALL_SPEED: 2.4,
   FIREBALL_COOLDOWN: 60,
 
-  HITSTOP: 6,         // kurzes Einfrieren bei Treffern ("Impact-Gefühl")
+  HITSTOP: 6,         // brief freeze on hits ("impact feel")
 
-  // Roster: welcher Charakter mit welchem Farbschema antritt.
-  // Verfügbar: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
-  // Bis Antoine auf die neue Sprite-Generation gehoben ist (Roadmap M2),
-  // läuft der Standard-Kampf als Klaus-Spiegelmatch.
+  // Roster: which character enters with which color scheme.
+  // Available: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
   P1_CHAR: 'klaus', P1_SKIN: 'gold', P1_NAME: 'KLAUS',
-  P2_CHAR: 'klaus', P2_SKIN: 'crimson', P2_NAME: 'KLAUS',
+  P2_CHAR: 'antoine', P2_SKIN: 'olive', P2_NAME: 'ANTOINE',
 };
 
-// Frame-Daten der Angriffe: startup = Anlauf, active = Trefferfenster,
-// recovery = Erholung (alles in Frames). box = Hitbox relativ zur Fussmitte,
-// x zeigt in Blickrichtung, y ist negativ nach oben.
+// Attack frame data: startup = wind-up, active = hit window,
+// recovery = cool-down (all in frames). box = hitbox relative to the foot
+// center, x points in facing direction, y is negative upwards.
 DD.ATTACKS = {
   punch: {
     startup: 5, active: 4, recovery: 10,
@@ -53,13 +49,13 @@ DD.ATTACKS = {
     sfx: 'kick',
   },
   airkick: {
-    startup: 6, active: 999, recovery: 0,  // aktiv bis zur Landung
+    startup: 6, active: 999, recovery: 0,  // active until landing
     dmg: 8, chip: 2, stun: 18, blockstun: 10, kb: 2.2,
     box: { x: 6, y: -36, w: 26, h: 14 },
     sfx: 'kick',
   },
   special: {
-    startup: 14, active: 2, recovery: 24,  // "active" = Frame, in dem der Ball entsteht
+    startup: 14, active: 2, recovery: 24,  // "active" = the frame that spawns the projectile
     dmg: 0, chip: 0, stun: 0, blockstun: 0, kb: 0,
     box: null,
     sfx: 'fireball',

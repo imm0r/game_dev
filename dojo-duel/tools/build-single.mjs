@@ -1,7 +1,7 @@
-// Baut das komplette Spiel in eine einzige HTML-Datei (dist/dojo-duel.html).
-// Praktisch zum Verschicken oder für itch.io. Aufruf: node tools/build-single.mjs
-// Mit --embed werden vorhandene assets/stage-N.png als data-URIs eingebettet,
-// damit die Einzeldatei auch die eigenen Stage-Panoramen enthält.
+// Builds the whole game into a single HTML file (dist/dojo-duel.html).
+// Handy for sharing or itch.io. Usage: node tools/build-single.mjs
+// With --embed, existing assets/stage-N.png files are inlined as data URIs
+// so the single file also carries the custom stage panoramas.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -30,7 +30,7 @@ if (embed) {
     if (existsSync(p)) {
       const b64 = readFileSync(p).toString('base64');
       entries.push(`${n}: 'data:image/png;base64,${b64}'`);
-      console.log(`eingebettet: assets/stage-${n}.png (${(b64.length / 1024 / 1024).toFixed(2)} MB als base64)`);
+      console.log(`embedded: assets/stage-${n}.png (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
     }
   }
   if (entries.length) {
@@ -42,4 +42,4 @@ out = out.replace('</body>', `${assetScript}<script>\n${bundle}\n</script>\n</bo
 
 mkdirSync(join(root, 'dist'), { recursive: true });
 writeFileSync(join(root, 'dist', 'dojo-duel.html'), out);
-console.log(`dist/dojo-duel.html geschrieben (${scripts.length} Skripte gebündelt)`);
+console.log(`dist/dojo-duel.html written (${scripts.length} scripts bundled)`);

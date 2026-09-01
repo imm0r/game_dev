@@ -1,9 +1,10 @@
 # game_dev
 
-Spielprojekte von imm0r.
+Game projects by imm0r.
 
-## Projekte
+## Projects
 
-- **[Dojo Duel](dojo-duel/)** — Retro-Pixel-Fighting-Game im Stil der frühen
-  90er-Arcade-Prügler. Vanilla JS, keine Engine, läuft direkt im Browser:
-  `dojo-duel/index.html` öffnen. Details im [Projekt-README](dojo-duel/README.md).
+- **[Dojo Duel](dojo-duel/)** — a retro pixel fighting game in the spirit
+  of the early-90s arcade brawlers. Vanilla JS, no engine, runs straight
+  in the browser: open `dojo-duel/index.html`. Details in the
+  [project README](dojo-duel/README.md).

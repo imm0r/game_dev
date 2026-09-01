@@ -1,4 +1,4 @@
-// Einstiegspunkt: Canvas holen, Spiel bauen, 60fps-Loop mit fester Schrittweite.
+// Entry point: grab the canvas, build the game, fixed-step 60fps loop.
 window.DD = window.DD || {};
 
 (function () {
@@ -15,7 +15,7 @@ window.DD = window.DD || {};
   function loop(now) {
     acc += now - last;
     last = now;
-    // Nachhol-Schritte begrenzen (z.B. nach Tab-Wechsel)
+    // cap catch-up steps (e.g. after a tab switch)
     if (acc > STEP * 5) acc = STEP * 5;
     while (acc >= STEP) {
       game.update();
@@ -27,6 +27,6 @@ window.DD = window.DD || {};
 
   requestAnimationFrame(loop);
 
-  // Debug-Zugriff (z.B. für automatisierte Tests): window.__DOJO.game.state
+  // debug access (e.g. for automated tests): window.__DOJO.game.state
   window.__DOJO = { game, DD };
 })();

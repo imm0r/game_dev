@@ -1,4 +1,4 @@
-// Der Kämpfer: Zustandsmaschine, Physik, Hitboxen, Treffer-Reaktionen.
+// The fighter: state machine, physics, hitboxes, hit reactions.
 window.DD = window.DD || {};
 
 (function () {
@@ -23,17 +23,17 @@ window.DD = window.DD || {};
       this.vy = 0;
       this.facing = facing;
       this.hp = C().MAX_HP;
-      this.showHp = C().MAX_HP;   // nachlaufender Anzeigewert (roter Balken)
+      this.showHp = C().MAX_HP;   // trailing display value (red bar)
       this.state = 'idle';
-      this.timer = 0;             // Restdauer von hitstun/blockstun
+      this.timer = 0;             // remaining hitstun/blockstun
       this.atkName = null;
       this.atkT = 0;
       this.hasHit = false;
       this.airAttackUsed = false;
       this.fireCd = 0;
-      this.kbVx = 0;              // Rückstoss
+      this.kbVx = 0;              // knockback
       this.pad = DD.input.emptyPad();
-      this.animT = 0;             // Frames im aktuellen Zustand (für Sequenzen)
+      this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
     }
 
@@ -57,10 +57,10 @@ window.DD = window.DD || {};
       if (this.state === this.prevState) this.animT++;
       else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
-      // Anzeige-HP läuft dem echten Wert langsam hinterher
+      // display HP slowly trails the real value
       if (this.showHp > this.hp) this.showHp = Math.max(this.hp, this.showHp - 0.6);
 
-      // Blickrichtung nur im neutralen Stand anpassen
+      // only re-face the opponent while in a neutral stance
       if (this.controllable && this.grounded && opp) {
         const d = opp.x - this.x;
         if (d !== 0) this.facing = d > 0 ? 1 : -1;
@@ -75,7 +75,7 @@ window.DD = window.DD || {};
             this.vy = C().JUMP_VY;
             this.vx = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
             this.vx *= C().JUMP_VX;
-            this.y -= 0.01; // sofort "in der Luft"
+            this.y -= 0.01; // instantly "airborne"
             this.state = 'jump';
             this.airAttackUsed = false;
             DD.audio.play('jump');
@@ -166,7 +166,7 @@ window.DD = window.DD || {};
           break;
       }
 
-      // Arena-Begrenzung (Weltbreite kommt von der aktuellen Stage)
+      // arena bounds (world width comes from the current stage)
       const m = C().WALL_MARGIN;
       this.x = Math.max(m, Math.min(game.worldW - m, this.x));
     }
@@ -188,7 +188,7 @@ window.DD = window.DD || {};
       this.atkName = null;
     }
 
-    // Körper-Box (wo man getroffen werden kann), Weltkoordinaten
+    // body box (where you can be hit), world coordinates
     hurtbox() {
       if (this.state === 'kolie' || this.state === 'kofall') return null;
       let top = 64, h = 64;
@@ -197,7 +197,7 @@ window.DD = window.DD || {};
       return { x0: this.x - 10, y0: this.y - top, x1: this.x + 10, y1: this.y - top + h };
     }
 
-    // aktive Angriffs-Box oder null
+    // active attack box or null
     attackHitbox() {
       let a = null, t = 0;
       if (this.state === 'attack' && this.atkName !== 'special') {
@@ -219,14 +219,14 @@ window.DD = window.DD || {};
       };
     }
 
-    // dir: Richtung, in die der Getroffene geschoben wird (+1 = nach rechts)
+    // dir: direction the defender gets pushed (+1 = to the right)
     receiveHit(game, data, dir) {
       if (this.state === 'kolie' || this.state === 'kofall') return 'none';
 
       const away = dir > 0 ? this.pad.right : this.pad.left;
       const canBlock = this.grounded && (this.controllable);
       if (canBlock && away) {
-        this.hp = Math.max(1, this.hp - data.chip); // Chip-Schaden macht kein K.O.
+        this.hp = Math.max(1, this.hp - data.chip); // chip damage cannot K.O.
         this.state = 'block';
         this.timer = data.blockstun;
         this.kbVx = dir * data.kb * 0.7;
@@ -250,7 +250,7 @@ window.DD = window.DD || {};
       return 'hit';
     }
 
-    // Frame + y-Versatz aus den Animations-Tabellen des Charakters bestimmen
+    // resolve frame + y offset from the character's animation tables
     resolveFrame() {
       const anims = DD.sprites.CHARS[this.char].anims;
 

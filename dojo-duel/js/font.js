@@ -1,4 +1,4 @@
-// Winziger 3x5-Pixelfont im Arcade-Stil. Jede Glyphe: 5 Zeilen à 3 Bits.
+// Tiny 3x5 arcade-style pixel font. Each glyph: 5 rows of 3 bits.
 window.DD = window.DD || {};
 
 (function () {
@@ -50,10 +50,10 @@ window.DD = window.DD || {};
     ' ': ['000','000','000','000','000'],
   };
 
-  // text zeichnen; align: 'left' | 'center' | 'right'
+  // draw text; align: 'left' | 'center' | 'right'
   function drawText(ctx, text, x, y, scale, color, align) {
     text = String(text).toUpperCase();
-    const w = text.length * 4 * scale - scale; // 3px Glyphe + 1px Abstand
+    const w = text.length * 4 * scale - scale; // 3px glyph + 1px spacing
     if (align === 'center') x -= Math.floor(w / 2);
     if (align === 'right') x -= w;
     ctx.fillStyle = color;
@@ -71,7 +71,7 @@ window.DD = window.DD || {};
     }
   }
 
-  // Text mit schwarzem Versatz-Schatten – Standard fürs HUD
+  // text with a black drop shadow – the HUD default
   function drawTextShadow(ctx, text, x, y, scale, color, align) {
     drawText(ctx, text, x + scale, y + scale, scale, '#000000', align);
     drawText(ctx, text, x, y, scale, color, align);

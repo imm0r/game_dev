@@ -1,24 +1,24 @@
-// Kämpfer-Sprites als Text-Grids – jedes Zeichen ist ein Pixel.
+// Fighter sprites as text grids – every character is one pixel.
 //
-// Seit Meilenstein 2 gibt es zwei Qualitätsstufen:
-//   klaus  – NEUE Generation: 42x68 in 1x-Pixeldichte (scale 1), 20 Farben,
-//            echte Licht/Schatten-Modellierung, Frame-Sequenzen.
-//   antoine, hanzo – alte Generation (28x36, scale 2), wird paketweise
-//            auf die neue Stufe gehoben.
+// Since milestone 2 there are two quality tiers:
+//   klaus  – NEW generation: 42x68 at 1x pixel density (scale 1), 20 colors,
+//            real light/shadow modelling, frame sequences.
+//   antoine, hanzo – old generation (28x36, scale 2), being lifted to the
+//            new tier package by package.
 //
-// Legende neue Generation (klaus):
-//   K Umriss · A Haut-Licht · S Haut · T Haut-Schatten · U Haut-Tief
-//   L Haar-Licht · H Haar · J Haar-Dunkel (Bart-Textur)
-//   G Shorts · g Shorts-Schatten · D Gold · d Gold-Dunkel
-//   R Handschuh-Licht · r Handschuh · q Handschuh-Dunkel
-//   E Auge (pro Blickrichtung eigene Farbe!) · W Augenweiss
-//   M Tattoo · F/Y Flaggen-Patch · O/C/X Projektil
+// Legend, new generation (klaus):
+//   K outline · A skin-light · S skin · T skin-shadow · U skin-deep
+//   L hair-light · H hair · J hair-dark (beard texture)
+//   G shorts · g shorts-shadow · D gold · d gold-dark
+//   R glove-light · r glove · q glove-dark
+//   E eye (its own color per facing direction!) · W eye-white
+//   M tattoo · F/Y flag patch · O/C/X projectile
 //
-// Legende alte Generation: K S T H R G D B Y F U E O C W (wie bisher).
+// Legend, old generation: K S T H R G D B Y F U E O C W (as before).
 window.DD = window.DD || {};
 
 (function () {
-  // ------------------------------------------------------------- Paletten --
+  // ------------------------------------------------------------- Palettes --
 
   const SKINS = {
     klaus: {
@@ -32,8 +32,8 @@ window.DD = window.DD || {};
           W: '#f2f2f2', M: '#5f4630', F: '#d82818', Y: '#f8d838',
           O: '#a03808', C: '#f8a030', X: '#f8f0d8',
         },
-        eyeR: '#4fc4f5',   // blaues Auge (Blick nach rechts)
-        eyeL: '#8a5a14',   // braunes Auge (Blick nach links)
+        eyeR: '#4fc4f5',   // blue eye (facing right)
+        eyeL: '#8a5a14',   // brown eye (facing left)
       },
       crimson: {
         colors: {
@@ -50,21 +50,31 @@ window.DD = window.DD || {};
       },
     },
     antoine: {
+      // new generation (v2): K outline · A/S/T/U skin tones · L/H/J hair &
+      // beard · G/D/g uniform base/light/shadow · d pockets/dark trim ·
+      // R/r/q boots & gloves · W white (eye, buckle, patch) · E eye ·
+      // M scar · B/F patch blue/red · O/C/X grenade
       olive: {
         colors: {
-          K: '#141018', S: '#d8a878', T: '#b08050', H: '#16120e',
-          R: '#26262c', G: '#5c5c38', D: '#44442a', B: '#2e2e1e',
-          Y: '#e8e8e8', F: '#d82818', U: '#2848a0',
-          O: '#141018', C: '#4a5434', W: '#a8b880',
+          K: '#141018',
+          A: '#e0b184', S: '#c99266', T: '#a26f42', U: '#7c4f28',
+          L: '#4a4a58', H: '#2c2c38', J: '#1c1c26',
+          G: '#5f6339', D: '#7a7f4c', g: '#40442a', d: '#2e3120',
+          R: '#4a4a52', r: '#333339', q: '#1e1e24',
+          W: '#eeeeee', M: '#eed3b2', B: '#2848a0', F: '#d82818',
+          O: '#141018', C: '#4a5434', X: '#a8b880',
         },
         eyeR: '#6a3a10', eyeL: '#6a3a10',
       },
       navy: {
         colors: {
-          K: '#141018', S: '#c89868', T: '#a07040', H: '#2e2318',
-          R: '#7a1e1e', G: '#34405c', D: '#242c44', B: '#1a2030',
-          Y: '#e8e8e8', F: '#d82818', U: '#2848a0',
-          O: '#141018', C: '#3a4454', W: '#98a8c0',
+          K: '#141018',
+          A: '#e8c096', S: '#d0a072', T: '#a87c4c', U: '#7e5628',
+          L: '#5e5040', H: '#443626', J: '#2a2016',
+          G: '#34405c', D: '#4a5878', g: '#232c44', d: '#1a2234',
+          R: '#8a4444', r: '#5e2e2e', q: '#3a1c1c',
+          W: '#eeeeee', M: '#f0d8bc', B: '#2848a0', F: '#d82818',
+          O: '#141018', C: '#3a3a5c', X: '#9aa4c8',
         },
         eyeR: '#6a3a10', eyeL: '#6a3a10',
       },
@@ -91,7 +101,7 @@ window.DD = window.DD || {};
     },
   };
 
-  // Varianten = Basis-Grid + ersetzte Zeilen
+  // variants = base grid + replaced rows
   function patch(base, ...editLists) {
     const g = base.slice();
     for (const edits of editLists) {
@@ -177,14 +187,14 @@ window.DD = window.DD || {};
     '........KKKKKK....KKKKKKKK................',
   ];
 
-  // Atmung: Schultern schwellen, Brust-Licht wandert
+  // breathing: shoulders swell, chest highlight shifts
   const K2_IDLE1 = patch(K2_IDLE0, [
     [19, '.........KTSSSTSSSSSAAAAKKSSSTK...........'],
     [24, '........KTSSTSSAASSSSSSSKKK...............'],
     [25, '........KTSSTSSUUUUUSSAAK.................'],
   ]);
 
-  // ---- Laufzyklus: 4 Bein-Blöcke (Zeilen 44-67) ----
+  // ---- walk cycle: 4 leg blocks (rows 44-67) ----
 
   const K2_LEGS_CONTACT = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -240,7 +250,7 @@ window.DD = window.DD || {};
     [67, '.........KKKKK...KKKKKKK..................'],
   ];
 
-  // vorderes Bein schwingt gestreckt nach vorn (noch in der Luft)
+  // front leg swings forward, extended (still in the air)
   const K2_LEGS_REACH = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
     [45, '..........KdGGGGGGGGGGGGgK................'],
@@ -268,7 +278,7 @@ window.DD = window.DD || {};
     [67, '.......KKKKK..............KKKKKK..........'],
   ];
 
-  // hinteres Bein streckt sich beim Abstoss nach hinten
+  // rear leg extends backwards during push-off
   const K2_LEGS_PUSH = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
     [45, '..........KdGGGGGGGGGGGGgK................'],
@@ -301,9 +311,9 @@ window.DD = window.DD || {};
   const K2_WALK2 = patch(K2_IDLE0, K2_LEGS_PASS);
   const K2_WALK3 = patch(K2_IDLE0, K2_LEGS_PUSH);
 
-  // ---- Schlag: Ausholen / Strecken / Zurückziehen ----
+  // ---- punch: wind-up / extend / retract ----
 
-  // vordere Faust weg (wird pro Pose neu gesetzt)
+  // clear the lead fist (re-placed per pose)
   const K2_EDIT_ARM_CLEAR = [
     [9, '.............KJHSSSSSAAK..................'],
     [10, '.............KJHSSSSATSK..................'],
@@ -326,7 +336,7 @@ window.DD = window.DD || {};
     [17, '...............KTTSSAKSTK.................'],
   ]);
 
-  // Arm voll gestreckt, Ausfallschritt
+  // arm fully extended, lunge step
   const K2_PUN1 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [18, '..........KKKKTTSSSSAAKKKKKKK.............'],
     [19, '.........KTSSSTSSSSSSAAASSSSSSSSSKRRRRK...'],
@@ -335,7 +345,7 @@ window.DD = window.DD || {};
     [22, '........KTSSTSSSSSSSMMSAAKKKKKKKKKKqqKK...'],
   ], K2_LEGS_CONTACT);
 
-  // halb zurückgezogen
+  // half retracted
   const K2_PUN2 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [19, '.........KTSSSTSSSSSSAAASSSSKRRRK.........'],
     [20, '........KTSSSSTSSSSSSSAAASSSSKRrrrK.......'],
@@ -343,7 +353,7 @@ window.DD = window.DD || {};
     [22, '........KTSSTSSSSSSSMMSAAKKKKKKqKK........'],
   ]);
 
-  // ---- Tritt: Knie hoch / Bein gestreckt ----
+  // ---- kick: knee raised / leg extended ----
 
   const K2_KICK0 = patch(K2_IDLE0, [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -405,7 +415,7 @@ window.DD = window.DD || {};
     [67, '.........KKKKKK...........................'],
   ]);
 
-  // ---- Spezial: Energie-Stoss mit beiden Händen ----
+  // ---- special: two-handed energy thrust ----
 
   const K2_SP0 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [28, '........KTSSTSSTUTSSSSAK..................'],
@@ -431,7 +441,7 @@ window.DD = window.DD || {};
     [33, '.........KTSSTSSSSSAAK....................'],
   ], K2_LEGS_CONTACT);
 
-  // ---- Sprung: Absprung / Tuck / Fallen ----
+  // ---- jump: take-off / tuck / falling ----
 
   const K2_JMP_TUCK = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -460,11 +470,11 @@ window.DD = window.DD || {};
     [67, '..........................................'],
   ];
 
-  const K2_JMP0 = patch(K2_IDLE0, K2_LEGS_PUSH);
-  const K2_JMP1 = patch(K2_IDLE0, K2_JMP_TUCK);
-  const K2_JMP2 = patch(K2_IDLE0, K2_LEGS_REACH);
+  const K2_JMP0 = patch(K2_IDLE0, K2_LEGS_PUSH);   // take-off: legs extended
+  const K2_JMP1 = patch(K2_IDLE0, K2_JMP_TUCK);    // apex: tuck
+  const K2_JMP2 = patch(K2_IDLE0, K2_LEGS_REACH);  // falling: legs ready
 
-  // ---- Ducken ----
+  // ---- crouch ----
 
   const K2_CROUCH = [
     '..........................................',
@@ -537,7 +547,7 @@ window.DD = window.DD || {};
     '..........................................',
   ];
 
-  // ---- Block: Doppel-Deckung ----
+  // ---- block: double guard ----
 
   const K2_BLOCK = patch(K2_IDLE0, [
     [9, '.............KJHSSSSSAAKKKKK..............'],
@@ -557,7 +567,7 @@ window.DD = window.DD || {};
     [33, '.........KTSSTSSSSSAAKKSTK................'],
   ]);
 
-  // ---- Treffer-Reaktion: Kopf und Oberkörper zurück ----
+  // ---- hit reaction: head and torso thrown back ----
 
   const K2_HURT = patch(K2_IDLE0, [
     [1, '.............KKKKKKK......................'],
@@ -579,7 +589,7 @@ window.DD = window.DD || {};
     [17, '.............KTTSSAK......KSSTK...........'],
   ]);
 
-  // ---- K.O.: rücklings fliegen + liegen ----
+  // ---- K.O.: flying backwards + lying down ----
 
   const K2_KOFALL = patch(K2_HURT, [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -622,7 +632,7 @@ window.DD = window.DD || {};
     return g;
   })();
 
-  // ---- Siegerpose: Faust in den Himmel ----
+  // ---- victory pose: fist to the sky ----
 
   const K2_WIN = patch(K2_IDLE0, [
     [0, '..........................KKKK............'],
@@ -645,7 +655,7 @@ window.DD = window.DD || {};
     [17, '...............KTTSSAKSTK.................'],
   ]);
 
-  // Energie-Stoss-Projektil der neuen Generation (18x12)
+  // energy-thrust projectile of the new generation (18x12)
   const K2_FB_A = [
     '......OOOOOO......',
     '....OOCCCCCCOO....',
@@ -676,7 +686,7 @@ window.DD = window.DD || {};
     '.....OOOOOO.......',
   ];
 
-  // ============================================ ALTE GENERATION (28x36, 2x)
+  // ============================================= OLD GENERATION (28x36, 2x)
 
   const KA_IDLE = [
     '............................',
@@ -1048,395 +1058,441 @@ window.DD = window.DD || {};
     '............................',
   ];
 
-  const AN_IDLE = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KUYGGGGGGGGK........',
-    '........KFDGGGGGGGKSSK......',
-    '........KGDGGGGGGGKSKRRK....',
-    '........KGDGGGGGGGKKRRRK....',
-    '........KGDGGGGGGGK.KKK.....',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KRRK.KRRK..........',
-    '........KRRRK.KRRRRK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
+  // =============================================== ANTOINE v2 (44x68, 1x) --
+  // Bulkier than Klaus: wide shoulders, olive uniform with rolled-up
+  // sleeves, French flag patch (B/W/F) on the rear shoulder, chest
+  // pockets, fingerless gloves (skin knuckles!), heavy boots, massive
+  // black beard — and the scar (M) across his right brow and cheek.
+
+  const A2_IDLE0 = [
+    '............................................',
+    '................KKKKKKK.....................',
+    '...............KLLHHHHHK....................',
+    '..............KLHHHHHHHHK...................',
+    '..............KJHHHHHHHHK...................',
+    '..............KJHSSSSSAAK...................',
+    '..............KJHSUUMUSAK...................',
+    '..............KJHSSWESSAK...................',
+    '..............KJHSSSSMSAK..KKKKK............',
+    '..............KJHJJJJJJAK..KSSSSK...........',
+    '.............KJHJJHHHHJJAK.KSSSSSK..........',
+    '.............KJJJHHHHHHJJK.KRrrrrK..........',
+    '..............KJJHHHHHHJK.KRrrrrrK..........',
+    '..............KKJJHHHHJK..KrrrrqK...........',
+    '...............KJJJJJJK...KqrqqK............',
+    '................KJJJJK....KKqSTK............',
+    '................KTSSAK.....KSSTK............',
+    '...............KTTSSAAK....KSSTK............',
+    '..........KKKKDDGGGGGDDKKK.KSSTK............',
+    '........KBDGGGDGGGGGGGGGGDKKSTK.............',
+    '.......KBWDGGDGGGGGGGGGGGGGDKK..............',
+    '.......KFWGGDGGGGGGGGGGGGGGDK...............',
+    '.......KGGGDdddDGGGGDdddDGGDK...............',
+    '.......KGGGDdddDGGGGDdddDGGDK...............',
+    '.......KGGGGDDDGGGGGGDDDGGGDKKK.............',
+    '.......KgGGGGGGGGGGGGGGGGGgKSSTK............',
+    '.......KgGGGGGGGGGGGGGGGGgKKRrrK............',
+    '........KgGGGGGGGGGGGGGGgKKRrrrK............',
+    '........KggGGGGGGGGGGGGgKKrrqqK.............',
+    '.........KggGGGGGGGGGGgKKSqqK...............',
+    '.........KgggGGGGGGGgggKKSTK................',
+    '.........KqqqqqqqWWqqqqqK...................',
+    '.........KqqqqqqqWWqqqqqK...................',
+    '........KgGGGGGGGGGGGGGGgK..................',
+    '........KgGGGGGGGGGGGGGGgK..................',
+    '........KdGGGGGGGGGGGGGGdK..................',
+    '........KdGdddGGGGGGGGGGdK..................',
+    '........KdGdddGGGGGGGGGGdK..................',
+    '........KgGGGGGGGGGGGGGGgK..................',
+    '........KgGGGGGGKKGGGGGGgK..................',
+    '........KgGGGGGgK.KgGGGGgK..................',
+    '........KgGGGGGgK.KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KdGGGGdK..KdGGGGdK..................',
+    '........KdGddGdK..KdGddGdK..................',
+    '........KdGddGdK..KdGddGdK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KgGGGGgK..KgGGGGgK..................',
+    '........KggGGggK..KggGGggK..................',
+    '........KggGGggK..KggGGggK..................',
+    '........KRrrrrqK..KRrrrrqK..................',
+    '........KRrrrrqK..KRrrrrqK..................',
+    '........KRrrrrqK..KRrrrrqK..................',
+    '........KrrrrrqK..KrrrrrqK..................',
+    '........KrrrrrqK..KrrrrrqK..................',
+    '........KrrrrrqK..KrrrrrqK..................',
+    '........KqrrrqqK..KqrrrqqK..................',
+    '........KqrrrqqK..KqrrrqqK..................',
+    '.......KqrrrrqqK..KqrrrrqqK.................',
+    '.......KqrrrrrqK.KqrrrrrrqK.................',
+    '......KqqrrrrqqK.KqqrrrrrqqK................',
+    '......KKKKKKKKK..KKKKKKKKKKK................',
   ];
 
-  const AN_LEGS_APART = [
-    '........KGGGK.KGGGK.........',
-    '........KGGK...KGGK.........',
-    '........KGGK...KGGK.........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KRRK.....KRRK........',
-    '......KRRRK.....KRRRRK......',
-    '......KKKKK.....KKKKKK......',
+  // breathing: shoulder light widens
+  const A2_IDLE1 = patch(A2_IDLE0, [
+    [18, '..........KKKDDDGGGGGDDDKK.KSSTK............'],
+    [25, '.......KgGGGGGGGGGGGGGGGGGgKSSTK............'],
+  ]);
+
+  // ---- walk cycle: 4 leg blocks (rows 44-67), boots included ----
+
+  const A2_LEGS_REACH = [
+    [44, '........KdGGGGdK...KdGGGGdK.................'],
+    [45, '........KdGddGdK...KdGddGdK.................'],
+    [46, '........KdGddGdK...KdGddGdK.................'],
+    [47, '........KgGGGGgK....KgGGGGgK................'],
+    [48, '........KgGGGGgK....KgGGGGgK................'],
+    [49, '.......KgGGGGgK......KgGGGGgK...............'],
+    [50, '.......KgGGGGgK......KgGGGGgK...............'],
+    [51, '.......KgGGGGgK.......KgGGGGgK..............'],
+    [52, '.......KgGGGGgK.......KgGGGGgK..............'],
+    [53, '.......KgGGGGgK........KgGGGgK..............'],
+    [54, '.......KggGGggK........KggGggK..............'],
+    [55, '.......KggGGggK........KggGggK..............'],
+    [56, '.......KRrrrrqK........KRrrrqK..............'],
+    [57, '.......KRrrrrqK........KRrrrqK..............'],
+    [58, '.......KRrrrrqK.........KRrrqK..............'],
+    [59, '.......KrrrrrqK.........KrrrqK..............'],
+    [60, '.......KrrrrrqK.........KrrrqK..............'],
+    [61, '.......KrrrrrqK.........KrrrqK..............'],
+    [62, '.......KqrrrqqK.........KqrrqK..............'],
+    [63, '.......KqrrrqqK.........KqrrqK..............'],
+    [64, '......KqrrrrqqK.........KqrrrqK.............'],
+    [65, '......KqrrrrrqK........KqrrrrqK.............'],
+    [66, '.....KqqrrrrqqK........KqqrrrqqK............'],
+    [67, '.....KKKKKKKKK..........KKKKKKK.............'],
   ];
 
-  const AN_LEGS_PASS = [
-    '.........KGGGGGGGK..........',
-    '..........KGGGGGK...........',
-    '..........KGGGGGK...........',
-    '..........KGGKGGK...........',
-    '..........KGGKGGK...........',
-    '..........KGGKGGK...........',
-    '..........KGGKGGK...........',
-    '..........KGGKGGK...........',
-    '..........KGGKGGK...........',
-    '..........KRRKRRK...........',
-    '.........KRRRKRRRK..........',
-    '.........KKKKKKKKK..........',
+  const A2_LEGS_CONTACT = [
+    [44, '.......KdGGGGdK....KdGGGGdK.................'],
+    [45, '.......KdGddGdK....KdGddGdK.................'],
+    [46, '.......KdGddGdK....KdGddGdK.................'],
+    [47, '......KgGGGGgK......KgGGGGgK................'],
+    [48, '......KgGGGGgK......KgGGGGgK................'],
+    [49, '......KgGGGGgK.......KgGGGGgK...............'],
+    [50, '......KgGGGGgK.......KgGGGGgK...............'],
+    [51, '.....KgGGGGgK.........KgGGGGgK..............'],
+    [52, '.....KgGGGGgK.........KgGGGGgK..............'],
+    [53, '.....KgGGGGgK..........KgGGGgK..............'],
+    [54, '.....KggGGggK..........KggGggK..............'],
+    [55, '.....KggGGggK..........KggGggK..............'],
+    [56, '.....KRrrrrqK..........KRrrrqK..............'],
+    [57, '....KRrrrrqK............KRrrqK..............'],
+    [58, '....KRrrrrqK............KRrrqK..............'],
+    [59, '....KrrrrrqK............KrrrqK..............'],
+    [60, '....KrrrrrqK............KrrrqK..............'],
+    [61, '...KrrrrrqK.............KrrrqK..............'],
+    [62, '...KqrrrqqK.............KqrrqK..............'],
+    [63, '...KqrrrqqK.............KqrrqK..............'],
+    [64, '...KqrrrqqK............KqrrrqqK.............'],
+    [65, '..KqrrrrqK.............KqrrrrrqK............'],
+    [66, '..KqqrrqqK.............KqqrrrrqqK...........'],
+    [67, '..KKKKKKK...............KKKKKKKKK...........'],
   ];
 
-  const AN_WALK_A = withLegs(AN_IDLE, AN_LEGS_APART);
-  const AN_WALK_B = withLegs(AN_IDLE, AN_LEGS_PASS);
-
-  const AN_PUNCH = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KUYGGGGGGGGKK.......',
-    '........KFDGGGGGGGSSSSRRK...',
-    '........KGDGGGGGGGSSSRRRK...',
-    '........KGDGGGGGGKKKKKRRK...',
-    '........KGDGGGGGGGK.KKKK....',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-  ].concat(AN_LEGS_APART, ['............................']);
-
-  const AN_KICK = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KUYGGGGGGGGK........',
-    '........KFDGGGGGGGKSK.......',
-    '........KGDGGGGGGGKRRK......',
-    '........KGDGGGGGGGKKKK......',
-    '........KGDGGGGGGGK.........',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGKKKKKKKK...',
-    '.........KGGGGGGGGGGGGGRRK..',
-    '.........KGGGGGGKKKKKKKKKK..',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KGGK..............',
-    '..........KRRK..............',
-    '.........KRRRK..............',
-    '.........KKKKK..............',
-    '............................',
+  const A2_LEGS_PASS = [
+    [44, '.........KdGGGGGGGGGGGGdK...................'],
+    [45, '.........KdGddGGGGGGddGdK...................'],
+    [46, '.........KdGddGGGGGGddGdK...................'],
+    [47, '..........KgGGGGGGGGGGgK....................'],
+    [48, '..........KgGGGGGGGGGgK.....................'],
+    [49, '..........KgGGGKKGGGGgK.....................'],
+    [50, '..........KgGGGK.KGGGgK.....................'],
+    [51, '..........KgGGGK.KGGGgK.....................'],
+    [52, '..........KgGGgK.KgGGgK.....................'],
+    [53, '..........KgGGgK.KgGGgK.....................'],
+    [54, '..........KggggK.KggggK.....................'],
+    [55, '..........KggggK.KggggK.....................'],
+    [56, '..........KRrrqK.KRrrqK.....................'],
+    [57, '..........KRrrqK.KRrrqK.....................'],
+    [58, '..........KRrrqK.KRrrqK.....................'],
+    [59, '..........KrrrqK.KrrrqK.....................'],
+    [60, '..........KrrrqK.KrrrqK.....................'],
+    [61, '..........KrrrqK.KrrrqK.....................'],
+    [62, '..........KqrrqK.KqrrqK.....................'],
+    [63, '..........KqrrqK.KqrrqK.....................'],
+    [64, '.........KqrrrqK.KqrrrqK....................'],
+    [65, '.........KqrrrqK.KqrrrrqK...................'],
+    [66, '........KqqrrqqK.KqqrrrqqK..................'],
+    [67, '........KKKKKKK...KKKKKKK...................'],
   ];
 
-  const AN_SPECIAL = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KUYGGGGGGGGKK.......',
-    '........KFDGGGGGGGSSSSK.....',
-    '........KGDGGGGGGKKSSSK.....',
-    '........KGDGGGGGGGSSSSK.....',
-    '........KGDGGGGGGKKKKKK.....',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-  ].concat(AN_LEGS_APART, ['............................']);
-
-  const AN_JUMP = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KGDGGGGGGGGK........',
-    '........KGDGGGGGGGKSSK......',
-    '........KGDGGGGGGGKRRK......',
-    '........KGDGGGGGGGK.KK......',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '........KGGGGGGGGGK.........',
-    '........KGGKKKKGGK..........',
-    '........KRRK..KRRK..........',
-    '........KKKK..KKKK..........',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
+  const A2_LEGS_PUSH = [
+    [44, '.......KdGGGGdK....KdGGGGdK.................'],
+    [45, '.......KdGddGdK....KdGddGdK.................'],
+    [46, '......KdGddGdK.....KdGddGdK.................'],
+    [47, '......KgGGGGgK.....KgGGGGgK.................'],
+    [48, '.....KgGGGGgK......KgGGGGgK.................'],
+    [49, '.....KgGGGGgK......KgGGGGgK.................'],
+    [50, '....KgGGGGgK.......KgGGGGgK.................'],
+    [51, '....KgGGGGgK.......KgGGGGgK.................'],
+    [52, '...KgGGGGgK........KgGGGGgK.................'],
+    [53, '...KgGGGGgK........KgGGGGgK.................'],
+    [54, '...KggGGggK........KggGGggK.................'],
+    [55, '..KggGGggK.........KggGGggK.................'],
+    [56, '..KRrrrrqK.........KRrrrrqK.................'],
+    [57, '..KRrrrqK..........KRrrrrqK.................'],
+    [58, '.KRrrrqK...........KRrrrrqK.................'],
+    [59, '.KrrrrqK...........KrrrrrqK.................'],
+    [60, '.KrrrqK............KrrrrrqK.................'],
+    [61, 'KrrrrqK............KrrrrrqK.................'],
+    [62, 'KqrrqK.............KqrrrqqK.................'],
+    [63, 'KqrrqK.............KqrrrqqK.................'],
+    [64, 'KqrrqK.............KqrrrrqqK................'],
+    [65, 'KqrrqK.............KqrrrrrqK................'],
+    [66, 'KqqqqK............KqqrrrrqqK................'],
+    [67, 'KKKKK.............KKKKKKKKK.................'],
   ];
 
-  const AN_CROUCH = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '.........KGGGGGGGGK.........',
-    '........KGDGGGGGGGGK........',
-    '........KGDGGGGGGGKSSK......',
-    '........KGDGGGGGGGKRRK......',
-    '........KGDGGGGGGGKKKK......',
-    '........KGDGGGGGGGK.........',
-    '.........KBBBBBBK...........',
-    '........KGGGGGGGGGK.........',
-    '.......KGGGGGGGGGGGK........',
-    '.......KGGKKKKKKKGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KGGK.....KGGK........',
-    '.......KRRK.....KRRK........',
-    '......KRRRK.....KRRRRK......',
-    '......KKKKK.....KKKKKK......',
-    '............................',
+  const A2_WALK0 = patch(A2_IDLE0, A2_LEGS_REACH);
+  const A2_WALK1 = patch(A2_IDLE0, A2_LEGS_CONTACT);
+  const A2_WALK2 = patch(A2_IDLE0, A2_LEGS_PASS);
+  const A2_WALK3 = patch(A2_IDLE0, A2_LEGS_PUSH);
+
+  // ---- punch: wind-up / extend / retract ----
+
+  // clear the lead fist (re-placed per pose)
+  const A2_ARM_CLEAR = [
+    [8, '..............KJHSSSSMSAK...................'],
+    [9, '..............KJHJJJJJJAK...................'],
+    [10, '.............KJHJJHHHHJJAK..................'],
+    [11, '.............KJJJHHHHHHJJK..................'],
+    [12, '..............KJJHHHHHHJK...................'],
+    [13, '..............KKJJHHHHJK....................'],
+    [14, '...............KJJJJJJK.....................'],
+    [15, '................KJJJJK......................'],
+    [16, '................KTSSAK......................'],
+    [17, '...............KTTSSAAK.....................'],
+    [18, '..........KKKKDDGGGGGDDKKK..................'],
+    [19, '........KBDGGGDGGGGGGGGGGDKK................'],
   ];
 
-  const AN_BLOCK = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '............KHHHK...........',
-    '...........KHHHHHK..........',
-    '..........KHHHSSSK..........',
-    '...........KSSSESSK.........',
-    '..........KHHSSSSSK.........',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGKRRK......',
-    '........KUYGGGGGGGGKRRK.....',
-    '........KFDGGGGGGGKKSSK.....',
-    '........KGDGGGGGGGKKSSK.....',
-    '........KGDGGGGGGGKRRKK.....',
-    '........KGDGGGGGGGKKKK......',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KRRK.KRRK..........',
-    '........KRRRK.KRRRRK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
-  ];
+  const A2_PUN0 = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [11, '.............KJJJHHHHHHJJKKRrK..............'],
+    [12, '..............KJJHHHHHHJKKRrrK..............'],
+    [13, '..............KKJJHHHHJKKrrqK...............'],
+    [14, '...............KJJJJJJKKSqK.................'],
+    [15, '................KJJJJKKSTK..................'],
+    [16, '................KTSSAKKSK...................'],
+  ]);
 
-  const AN_HURT = [
-    '............................',
-    '............................',
-    '............................',
-    '............................',
-    '..........KHHHK.............',
-    '.........KHHHHHK............',
-    '........KHHHSSSK............',
-    '.........KSSKSSK............',
-    '........KHHSSSSK............',
-    '.........KHHHHHK............',
-    '..........KHHHK.............',
-    '........KGGGGGGGGK..........',
-    '.......KGDGGGGGGGGK.........',
-    '......KSSKGDGGGGGGK.........',
-    '.....KRRKGDGGGGGGGK.........',
-    '.....KRRKGDGGGGGGGKSSK......',
-    '.....KKKKGDGGGGGGGKKKK......',
-    '........KGDGGGGGGK..........',
-    '.........KGDGGGGK...........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-  ].concat(AN_LEGS_APART, ['............................']);
+  const A2_PUN1 = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [19, '........KBDGGGDGGGGGGGGGGDKKKKKKKK..........'],
+    [20, '.......KBWDGGDGGGGGGGGGGGGGDSSSSSSSKRRrK....'],
+    [21, '.......KFWGGDGGGGGGGGGGGGGGDTTTTTTTKRrrqK...'],
+    [22, '.......KGGGDdddDGGGGDdddDGGDKKKKKKKKqqK.....'],
+  ], A2_LEGS_CONTACT);
 
-  const AN_KO = [
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................', '............................',
-    '............................',
-    '....KHHK........KRRK........',
-    '...KHHSKGGGGGGGGKSSK........',
-    '...KHSSKGGDGGBGGDGGGKRRRK...',
-    '....KKKKKKKKKKKKKKKKKKKK....',
-    '............................',
-    '............................',
-    '............................',
-  ];
+  const A2_PUN2 = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [20, '.......KBWDGGDGGGGGGGGGGGGGDSSSKRrK.........'],
+    [21, '.......KFWGGDGGGGGGGGGGGGGGDTTTKrqK.........'],
+    [22, '.......KGGGDdddDGGGGDdddDGGDKKKKKqK.........'],
+  ]);
 
-  const AN_WIN = [
-    '..................KKK.......',
-    '.................KRRK.......',
-    '.................KRRK.......',
-    '.................KSSK.......',
-    '............KHHHK.KSK.......',
-    '...........KHHHHHKKSK.......',
-    '..........KHHHSSSKKSK.......',
-    '...........KSSSESSKSK.......',
-    '..........KHHSSSSSKKK.......',
-    '...........KHHHHHK..........',
-    '............KHHHK...........',
-    '.........KGGGGGGGGK.........',
-    '........KUYGGGGGGGGK........',
-    '........KFDGGGGGGGK.........',
-    '........KGDGGGGGGGK.........',
-    '........KGDGGGGGGGK.........',
-    '........KGDGGGGGGGK.........',
-    '........KGDGGGGGGGK.........',
-    '.........KGDGGGGGK..........',
-    '.........KBBBBBBK...........',
-    '.........KGGGGGGGK..........',
-    '.........KGGGGGGGK..........',
-    '.........KGDGGDGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KGGK.KGGK..........',
-    '.........KRRK.KRRK..........',
-    '........KRRRK.KRRRRK........',
-    '........KKKKK.KKKKKK........',
-    '............................',
-  ];
+  // ---- kick: knee raised / boot extended ----
 
-  const GRENADE_A = [
-    '...OOOF.....',
-    '..OCCCOF....',
-    '.OCWCCCO....',
-    '.OCCCCCO....',
-    '.OCCCCCO....',
-    '..OCCCO.....',
-    '...OOO......',
+  const A2_KICK0 = patch(A2_IDLE0, [
+    [39, '........KgGGGGGGKKGGGGGGGgKKK...............'],
+    [40, '........KgGGGGGgK.KgGGGGGGGgK...............'],
+    [41, '........KgGGGGGgK.KgGGGGGGggK...............'],
+    [42, '........KgGGGGgK...KggggggKK................'],
+    [43, '........KgGGGGgK....KRrrrqK.................'],
+    [44, '........KdGGGGdK....KRrrrqK.................'],
+    [45, '........KdGddGdK....KrrrqK..................'],
+    [46, '........KdGddGdK....KqrrqqK.................'],
+    [47, '........KgGGGGgK....KKqqKK..................'],
+    [48, '........KgGGGGgK............................'],
+    [49, '........KgGGGGgK............................'],
+    [50, '........KgGGGGgK............................'],
+    [51, '........KgGGGGgK............................'],
+    [52, '........KgGGGGgK............................'],
+    [53, '........KgGGGGgK............................'],
+    [54, '........KggGGggK............................'],
+    [55, '........KggGGggK............................'],
+    [56, '........KRrrrrqK............................'],
+    [57, '........KRrrrrqK............................'],
+    [58, '........KRrrrrqK............................'],
+    [59, '........KrrrrrqK............................'],
+    [60, '........KrrrrrqK............................'],
+    [61, '........KrrrrrqK............................'],
+    [62, '........KqrrrqqK............................'],
+    [63, '........KqrrrqqK............................'],
+    [64, '.......KqrrrrqqK............................'],
+    [65, '.......KqrrrrrqK............................'],
+    [66, '......KqqrrrrqqK............................'],
+    [67, '......KKKKKKKKK.............................'],
+  ]);
+
+  const A2_KICK1 = patch(A2_KICK0, [
+    [38, '........KgGGGGGGGGGGGGGGgKKKKK..............'],
+    [39, '........KgGGGGGGKKGGGGGGGGGGGKKKKKK.........'],
+    [40, '........KgGGGGGgK.KgGGGGGGGGGGGRRrrK........'],
+    [41, '........KgGGGGGgK.KgGGGGGGGGGGrrrrqK........'],
+    [42, '........KgGGGGgK...KggggKKKKKKKKqqK.........'],
+    [43, '........KgGGGGgK............................'],
+    [44, '........KdGGGGdK............................'],
+    [45, '........KdGddGdK............................'],
+    [46, '........KdGddGdK............................'],
+    [47, '........KgGGGGgK............................'],
+  ]);
+
+  // ---- special: grenade throw (wind up overhead / release forward) ----
+
+  const A2_SP0 = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [1, '......KKKK......KKKKKKK.....................'],
+    [2, '.....KOCCOK....KLLHHHHHK....................'],
+    [3, '.....KOCXCOK..KLHHHHHHHHK...................'],
+    [4, '.....KSSKOK...KJHHHHHHHHK...................'],
+    [5, '.....KSSTK....KJHSSSSSAAK...................'],
+    [6, '......KSTK....KJHSUUMUSAK...................'],
+    [7, '......KSTK....KJHSSWESSAK...................'],
+    [8, '.......KSTK...KJHSSSSMSAK...................'],
+    [9, '.......KSTK...KJHJJJJJJAK...................'],
+    [10, '........KSTK.KJHJJHHHHJJAK..................'],
+    [11, '........KSTKKJJJHHHHHHJJK...................'],
+  ]);
+
+  const A2_SP1 = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [3, '..............KLHHHHHHHHK..KSK..............'],
+    [4, '..............KJHHHHHHHHK.KSSSK.............'],
+    [5, '..............KJHSSSSSAAKKKSTK..............'],
+    [6, '..............KJHSUUMUSAKKSTKK..............'],
+    [7, '..............KJHSSWESSAKKSTK...............'],
+    [8, '..............KJHSSSSMSAKKSTK...............'],
+    [9, '..............KJHJJJJJJAKKSK................'],
+  ], A2_LEGS_CONTACT);
+
+  const A2_JMP0 = patch(A2_IDLE0, A2_LEGS_PUSH);    // take-off: legs extended
+  const A2_JMP1 = patch(A2_IDLE0, A2_LEGS_PASS);    // apex: legs together
+  const A2_JMP2 = patch(A2_IDLE0, A2_LEGS_REACH);   // falling: legs ready
+
+  // ---- crouch ----
+
+  const A2_CROUCH = (() => {
+    const g = [];
+    for (let i = 0; i < 68; i++) g.push('............................................');
+    const head = A2_IDLE0.slice(1, 18);
+    for (let i = 0; i < head.length; i++) g[21 + i] = head[i];
+    g[38] = '...............KTTSSAAKKK...................';
+    g[39] = '..........KKKKDDGGGGGDDKKKSSTK..............';
+    g[40] = '........KBDGGGDGGGGGGGGGGDKSSTK.............';
+    g[41] = '.......KBWDGGDGGGGGGGGGGGGGDKKK.............';
+    g[42] = '.......KGGGDdddDGGGGDdddDGGDK...............';
+    g[43] = '.......KgGGGGGGGGGGGGGGGGGgK................';
+    g[44] = '.........KqqqqqqWWqqqqqqK...................';
+    g[45] = '.......KgGGGGGGGGGGGGGGGGgK.................';
+    g[46] = '......KgGGGGGGGGGGGGGGGGGGgK................';
+    g[47] = '......KgGGGGGgKKKKKKKgGGGGgK................';
+    g[48] = '......KgGGGGgK.......KgGGGgK................';
+    g[49] = '......KgGGGGgK.......KgGGGgK................';
+    g[50] = '......KggGGggK.......KggGggK................';
+    g[51] = '......KRrrrrqK.......KRrrqK.................';
+    g[52] = '......KRrrrrqK.......KRrrqK.................';
+    g[53] = '......KqrrrqqK.......KqrrqK.................';
+    g[54] = '.....KqrrrrqqK......KqrrrqqK................';
+    g[55] = '.....KqrrrrrqK......KqrrrrqK................';
+    g[56] = '....KqqrrrrqqK.....KqqrrrqqK................';
+    g[57] = '....KKKKKKKKK......KKKKKKKK.................';
+    return g;
+  })();
+
+  // ---- block: double guard ----
+
+  const A2_BLOCK = patch(A2_IDLE0, [
+    [17, '...............KTTSSAAKKKKK.................'],
+    [18, '..........KKKKDDGGGGGDDKKKKRrrK.............'],
+    [19, '........KBDGGGDGGGGGGGGGGDKKRrrrK...........'],
+    [20, '.......KBWDGGDGGGGGGGGGGGGGDKrrqK...........'],
+    [21, '.......KFWGGDGGGGGGGGGGGGGGDKSqK............'],
+    [22, '.......KGGGDdddDGGGGDdddDGGDKSTK............'],
+  ]);
+
+  // ---- hit reaction: head and torso thrown back ----
+
+  const A2_HURT = patch(A2_IDLE0, [
+    [1, '..............KKKKKKK.......................'],
+    [2, '.............KLLHHHHHK......................'],
+    [3, '............KLHHHHHHHHK.....................'],
+    [4, '............KJHHHHHHHHK.....................'],
+    [5, '............KJHSSSSSAAK.....................'],
+    [6, '............KJHSUUMUSAK.....................'],
+    [7, '............KJHSSKKSSAK.....................'],
+    [8, '............KJHSSSSMSAK....KKKKK............'],
+    [9, '............KJHJJJJJJAK....KSSSSK...........'],
+    [10, '...........KJHJJHHHHJJAK...KSSSSSK..........'],
+    [11, '...........KJJJHHHHHHJJK...KRrrrrK..........'],
+    [12, '............KJJHHHHHHJK...KRrrrrrK..........'],
+    [13, '............KKJJHHHHJK....KrrrrqK...........'],
+    [14, '.............KJJJJJJK.....KqrqqK............'],
+    [15, '..............KJJJJK......KKqSTK............'],
+    [16, '..............KTSSAK.......KSSTK............'],
+    [17, '.............KTTSSAAK......KSSTK............'],
+  ]);
+
+  const A2_KOFALL = patch(A2_HURT, A2_LEGS_PUSH);
+
+  const A2_KO = (() => {
+    const g = [];
+    for (let i = 0; i < 68; i++) g.push('............................................');
+    g[57] = '......KKKK..................................';
+    g[58] = '.....KLHHK......KKKKKKKKKKKKKKKKK...........';
+    g[59] = '....KJHHHKKKKKGGGGGGGGGGGGGGGGGGKKKKKK......';
+    g[60] = '....KJHSSKGGDGGGGGGGqWWqGGGGGGgggGGrrK......';
+    g[61] = '....KJHSWKGGGDdddDGGqWWqGGGGGGGGrrrrqK......';
+    g[62] = '....KJJHHKgGGGGGGGGGGGGGGGGGgggrrrrqqK......';
+    g[63] = '.....KJJKKgggggggggggggggggggKqqqqqqK.......';
+    g[64] = '......KKKKKKKKKKKKKKKKKKKKKKKKKKKKK.........';
+    return g;
+  })();
+
+  // ---- victory pose: fist to the sky ----
+
+  const A2_WIN = patch(A2_IDLE0, A2_ARM_CLEAR, [
+    [0, '..........................KKKK..............'],
+    [1, '................KKKKKKK..KRrrK..............'],
+    [2, '...............KLLHHHHHK.KRrrK..............'],
+    [3, '..............KLHHHHHHHHKKrrqK..............'],
+    [4, '..............KJHHHHHHHHKKSTK...............'],
+    [5, '..............KJHSSSSSAAKKSTK...............'],
+    [6, '..............KJHSUUMUSAKKSTK...............'],
+    [7, '..............KJHSSWESSAKKSTK...............'],
+    [8, '..............KJHSSSSMSAKKSTK...............'],
+    [9, '..............KJHJJJJJJAKKSTK...............'],
+    [10, '.............KJHJJHHHHJJAKSTK...............'],
+    [11, '.............KJJJHHHHHHJJKKSK...............'],
+  ]);
+
+  // Antoine's projectile: a grenade with a red lever (12x10)
+  const A2_GRENADE_A = [
+    '....KKKK....',
+    '...KKFFK....',
+    '...KCCCCK...',
+    '..KCXCCCCK..',
+    '..KCCCCCCK..',
+    '..KCOCOCCK..',
+    '..KCCCCCCK..',
+    '...KCCCCK...',
+    '....KKKK....',
     '............',
   ];
 
-  const GRENADE_B = [
-    '...FOOO.....',
-    '..FOCCCO....',
-    '..OCCCWCO...',
-    '..OCCCCCO...',
-    '..OCCCCCO...',
-    '...OCCCO....',
-    '....OOO.....',
+  const A2_GRENADE_B = [
+    '....KKKK....',
+    '....KFFKK...',
+    '...KCCCCK...',
+    '..KCCCCXCK..',
+    '..KCCCCCCK..',
+    '..KCCOCOCK..',
+    '..KCCCCCCK..',
+    '...KCCCCK...',
+    '....KKKK....',
     '............',
   ];
 
@@ -1462,7 +1518,7 @@ window.DD = window.DD || {};
     '....OOOO....',
   ];
 
-  // Animations-Tabellen der alten Generation (1-2 Frames pro Aktion)
+  // animation tables of the old generation (1-2 frames per action)
   const LEGACY_ANIMS = {
     idle: { seq: [['idle', 16, 0], ['idle', 16, 1]] },
     walk: { seq: [['walkA', 9, 0], ['walkB', 9, 0]] },
@@ -1506,15 +1562,31 @@ window.DD = window.DD || {};
       },
     },
     antoine: {
-      scale: 2,
+      scale: 1,
       grids: {
-        idle: AN_IDLE, walkA: AN_WALK_A, walkB: AN_WALK_B,
-        punch: AN_PUNCH, kick: AN_KICK, special: AN_SPECIAL,
-        jump: AN_JUMP, crouch: AN_CROUCH, block: AN_BLOCK,
-        hurt: AN_HURT, ko: AN_KO, win: AN_WIN,
-        fireballA: GRENADE_A, fireballB: GRENADE_B,
+        idle0: A2_IDLE0, idle1: A2_IDLE1,
+        walk0: A2_WALK0, walk1: A2_WALK1, walk2: A2_WALK2, walk3: A2_WALK3,
+        pun0: A2_PUN0, pun1: A2_PUN1, pun2: A2_PUN2,
+        kick0: A2_KICK0, kick1: A2_KICK1,
+        sp0: A2_SP0, sp1: A2_SP1,
+        jmp0: A2_JMP0, jmp1: A2_JMP1, jmp2: A2_JMP2,
+        crouch0: A2_CROUCH, block0: A2_BLOCK,
+        hurt0: A2_HURT, kof0: A2_KOFALL, ko0: A2_KO, win0: A2_WIN,
+        fireballA: A2_GRENADE_A, fireballB: A2_GRENADE_B,
       },
-      anims: LEGACY_ANIMS,
+      anims: {
+        idle: { seq: [['idle0', 13, 0], ['idle0', 10, 1], ['idle1', 13, 1], ['idle1', 10, 0]] },
+        walk: { seq: [['walk0', 7, 0], ['walk1', 7, 1], ['walk2', 7, 0], ['walk3', 7, 0]] },
+        win: { seq: [['win0', 15, 0], ['win0', 13, 1]] },
+        punch: { atk: ['pun0', 'pun1', 'pun2'] },
+        kick: { atk: ['kick0', 'kick1', 'kick0'] },
+        special: { atk: ['sp0', 'sp1', 'sp1'] },
+        airkick: { atk: ['kick1', 'kick1', 'kick1'] },
+        jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+        kofall: { vel2: ['hurt0', 'kof0'] },
+        crouch: 'crouch0', block: 'block0',
+        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
+      },
     },
     hanzo: {
       scale: 2,
@@ -1539,13 +1611,13 @@ window.DD = window.DD || {};
     const ctx = cv.getContext('2d');
     for (let y = 0; y < h; y++) {
       if (rows[y].length !== w) {
-        throw new Error(`Sprite "${name}", Zeile ${y}: ${rows[y].length} statt ${w} Zeichen`);
+        throw new Error(`Sprite "${name}", row ${y}: ${rows[y].length} instead of ${w} chars`);
       }
       for (let x = 0; x < w; x++) {
         const ch = rows[y][x];
         if (ch === '.') continue;
         const col = pal[ch];
-        if (!col) throw new Error(`Sprite "${name}": unbekanntes Zeichen "${ch}" in Zeile ${y}`);
+        if (!col) throw new Error(`Sprite "${name}": unknown character "${ch}" in row ${y}`);
         ctx.fillStyle = col;
         ctx.fillRect(x, y, 1, 1);
       }
@@ -1598,7 +1670,7 @@ window.DD = window.DD || {};
     }
   }
 
-  // Einen Frame an Weltposition (x = Fussmitte, y = Fusslinie) zeichnen
+  // draw a frame at a world position (x = foot center, y = foot line)
   function draw(ctx, charKey, skinKey, frameName, facing, x, y, dy) {
     const f = frames[charKey][skinKey][frameName];
     const m = meta[charKey][frameName];

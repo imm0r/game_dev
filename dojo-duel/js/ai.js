@@ -1,6 +1,6 @@
-// Einfache aber glaubwürdige CPU-KI: hält Distanzen, mischt Angriffe,
-// blockt manchmal und weicht Feuerbällen aus. Bewusst nicht perfekt –
-// sie "überlegt" nur alle paar Frames neu und lässt sich austricksen.
+// Simple but believable CPU AI: keeps its distance, mixes attacks,
+// blocks occasionally and dodges projectiles. Deliberately imperfect –
+// it only "re-thinks" every few frames and can be outplayed.
 window.DD = window.DD || {};
 
 (function () {
@@ -23,7 +23,7 @@ window.DD = window.DD || {};
       const toward = d > 0 ? 'right' : 'left';
       const away = d > 0 ? 'left' : 'right';
 
-      // Gefahr: anfliegender Feuerball -> springen oder blocken
+      // danger: incoming projectile -> jump or block
       for (const p of this.game.projectiles) {
         if (p.owner !== opp) continue;
         const coming = (p.vx > 0) === (me.x > p.x);
@@ -35,7 +35,7 @@ window.DD = window.DD || {};
         }
       }
 
-      // Gegner holt aus -> ab und zu blocken
+      // opponent is winding up -> block every now and then
       if (opp.state === 'attack' && dist < 75 && Math.random() < 0.35) {
         pad[away] = true;
         return pad;
@@ -46,7 +46,7 @@ window.DD = window.DD || {};
         this.plan = this.newPlan(dist, toward, away);
       }
 
-      // gemerkten Plan ausführen; Angriffe sind Einmal-Impulse
+      // execute the stored plan; attacks are one-shot impulses
       Object.assign(pad, this.plan);
       this.plan.punch = this.plan.kick = this.plan.special = this.plan.up = false;
       return pad;
@@ -59,7 +59,7 @@ window.DD = window.DD || {};
         if (r < 0.30) p[toward] = true;
         else if (r < 0.55 && this.me.fireCd === 0) p.special = true;
         else if (r < 0.70) { p.up = true; p[toward] = true; }
-        // sonst: kurz stehen bleiben
+        // otherwise: hold position briefly
       } else if (dist > 60) {
         if (r < 0.45) p[toward] = true;
         else if (r < 0.60) { p.up = true; p[toward] = true; p.kick = true; }

@@ -1,19 +1,19 @@
-// Die Stages von Dojo Duel – prozedural gezeichnete Pixel-Hommagen an die
-// Referenzbilder des Projekt-Besitzers, seit Meilenstein 1 als scrollende
-// Arenen mit Parallax-Ebenen:
-//   fern  (Faktor 0.35) Himmel, Berge, Skyline
-//   mitte (Faktor 0.65) Viadukt, Tempel, Stadt
-//   nah   (Faktor 1.0)  Läden, Menge, Kampf-Boden
-//   vorn  (Faktor 1.15) Silhouetten VOR den Kämpfern – verkauft die Tiefe
+// The stages of Dojo Duel – procedurally drawn pixel homages to the
+// project owner's reference images, running as scrolling arenas with
+// parallax layers since milestone 1:
+//   far   (factor 0.35) sky, mountains, skyline
+//   mid   (factor 0.65) viaduct, temple, city
+//   near  (factor 1.0)  shops, crowd, fighting ground
+//   front (factor 1.15) silhouettes IN FRONT of the fighters – sells depth
 //
-// Eigenes Panorama verwenden? PNG unter assets/stage-1.png (bzw. stage-2/
-// stage-3) ablegen – es wird auf 180px Höhe skaliert und als scrollende
-// Arena benutzt (Weltbreite = Bildbreite, gedeckelt bei 768px ≈ 2.4 Screens).
+// Want your own panorama? Drop a PNG at assets/stage-1.png (or stage-2/
+// stage-3) – it gets scaled to 180px height and used as a scrolling arena
+// (world width = image width, capped at 832px; see assets/README.md).
 window.DD = window.DD || {};
 
 (function () {
   const W = 320, H = 180;       // Viewport
-  const WORLD = 640;            // Weltbreite der prozeduralen Stages
+  const WORLD = 640;            // world width of the procedural stages
   const F_FAR = 0.35, F_MID = 0.65, F_FG = 1.15;
   const FAR_W = W + Math.ceil((WORLD - W) * F_FAR);   // 432
   const MID_W = W + Math.ceil((WORLD - W) * F_MID);   // 528
@@ -30,7 +30,7 @@ window.DD = window.DD || {};
     return cv;
   }
 
-  // einfacher Pixel-Berg: Spitze (px,py), Halbbreite hw, Fuss bei baseY
+  // simple pixel mountain: peak (px,py), half width hw, base at baseY
   function mountain(c, px, py, hw, baseY, rock, snow, lit) {
     const hgt = baseY - py;
     for (let i = 0; i < hgt; i++) {
@@ -59,7 +59,7 @@ window.DD = window.DD || {};
         rect(c, 230 + i * 60, y + 4, 46, 2, '#42152a');
       });
 
-      // ferne Skyline über die ganze Ebenen-Breite
+      // distant skyline across the whole layer width
       const bld = [
         [0, 52, 26], [22, 44, 16], [40, 56, 22], [66, 48, 14],
         [84, 58, 26], [112, 42, 18], [132, 54, 24], [158, 46, 14],
@@ -77,7 +77,7 @@ window.DD = window.DD || {};
         }
       }
 
-      // roter Funkturm
+      // red radio tower
       const tx = 306;
       rect(c, tx, 22, 2, 6, '#e8503a');
       rect(c, tx - 1, 28, 4, 8, '#c83c28');
@@ -95,7 +95,7 @@ window.DD = window.DD || {};
       midCv = layer(MID_W);
       const c = midCv.getContext('2d');
 
-      // Bahnviadukt über die volle Mittel-Ebene
+      // rail viaduct across the full mid layer
       rect(c, 0, 74, MID_W, 3, '#5a666e');
       rect(c, 0, 77, MID_W, 16, '#39434a');
       rect(c, 0, 91, MID_W, 3, '#22282c');
@@ -117,7 +117,7 @@ window.DD = window.DD || {};
       }
     }
 
-    // Laden-Modul A: Marquee + vertikales Neon + warmes Fenster (96px breit)
+    // shop module A: marquee + vertical neon + warm window (96px wide)
     function shopMarquee(c, x, v) {
       const neon = v ? '#40e8f8' : '#ff40c8';
       const glyph = v ? '#ff6ad0' : '#40e8f8';
@@ -147,7 +147,7 @@ window.DD = window.DD || {};
       }
     }
 
-    // Laden-Modul B: blaues Schild + rotes Banner + Fenster (96px breit)
+    // shop module B: blue sign + red banner + window (96px wide)
     function shopBlue(c, x, v) {
       const sign = v ? '#8af838' : '#38c8f8';
       rect(c, x, 50, 96, 88, '#201826');
@@ -171,13 +171,13 @@ window.DD = window.DD || {};
       nearCv = layer(WORLD);
       const c = nearCv.getContext('2d');
 
-      // Läden mit Lücken dazwischen, damit Viadukt und Skyline durchscheinen
+      // shops with gaps in between so viaduct and skyline shine through
       shopMarquee(c, 0, 0);
       shopBlue(c, 160, 0);
       shopMarquee(c, 352, 1);
       shopBlue(c, 512, 1);
 
-      // Gehweg + Strasse über die volle Welt
+      // sidewalk + street across the whole world
       rect(c, 0, 152, WORLD, 3, '#8a8090');
       rect(c, 0, 155, WORLD, 3, '#565060');
       rect(c, 0, 158, WORLD, 22, '#46424e');
@@ -252,11 +252,11 @@ window.DD = window.DD || {};
         c.translate(-Math.round(cam), 0);
         c.drawImage(nearCv, 0, 0);
         drawCrowd(c, t);
-        // Absperrgitter VOR der Menge
+        // crowd barrier IN FRONT of the crowd
         rect(c, 0, 146, WORLD, 1, '#8a8494');
         rect(c, 0, 149, WORLD, 1, '#6a6474');
         for (let x = 4; x < WORLD; x += 14) rect(c, x, 146, 2, 6, '#7a7484');
-        // Neon-Puls + Turm-Blinklicht (Turm sitzt in der Fern-Ebene)
+        // neon pulse + tower beacon (the tower lives in the far layer)
         const on = (t % 90) < 60;
         c.globalAlpha = 0.22;
         if (on) { rect(c, 6, 56, 14, 56, '#ff40c8'); rect(c, 358, 56, 14, 56, '#ff40c8'); }
@@ -266,7 +266,7 @@ window.DD = window.DD || {};
         if ((t % 120) < 60) rect(c, 306 - Math.round(cam * F_FAR), 21, 2, 2, '#ff4030');
       },
       drawFg(c, t, cam) {
-        // Strommasten ziehen VOR den Kämpfern vorbei
+        // utility poles pass IN FRONT of the fighters
         c.save();
         c.translate(-Math.round(cam * F_FG), 0);
         for (const x of [56, 330, 604]) {
@@ -306,7 +306,7 @@ window.DD = window.DD || {};
       midCv = layer(MID_W);
       const c = midCv.getContext('2d');
 
-      // Neon-Türme über die volle Mittel-Ebene
+      // neon towers across the full mid layer
       const tw = [
         [0, 44, 30], [34, 30, 22], [60, 50, 18], [82, 38, 20],
         [280, 36, 22], [306, 48, 18], [328, 30, 24], [356, 42, 38],
@@ -324,7 +324,7 @@ window.DD = window.DD || {};
         }
       }
 
-      // Werbetafel-Turm
+      // billboard tower
       rect(c, 218, 26, 30, 104, '#20243c');
       rect(c, 216, 28, 34, 26, '#f84ad8');
       rect(c, 218, 30, 30, 22, '#160b28');
@@ -340,14 +340,14 @@ window.DD = window.DD || {};
       rect(c, 221, 83, 24, 3, '#6ae8f8');
       rect(c, 221, 88, 20, 2, '#f84ad8');
 
-      // leuchtende Kugel auf Sockel
+      // glowing orb on a pedestal
       rect(c, 112, 88, 16, 4, '#2a3450');
       rect(c, 115, 74, 10, 14, '#1a4a58');
       rect(c, 116, 72, 8, 14, '#2a8aa8');
       rect(c, 117, 73, 6, 10, '#3ae8f8');
       rect(c, 118, 74, 4, 5, '#c8f8ff');
 
-      // Mech-Statuen
+      // mech statues
       for (const [mx, eye] of [[140, '#f84a4a'], [170, '#3ae8f8']]) {
         rect(c, mx - 3, 124, 16, 8, '#343c58');
         rect(c, mx, 100, 10, 6, '#2a3244');
@@ -359,7 +359,7 @@ window.DD = window.DD || {};
         rect(c, mx + 6, 116, 4, 8, '#2a3244');
       }
 
-      // Schrägseilbrücke
+      // cable-stayed bridge
       rect(c, 466, 34, 4, 96, '#4a5570');
       rect(c, 467, 34, 1, 96, '#6a7694');
       for (let i = 0; i < 6; i++) {
@@ -372,7 +372,7 @@ window.DD = window.DD || {};
       }
       rect(c, 428, 118, 100, 4, '#3a4258');
 
-      // Monorail-Trasse
+      // monorail track
       rect(c, 0, 108, 428, 2, '#5a6580');
       for (let x = 10; x < 420; x += 36) rect(c, x, 110, 3, 20, '#2e3650');
     }
@@ -381,7 +381,7 @@ window.DD = window.DD || {};
       nearCv = layer(WORLD);
       const c = nearCv.getContext('2d');
 
-      // Zuschauer-Nischen hinter Geländern, verteilt über die Welt
+      // spectator niches behind railings, spread across the world
       const spect = [
         [8, '#3ae8f8'], [24, '#f84ad8'], [286, '#f8d848'], [302, '#3ae8f8'],
         [330, '#f84ad8'], [590, '#f8d848'], [612, '#3ae8f8'],
@@ -396,14 +396,14 @@ window.DD = window.DD || {};
         for (let x = rx + 2; x < rx + rw; x += 10) rect(c, x, 148, 2, 6, '#3a4258');
       }
 
-      // Glassteg (Kampffläche)
+      // glass walkway (fighting surface)
       rect(c, 0, 152, WORLD, 2, '#9ab8c8');
       rect(c, 0, 154, WORLD, 4, '#2a4a56');
       rect(c, 0, 158, WORLD, 22, '#16323c');
     }
 
     function drawTraffic(c, t) {
-      // Verkehr UNTER dem Glasboden (gedimmte Lichtstreifen)
+      // traffic BELOW the glass floor (dimmed light streaks)
       c.globalAlpha = 0.5;
       for (let i = 0; i < 13; i++) {
         const lane = i % 2;
@@ -451,7 +451,7 @@ window.DD = window.DD || {};
         c.translate(-Math.round(cam * F_MID), 0);
         c.drawImage(midCv, 0, 0);
         drawMonorail(c, t);
-        // pulsierende Werbetafeln + Mech-Augen
+        // pulsing billboards + mech eyes
         const on = (t % 80) < 50;
         c.globalAlpha = 0.25;
         if (on) rect(c, 216, 28, 34, 26, '#f84ad8');
@@ -466,7 +466,7 @@ window.DD = window.DD || {};
         c.restore();
       },
       drawFg(c, t, cam) {
-        // hängende Holo-Banner ziehen VOR den Kämpfern vorbei
+        // hanging holo banners pass IN FRONT of the fighters
         c.save();
         c.translate(-Math.round(cam * F_FG), 0);
         for (const [x, col] of [[120, '#3ae8f8'], [420, '#f84ad8'], [640, '#f8d848']]) {
@@ -510,7 +510,7 @@ window.DD = window.DD || {};
       midCv = layer(MID_W);
       const c = midCv.getContext('2d');
 
-      // Reisterrassen + Fluss links
+      // rice terraces + river on the left
       for (let i = 0; i < 8; i++) {
         rect(c, 0, 70 + i * 9, 140 - i * 12, 9, i % 2 ? '#5a7a3a' : '#4c6a30');
         rect(c, 140 - i * 12 - 2, 70 + i * 9, 2, 9, '#3a5424');
@@ -519,8 +519,8 @@ window.DD = window.DD || {};
         rect(c, 92 + Math.round(Math.sin(i / 3) * 6), 76 + i * 3, 3, 3, '#58a8c8');
       }
 
-      // Tempel
-      const T = 110; // Versatz gegenüber der alten 320er-Komposition
+      // temple
+      const T = 110; // offset versus the old 320px composition
       rect(c, 118 + T, 122, 84, 18, '#8a7a6a');
       rect(c, 118 + T, 122, 84, 2, '#a89884');
       for (let i = 0; i < 3; i++) rect(c, 130 + T - i * 4, 134 + i * 2, 60 + i * 8, 2, '#9a8a74');
@@ -538,7 +538,7 @@ window.DD = window.DD || {};
       rect(c, 158 + T, 62, 4, 6, '#d8a848');
       rect(c, 159 + T, 58, 2, 4, '#f8d848');
 
-      // Stupas
+      // stupas
       rect(c, 332, 112, 18, 16, '#e8e0d0');
       rect(c, 336, 104, 10, 8, '#d8ccb8');
       rect(c, 339, 96, 4, 8, '#d8a848');
@@ -547,7 +547,7 @@ window.DD = window.DD || {};
       rect(c, 365, 114, 6, 6, '#d8ccb8');
       rect(c, 367, 110, 2, 4, '#d8a848');
 
-      // Gong
+      // gong
       rect(c, 388, 108, 3, 30, '#4a3228');
       rect(c, 409, 108, 3, 30, '#4a3228');
       rect(c, 386, 104, 28, 4, '#4a3228');
@@ -555,19 +555,19 @@ window.DD = window.DD || {};
       rect(c, 396, 113, 8, 8, '#a87828');
       rect(c, 398, 115, 4, 4, '#d8a848');
 
-      // kleiner Schrein rechts aussen
+      // small shrine on the far right
       rect(c, 470, 116, 34, 22, '#8a7a6a');
       rect(c, 474, 104, 26, 12, '#6a3a34');
       rect(c, 472, 102, 30, 3, '#7a2e28');
       rect(c, 478, 96, 18, 6, '#7a2e28');
       rect(c, 484, 108, 8, 8, '#2a1814');
 
-      rect(c, 0, 138, MID_W, 42, '#6a5a48'); // Erde hinter dem Platz
+      rect(c, 0, 138, MID_W, 42, '#6a5a48'); // earth behind the plaza
       rect(c, 140, 138, MID_W - 140, 3, '#7a6a54');
     }
 
     function drawFlags(c, t) {
-      // Gebetsfahnen-Ketten in der Mittel-Ebene, im Wind flatternd
+      // prayer flag strings in the mid layer, fluttering in the wind
       const cols = ['#4878d8', '#e8e8e8', '#d84838', '#48a858', '#e8c838'];
       const lines = [
         { x0: 270, y0: 64, x1: 20, y1: 92 },
@@ -602,7 +602,7 @@ window.DD = window.DD || {};
       nearCv = layer(WORLD);
       const c = nearCv.getContext('2d');
 
-      // Steinplatz über die volle Welt
+      // stone plaza across the whole world
       rect(c, 0, 152, WORLD, 2, '#b8a888');
       rect(c, 0, 154, WORLD, 4, '#8a7a64');
       rect(c, 0, 158, WORLD, 22, '#9a8a74');
@@ -614,7 +614,7 @@ window.DD = window.DD || {};
       }
       rect(c, 0, 176, WORLD, 4, '#6a5a48');
 
-      // Steinlaternen als Platz-Deko
+      // stone lanterns as plaza decoration
       for (const x of [150, 340, 530]) {
         rect(c, x, 142, 10, 10, '#8a7a6a');
         rect(c, x + 2, 134, 6, 8, '#9a8a74');
@@ -658,7 +658,7 @@ window.DD = window.DD || {};
         c.restore();
       },
       drawFg(c, t, cam) {
-        // eine Fahnen-Kette hoch über dem Platz, VOR den Kämpfern
+        // one flag string high above the plaza, IN FRONT of the fighters
         const cols = ['#4878d8', '#e8e8e8', '#d84838', '#48a858', '#e8c838'];
         c.save();
         c.translate(-Math.round(cam * F_FG), 0);
@@ -676,20 +676,20 @@ window.DD = window.DD || {};
     };
   }
 
-  // ================================================================ Verwaltung
+  // ================================================================ Management
 
   const stages = [makeTokyo(), makeNeon(), makeTemple()];
   const bgImgs = stages.map(() => ({ img: null, ok: false, canvas: null }));
 
-  const MAX_IMG_WORLD = 832; // ≈ 2.6 Bildschirmbreiten
+  const MAX_IMG_WORLD = 832; // ~2.6 screen widths
 
   function imgWorldW(slot) {
     const w = Math.round(slot.img.width * (H / slot.img.height));
     return Math.max(W, Math.min(MAX_IMG_WORLD, w));
   }
 
-  // Panorama einmalig sauber auf Weltgrösse herunterrechnen (mit Glättung).
-  // Danach wird jeden Frame nur noch 1:1 geblittet – scharf und flimmerfrei.
+  // Downscale the panorama once, cleanly, to world size (with smoothing).
+  // After that every frame just blits 1:1 – sharp and shimmer-free.
   function prerender(slot) {
     const world = imgWorldW(slot);
     const scaledW = Math.round(slot.img.width * (H / slot.img.height));
@@ -715,7 +715,7 @@ window.DD = window.DD || {};
       slot.img = new Image();
       slot.img.onload = () => { prerender(slot); slot.ok = true; };
       slot.img.onerror = () => { slot.ok = false; };
-      // DD.ASSETS erlaubt eingebettete Bilder (Single-File-Build/Artifact)
+      // DD.ASSETS allows embedded images (single-file build/artifact)
       slot.img.src = (DD.ASSETS && DD.ASSETS[i + 1]) || `assets/stage-${i + 1}.png`;
     });
   }
@@ -736,7 +736,7 @@ window.DD = window.DD || {};
 
   function drawFg(ctx, index, t, cam) {
     const slot = bgImgs[index];
-    if (slot.ok) return; // Panorama-Stages: keine Zusatz-Ebene davor
+    if (slot.ok) return; // panorama stages: no extra front layer
     if (stages[index].drawFg) stages[index].drawFg(ctx, t, cam || 0);
   }
 
