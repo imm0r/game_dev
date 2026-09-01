@@ -1,163 +1,162 @@
 # DOJO DUEL
 
-Ein Retro-Pixel-Fighting-Game im Geist der frühen 90er — komplett in
-Vanilla-JavaScript, ohne Engine, ohne Build-Schritt, ohne externe Assets.
-Einfach `index.html` im Browser öffnen und kämpfen.
+A retro pixel fighting game in the spirit of the early 90s — pure vanilla
+JavaScript, no engine, no build step, no external assets. Open `index.html`
+in a browser and fight.
 
-![Titelbildschirm](docs/screenshots/doc-title.png)
+![Title screen](docs/screenshots/doc-title.png)
 
-## Spielen
+## Play
 
-**Am einfachsten:** Doppelklick auf `index.html` — läuft direkt im Browser.
+**Easiest way:** double-click `index.html` — it runs straight in the browser.
 
-Alternativ mit lokalem Server (empfohlen, falls du eigene Stage-Bilder in
-`assets/` nutzen willst und der Browser lokale Dateien blockiert):
+Or with a local server (recommended if your browser blocks local files and
+you use custom stage images in `assets/`):
 
 ```bash
 cd dojo-duel
 python3 -m http.server 8000
-# dann http://localhost:8000 öffnen
+# then open http://localhost:8000
 ```
 
-## Steuerung
+## Controls
 
-| Aktion        | Spieler 1 | Spieler 2 |
-| ------------- | --------- | --------- |
-| Bewegen       | A / D     | ← / →     |
-| Springen      | W         | ↑         |
-| Ducken        | S         | ↓         |
-| Schlag        | F         | K         |
-| Tritt         | G         | L         |
-| Feuerball     | H         | J         |
-| **Blocken**   | *rückwärts halten, während der Gegner angreift* | ebenso |
+| Action     | Player 1 | Player 2 |
+| ---------- | -------- | -------- |
+| Move       | A / D    | ← / →    |
+| Jump       | W        | ↑        |
+| Crouch     | S        | ↓        |
+| Punch      | F        | K        |
+| Kick       | G        | L        |
+| Special    | H        | J        |
+| **Block**  | *hold back while the opponent attacks* | same |
 
-Sprung + Tritt = fliegender Tritt. Chip-Schaden beim Blocken ist dabei,
-kann aber (anders als beim grossen Vorbild) kein K.O. erzielen.
+Jump + kick = flying kick. Chip damage on block is in, but (unlike the
+big classics) it cannot score a K.O.
 
-**Menü / Allgemein:** Enter = Start/Bestätigen · ↑↓ = Modus wählen ·
-←→ = Stage wählen · P = Pause · M = Ton an/aus
+**Menu / general:** Enter = start/confirm · ↑↓ = pick mode ·
+←→ = pick stage · P = pause · M = sound on/off
 
-## Was schon drin ist
+## What's already in
 
-- **Das Roster** (nach den Charakter-Referenzen des Projekt-Besitzers,
-  umgesetzt im Hybrid-Workflow — Referenz-Sheet rein, Grid-Sprite raus):
-  - **KLAUS VÖLKER** (MMA, Deutschland) — seit M2 in der **neuen
-    Sprite-Generation**: 42x68 Pixel in 1x-Dichte, 20 Farben mit echter
-    Licht/Schatten-Modellierung, Bart-Textur, Tattoo, Flaggen-Patch,
-    4-Frame-Laufzyklus, Atmungs-Idle und Angriffs-Phasen
-    (Ausholen/Treffen/Zurückziehen). Und Heterochromie: von rechts sieht
-    man sein blaues, von links sein braunes Auge.
-    ![Klaus-Frames](docs/screenshots/klaus-frames.png)
-  - **ANTOINE MOREAU** (Judo/GIGN, Frankreich): bullig, Vollbart,
-    Oliv-Uniform mit Frankreich-Patch, Stiefel, **Granaten**-Projektil —
-    noch in der alten Sprite-Generation, sein v2-Upgrade ist das nächste
-    Paket. Bis dahin läuft der Standard-Kampf als Klaus-Spiegelmatch.
-  - der Karate-Kämpfer **HANZO** aus dem ersten Prototyp bleibt als
-    Bonus-Set (Roster-Zuordnung in `js/constants.js` umstellbar)
-- **1-Spieler-Modus gegen CPU** (die KI hält Distanz, blockt, weicht
-  Projektilen aus — und ist absichtlich nicht perfekt) sowie **lokaler
-  2-Spieler-Modus** an einer Tastatur
-- **3 scrollende Stages** nach den Referenzbildern des Projekt-Besitzers:
-  640px breite Arenen, eine Kamera, die den Kämpfern folgt, und echte
-  Parallax-Ebenen (fern/mitte/nah plus Vordergrund-Silhouetten, die VOR den
-  Kämpfern vorbeiziehen), alle mit animierten Details:
+- **The roster** (based on the project owner's character reference sheets,
+  built with a hybrid workflow — reference sheet in, grid sprite out):
+  - **KLAUS VÖLKER** (MMA, Germany) — since M2 in the **new sprite
+    generation**: 42x68 pixels at 1x density, 20 colors with real
+    light/shadow modelling, beard texture, tattoo, flag patch, a 4-frame
+    walk cycle, breathing idle and attack phases (wind-up/hit/recover).
+    Plus heterochromia: from the right you see his blue eye, from the
+    left his brown one.
+    ![Klaus frames](docs/screenshots/klaus-frames.png)
+  - **ANTOINE MOREAU** (judo/GIGN, France): bulky, full beard, olive
+    uniform with a French flag patch, boots, **grenade** projectile —
+    still on the old sprite generation; his v2 upgrade is the next
+    package. Until then the default match runs as a Klaus mirror match.
+  - **HANZO**, the karate fighter from the first prototype, remains as a
+    bonus set (roster mapping is configurable in `js/constants.js`)
+- **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
+  projectiles — and is deliberately beatable) plus **local two-player
+  mode** on one keyboard
+- **3 scrolling stages** based on the project owner's reference panoramas:
+  640px arenas, a camera that follows the fighters, and real parallax
+  layers (far/mid/near plus foreground silhouettes passing IN FRONT of
+  the fighters), all with animated details:
 
-  | Stage | Hommage | Animationen |
-  | ----- | ------- | ----------- |
-  | TOKYO STREET | Abendliche Einkaufsstrasse | fahrender Zug, jubelnde Menge, Neon-Flackern, Turm-Blinklicht |
-  | NEON CROSSING | Cyberpunk-Boulevard | Verkehr unter dem Glasboden, Monorail, Drohne, pulsierende Werbetafeln, Mech-Augen |
-  | WIND TEMPLE | Bergkloster | flatternde Gebetsfahnen, Räucherwerk, wippende Mönche |
+  | Stage | Homage | Animations |
+  | ----- | ------ | ---------- |
+  | TOKYO STREET | evening shopping street | passing train, cheering crowd, neon flicker, tower beacon |
+  | NEON CROSSING | cyberpunk boulevard | traffic below the glass floor, monorail, drone, pulsing billboards, mech eyes |
+  | WIND TEMPLE | mountain monastery | fluttering prayer flags, incense, swaying monks |
 
-- Lebensbalken mit rotem Schadens-Nachlauf, 99-Sekunden-Timer,
-  Best-of-3-Runden, K.O.- und Time-Over-Logik, Siegerpose
-- Trefferfunken, Hitstop (kurzes Einfrieren beim Treffer), Screenshake
-  beim K.O. — die kleinen Dinge, die sich "arcade" anfühlen
-- Synthetisierte Chiptune-Soundeffekte (WebAudio, keine Audiodateien)
-- Eigener 3x5-Pixel-Font, CRT-Scanline-Effekt (in `style.css` abschaltbar)
+- Health bars with red damage trails, a 99-second timer, best-of-3
+  rounds, K.O. and time-over logic, victory pose
+- Hit sparks, hitstop (a brief freeze on impact), screen shake on K.O. —
+  the small things that make it feel "arcade"
+- Synthesized chiptune sound effects (WebAudio, no audio files)
+- A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 
 ![Tokyo Street](docs/screenshots/doc-stage1.png)
 ![Neon Crossing](docs/screenshots/doc-stage2.png)
 ![Wind Temple](docs/screenshots/doc-stage3.png)
 
-## Eigene Stage-Panoramen
+## Custom stage panoramas
 
-Die drei Stages sind prozedural im Code gezeichnet — gedacht als
-Platzhalter für die Original-Panoramen: Lege sie als `assets/stage-1.png`
-bis `stage-3.png` ab, dann werden sie automatisch als **scrollende Welt**
-verwendet (auf 180px Höhe skaliert, Weltbreite bis 768px aus der
-Bildbreite). Details und Upload-Anleitung: [`assets/README.md`](assets/README.md).
+The three stages are drawn procedurally in code — meant as placeholders
+for the original panoramas: drop them in as `assets/stage-1.png` through
+`stage-3.png` and they are automatically used as a **scrolling world**
+(scaled to 180px height, world width up to 832px from the image width).
+Details and upload guide: [`assets/README.md`](assets/README.md).
 
-## Projektstruktur
+## Project structure
 
-| Datei | Aufgabe |
-| ----- | ------- |
-| `js/constants.js` | Alle Stellschrauben: Physik, Frame-Daten der Angriffe, Schaden |
-| `js/sprites.js` | **Die Pixel-Art.** Jeder Frame ist ein Text-Grid, jedes Zeichen ein Pixel |
-| `js/font.js` | 3x5-Pixel-Font |
-| `js/stage.js` | Die drei prozeduralen Stages |
-| `js/fighter.js` | Zustandsmaschine der Kämpfer, Hitboxen, Treffer-Logik |
-| `js/ai.js` | CPU-Gegner |
-| `js/game.js` | Rundenablauf, Kollisionen, Projektile, Partikel |
-| `js/input.js` | Tastatur (physische Tasten, QWERTZ-sicher) |
-| `js/audio.js` | Synthetisierte Soundeffekte |
-| `js/ui.js` | HUD, Titelbildschirm, Ansagen |
-| `js/main.js` | 60fps-Loop mit fester Schrittweite |
+| File | Job |
+| ---- | --- |
+| `js/constants.js` | All tuning knobs: physics, attack frame data, damage, roster |
+| `js/sprites.js` | **The pixel art.** Every frame is a text grid, every character a pixel |
+| `js/font.js` | 3x5 pixel font |
+| `js/stage.js` | The three procedural stages + panorama pipeline |
+| `js/fighter.js` | Fighter state machine, hitboxes, hit logic, animation resolve |
+| `js/ai.js` | CPU opponent |
+| `js/game.js` | Round flow, camera, collisions, projectiles, particles |
+| `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
+| `js/audio.js` | Synthesized sound effects |
+| `js/ui.js` | HUD, title screen, announcements |
+| `js/main.js` | Fixed-step 60fps loop |
 
-### Sprites bearbeiten — so einfach ist das
+### Editing sprites — it's this simple
 
-In `js/sprites.js` sieht ein Frame so aus (Ausschnitt):
+A frame in `js/sprites.js` looks like this (excerpt):
 
 ```text
-'............KHHHK...........',   ← Haare
-'...........KHHHHHK..........',
-'..........RRKRRRRK..........',   ← Stirnband
-'...........KSSSKSSK.........',   ← Gesicht mit Auge
+'.............KJHSSWESSAK..................',   ← face with eye
+'.............KJHSJJJJJSK..................',   ← beard texture
 ```
 
-`K` = Umriss, `S` = Haut, `H` = Haar, `R` = Akzent, `G` = Anzug, `D` =
-Anzug-Schatten, `B` = Gürtel. Zeichen ändern, Seite neu laden, fertig.
-Spieler 2 bekommt seine Farben automatisch über die Palette in derselben
-Datei.
+`K` = outline, `S` = skin, `H` = hair, `A/T/U` = skin light/shadow/deep,
+and so on (full legend at the top of the file). Change characters, reload
+the page, done. Each character's second color scheme comes from the
+palette in the same file.
 
 ### Balancing
 
-Alle Angriffe stehen als Frame-Daten in `js/constants.js`:
+All attacks live as frame data in `js/constants.js`:
 
 ```js
 punch: { startup: 5, active: 4, recovery: 10, dmg: 6, ... }
 ```
 
-`startup` = Frames Anlauf, `active` = Frames Trefferfenster, `recovery` =
-Frames Erholung (bei 60 Frames pro Sekunde). Wer hier dreht, balanciert
-das Spiel.
+`startup` = wind-up frames, `active` = hit-window frames, `recovery` =
+cool-down frames (at 60 frames per second). Turn these knobs to balance
+the game.
 
-## Single-File-Build
+## Single-file build
 
 ```bash
-node tools/build-single.mjs
+node tools/build-single.mjs           # game only
+node tools/build-single.mjs --embed   # game + stage panoramas inlined
 ```
 
-erzeugt `dist/dojo-duel.html` — das komplette Spiel in einer einzigen
-Datei, praktisch zum Verschicken oder Hochladen (z.B. itch.io).
+produces `dist/dojo-duel.html` — the whole game in one file, handy for
+sharing or uploading (e.g. itch.io).
 
 ## Tests
 
-Ein automatisierter Rauchtest (Playwright) startet das Spiel headless,
-simuliert Tastatur-Eingaben und prüft Treffer, Feuerball, Sprung, K.O. und
-Rundenwechsel: siehe `tools/smoke-test.js`.
+An automated smoke test (Playwright) boots the game headless, simulates
+keyboard input and verifies hits, projectiles, jumping, K.O. and round
+flow: see `tools/smoke-test.js`.
 
 ```bash
-npm install playwright   # einmalig, irgendwo ausserhalb des Repos ok
+npm install playwright   # once, anywhere outside the repo is fine
 node tools/smoke-test.js
 ```
 
 ## Roadmap
 
-Das Projekt wächst in Meilensteinen — Plan, Entscheidungen und Status
-stehen in [`ROADMAP.md`](ROADMAP.md).
+The project grows in milestones — plan, decisions and status live in
+[`ROADMAP.md`](ROADMAP.md).
 
-## Rechtliches
+## Legal
 
-Inspiriert von den Arcade-Klassikern der 90er, aber alle Namen, Sprites,
-Stages und Sounds sind Eigenkreationen dieses Projekts. Kein fremdes
-Material enthalten.
+Inspired by the arcade classics of the 90s, but every name, sprite, stage
+and sound is an original creation of this project. No third-party
+material included.

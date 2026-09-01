@@ -1,11 +1,12 @@
-// Automatischer Rauchtest für Dojo Duel: lädt das Spiel headless,
-// simuliert echte Tastatur-Eingaben und prüft die Kern-Mechanik.
+// Automated smoke test for Dojo Duel: loads the game headless, simulates
+// real keyboard input and verifies the core mechanics.
+// Requires the `playwright` npm package (install anywhere, see README).
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const GAME = "file://" + path.join(__dirname, "..", "index.html");
-const SHOTS = path.join(__dirname, 'shots');
+const GAME = 'file://' + path.join(__dirname, '..', 'index.html');
+const SHOTS = path.join(__dirname, '..', 'dist', 'smoke-shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 
 const fails = [];
@@ -25,7 +26,7 @@ function check(name, cond, extra) {
   const errors = [];
   page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
   page.on('console', (m) => {
-    // erwartete 404s der optionalen Stage-Bilder (assets/stage-*.png) ignorieren
+    // ignore expected 404s for the optional stage panoramas (assets/stage-*.png)
     if (m.type() === 'error' && !/ERR_FILE_NOT_FOUND|Failed to load resource/.test(m.text())) {
       errors.push('console: ' + m.text());
     }
@@ -35,7 +36,7 @@ function check(name, cond, extra) {
   await page.waitForTimeout(700);
 
   const state0 = await page.evaluate(() => window.__DOJO && window.__DOJO.game.state);
-  check('Spiel geladen, Titelbildschirm aktiv', state0 === 'title', 'state=' + state0);
+  check('game loaded, title screen active', state0 === 'title', 'state=' + state0);
 
   await page.screenshot({ path: SHOTS + '/title-stage1.png' });
   await page.keyboard.press('ArrowRight');
@@ -44,26 +45,26 @@ function check(name, cond, extra) {
   await page.keyboard.press('ArrowRight');
   await page.waitForTimeout(300);
   await page.screenshot({ path: SHOTS + '/title-stage3.png' });
-  await page.keyboard.press('ArrowRight'); // zurück zu Stage 1
+  await page.keyboard.press('ArrowRight'); // back to stage 1
   await page.waitForTimeout(200);
 
-  // 2-Spieler-Modus (deterministisch, keine KI) starten
+  // start two-player mode (deterministic, no AI)
   await page.keyboard.press('Digit2');
   await page.waitForTimeout(400);
   await page.screenshot({ path: SHOTS + '/round-intro.png' });
   await page.waitForFunction(() => window.__DOJO.game.state === 'fight', null, { timeout: 6000 });
-  check('Runden-Intro -> Kampfphase', true);
+  check('round intro -> fight phase', true);
   await page.screenshot({ path: SHOTS + '/fight-start.png' });
 
-  // P1 läuft auf P2 zu
+  // P1 walks towards P2
   const xBefore = await page.evaluate(() => window.__DOJO.game.fighters[0].x);
   await page.keyboard.down('KeyD');
   await page.waitForTimeout(500);
   await page.keyboard.up('KeyD');
   const xAfter = await page.evaluate(() => window.__DOJO.game.fighters[0].x);
-  check('P1 bewegt sich vorwärts', xAfter > xBefore + 10, `${xBefore} -> ${xAfter}`);
+  check('P1 walks forward', xAfter > xBefore + 10, `${xBefore} -> ${xAfter}`);
 
-  // Schlagen bis der Treffer sitzt
+  // punch until it lands
   let hp2 = 100;
   for (let i = 0; i < 10 && hp2 >= 100; i++) {
     await page.keyboard.down('KeyD');
@@ -75,9 +76,9 @@ function check(name, cond, extra) {
     await page.waitForTimeout(250);
     hp2 = await page.evaluate(() => window.__DOJO.game.fighters[1].hp);
   }
-  check('Schlag trifft, P2 verliert Energie', hp2 < 100, 'hp2=' + hp2);
+  check('punch lands, P2 loses health', hp2 < 100, 'hp2=' + hp2);
 
-  // Feuerball
+  // projectile
   await page.keyboard.down('KeyA');
   await page.waitForTimeout(400);
   await page.keyboard.up('KeyA');
@@ -88,10 +89,10 @@ function check(name, cond, extra) {
     hp2: window.__DOJO.game.fighters[1].hp,
   }));
   await page.screenshot({ path: SHOTS + '/fireball.png' });
-  check('Feuerball existiert oder hat getroffen', projInfo.n > 0 || projInfo.hp2 < hp2,
+  check('projectile exists or has hit', projInfo.n > 0 || projInfo.hp2 < hp2,
     JSON.stringify(projInfo));
 
-  // Sprung (erst warten, bis der Kämpfer wieder handlungsfähig ist)
+  // jump (wait until the fighter can act again)
   await page.waitForFunction(
     () => window.__DOJO.game.fighters[0].state === 'idle',
     null, { timeout: 4000 },
@@ -105,12 +106,12 @@ function check(name, cond, extra) {
     y: window.__DOJO.game.fighters[0].y,
     ground: window.__DOJO.DD.C.GROUND_Y,
   }));
-  check('Sprung funktioniert', jumpInfo.state === 'jump' || jumpInfo.y < jumpInfo.ground,
+  check('jump works', jumpInfo.state === 'jump' || jumpInfo.y < jumpInfo.ground,
     JSON.stringify(jumpInfo));
   await page.screenshot({ path: SHOTS + '/jump.png' });
   await page.waitForTimeout(700);
 
-  // K.O.-Sequenz: P2 fast besiegt, dann Schläge bis zum Rundenende
+  // K.O. sequence: P2 nearly beaten, then attack until the round ends
   await page.evaluate(() => { window.__DOJO.game.fighters[1].hp = 8; });
   for (let i = 0; i < 14; i++) {
     const st = await page.evaluate(() => window.__DOJO.game.state);
@@ -122,10 +123,10 @@ function check(name, cond, extra) {
     await page.waitForTimeout(350);
   }
   const koState = await page.evaluate(() => window.__DOJO.game.state);
-  check('K.O. beendet die Runde', koState === 'roundend', 'state=' + koState);
+  check('K.O. ends the round', koState === 'roundend', 'state=' + koState);
   await page.screenshot({ path: SHOTS + '/ko.png' });
 
-  // Sieger-Pose + nächste Runde
+  // victory pose + next round
   await page.waitForTimeout(1600);
   await page.screenshot({ path: SHOTS + '/round-win.png' });
   await page.waitForFunction(
@@ -137,11 +138,11 @@ function check(name, cond, extra) {
     round: window.__DOJO.game.round,
     wins1: window.__DOJO.game.fighters[0].wins,
   }));
-  check('Runde 2 startet, P1 hat 1 Sieg', r2.round === 2 && r2.wins1 === 1, JSON.stringify(r2));
+  check('round 2 starts, P1 has 1 win', r2.round === 2 && r2.wins1 === 1, JSON.stringify(r2));
 
-  check('Keine JavaScript-Fehler', errors.length === 0, errors.slice(0, 5).join(' | '));
+  check('no JavaScript errors', errors.length === 0, errors.slice(0, 5).join(' | '));
 
   await browser.close();
-  console.log(fails.length === 0 ? '\nALLE TESTS BESTANDEN' : `\n${fails.length} TEST(S) FEHLGESCHLAGEN`);
+  console.log(fails.length === 0 ? '\nALL TESTS PASSED' : `\n${fails.length} TEST(S) FAILED`);
   process.exit(fails.length === 0 ? 0 : 1);
-})().catch((e) => { console.error('Testlauf abgebrochen:', e); process.exit(2); });
+})().catch((e) => { console.error('test run aborted:', e); process.exit(2); });

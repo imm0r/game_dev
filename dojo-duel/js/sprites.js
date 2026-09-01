@@ -1,24 +1,24 @@
-// Kämpfer-Sprites als Text-Grids – jedes Zeichen ist ein Pixel.
+// Fighter sprites as text grids – every character is one pixel.
 //
-// Seit Meilenstein 2 gibt es zwei Qualitätsstufen:
-//   klaus  – NEUE Generation: 42x68 in 1x-Pixeldichte (scale 1), 20 Farben,
-//            echte Licht/Schatten-Modellierung, Frame-Sequenzen.
-//   antoine, hanzo – alte Generation (28x36, scale 2), wird paketweise
-//            auf die neue Stufe gehoben.
+// Since milestone 2 there are two quality tiers:
+//   klaus  – NEW generation: 42x68 at 1x pixel density (scale 1), 20 colors,
+//            real light/shadow modelling, frame sequences.
+//   antoine, hanzo – old generation (28x36, scale 2), being lifted to the
+//            new tier package by package.
 //
-// Legende neue Generation (klaus):
-//   K Umriss · A Haut-Licht · S Haut · T Haut-Schatten · U Haut-Tief
-//   L Haar-Licht · H Haar · J Haar-Dunkel (Bart-Textur)
-//   G Shorts · g Shorts-Schatten · D Gold · d Gold-Dunkel
-//   R Handschuh-Licht · r Handschuh · q Handschuh-Dunkel
-//   E Auge (pro Blickrichtung eigene Farbe!) · W Augenweiss
-//   M Tattoo · F/Y Flaggen-Patch · O/C/X Projektil
+// Legend, new generation (klaus):
+//   K outline · A skin-light · S skin · T skin-shadow · U skin-deep
+//   L hair-light · H hair · J hair-dark (beard texture)
+//   G shorts · g shorts-shadow · D gold · d gold-dark
+//   R glove-light · r glove · q glove-dark
+//   E eye (its own color per facing direction!) · W eye-white
+//   M tattoo · F/Y flag patch · O/C/X projectile
 //
-// Legende alte Generation: K S T H R G D B Y F U E O C W (wie bisher).
+// Legend, old generation: K S T H R G D B Y F U E O C W (as before).
 window.DD = window.DD || {};
 
 (function () {
-  // ------------------------------------------------------------- Paletten --
+  // ------------------------------------------------------------- Palettes --
 
   const SKINS = {
     klaus: {
@@ -32,8 +32,8 @@ window.DD = window.DD || {};
           W: '#f2f2f2', M: '#5f4630', F: '#d82818', Y: '#f8d838',
           O: '#a03808', C: '#f8a030', X: '#f8f0d8',
         },
-        eyeR: '#4fc4f5',   // blaues Auge (Blick nach rechts)
-        eyeL: '#8a5a14',   // braunes Auge (Blick nach links)
+        eyeR: '#4fc4f5',   // blue eye (facing right)
+        eyeL: '#8a5a14',   // brown eye (facing left)
       },
       crimson: {
         colors: {
@@ -91,7 +91,7 @@ window.DD = window.DD || {};
     },
   };
 
-  // Varianten = Basis-Grid + ersetzte Zeilen
+  // variants = base grid + replaced rows
   function patch(base, ...editLists) {
     const g = base.slice();
     for (const edits of editLists) {
@@ -177,14 +177,14 @@ window.DD = window.DD || {};
     '........KKKKKK....KKKKKKKK................',
   ];
 
-  // Atmung: Schultern schwellen, Brust-Licht wandert
+  // breathing: shoulders swell, chest highlight shifts
   const K2_IDLE1 = patch(K2_IDLE0, [
     [19, '.........KTSSSTSSSSSAAAAKKSSSTK...........'],
     [24, '........KTSSTSSAASSSSSSSKKK...............'],
     [25, '........KTSSTSSUUUUUSSAAK.................'],
   ]);
 
-  // ---- Laufzyklus: 4 Bein-Blöcke (Zeilen 44-67) ----
+  // ---- walk cycle: 4 leg blocks (rows 44-67) ----
 
   const K2_LEGS_CONTACT = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -240,7 +240,7 @@ window.DD = window.DD || {};
     [67, '.........KKKKK...KKKKKKK..................'],
   ];
 
-  // vorderes Bein schwingt gestreckt nach vorn (noch in der Luft)
+  // front leg swings forward, extended (still in the air)
   const K2_LEGS_REACH = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
     [45, '..........KdGGGGGGGGGGGGgK................'],
@@ -268,7 +268,7 @@ window.DD = window.DD || {};
     [67, '.......KKKKK..............KKKKKK..........'],
   ];
 
-  // hinteres Bein streckt sich beim Abstoss nach hinten
+  // rear leg extends backwards during push-off
   const K2_LEGS_PUSH = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
     [45, '..........KdGGGGGGGGGGGGgK................'],
@@ -301,9 +301,9 @@ window.DD = window.DD || {};
   const K2_WALK2 = patch(K2_IDLE0, K2_LEGS_PASS);
   const K2_WALK3 = patch(K2_IDLE0, K2_LEGS_PUSH);
 
-  // ---- Schlag: Ausholen / Strecken / Zurückziehen ----
+  // ---- punch: wind-up / extend / retract ----
 
-  // vordere Faust weg (wird pro Pose neu gesetzt)
+  // clear the lead fist (re-placed per pose)
   const K2_EDIT_ARM_CLEAR = [
     [9, '.............KJHSSSSSAAK..................'],
     [10, '.............KJHSSSSATSK..................'],
@@ -326,7 +326,7 @@ window.DD = window.DD || {};
     [17, '...............KTTSSAKSTK.................'],
   ]);
 
-  // Arm voll gestreckt, Ausfallschritt
+  // arm fully extended, lunge step
   const K2_PUN1 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [18, '..........KKKKTTSSSSAAKKKKKKK.............'],
     [19, '.........KTSSSTSSSSSSAAASSSSSSSSSKRRRRK...'],
@@ -335,7 +335,7 @@ window.DD = window.DD || {};
     [22, '........KTSSTSSSSSSSMMSAAKKKKKKKKKKqqKK...'],
   ], K2_LEGS_CONTACT);
 
-  // halb zurückgezogen
+  // half retracted
   const K2_PUN2 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [19, '.........KTSSSTSSSSSSAAASSSSKRRRK.........'],
     [20, '........KTSSSSTSSSSSSSAAASSSSKRrrrK.......'],
@@ -343,7 +343,7 @@ window.DD = window.DD || {};
     [22, '........KTSSTSSSSSSSMMSAAKKKKKKqKK........'],
   ]);
 
-  // ---- Tritt: Knie hoch / Bein gestreckt ----
+  // ---- kick: knee raised / leg extended ----
 
   const K2_KICK0 = patch(K2_IDLE0, [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -405,7 +405,7 @@ window.DD = window.DD || {};
     [67, '.........KKKKKK...........................'],
   ]);
 
-  // ---- Spezial: Energie-Stoss mit beiden Händen ----
+  // ---- special: two-handed energy thrust ----
 
   const K2_SP0 = patch(K2_IDLE0, K2_EDIT_ARM_CLEAR, [
     [28, '........KTSSTSSTUTSSSSAK..................'],
@@ -431,7 +431,7 @@ window.DD = window.DD || {};
     [33, '.........KTSSTSSSSSAAK....................'],
   ], K2_LEGS_CONTACT);
 
-  // ---- Sprung: Absprung / Tuck / Fallen ----
+  // ---- jump: take-off / tuck / falling ----
 
   const K2_JMP_TUCK = [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -460,11 +460,11 @@ window.DD = window.DD || {};
     [67, '..........................................'],
   ];
 
-  const K2_JMP0 = patch(K2_IDLE0, K2_LEGS_PUSH);
-  const K2_JMP1 = patch(K2_IDLE0, K2_JMP_TUCK);
-  const K2_JMP2 = patch(K2_IDLE0, K2_LEGS_REACH);
+  const K2_JMP0 = patch(K2_IDLE0, K2_LEGS_PUSH);   // take-off: legs extended
+  const K2_JMP1 = patch(K2_IDLE0, K2_JMP_TUCK);    // apex: tuck
+  const K2_JMP2 = patch(K2_IDLE0, K2_LEGS_REACH);  // falling: legs ready
 
-  // ---- Ducken ----
+  // ---- crouch ----
 
   const K2_CROUCH = [
     '..........................................',
@@ -537,7 +537,7 @@ window.DD = window.DD || {};
     '..........................................',
   ];
 
-  // ---- Block: Doppel-Deckung ----
+  // ---- block: double guard ----
 
   const K2_BLOCK = patch(K2_IDLE0, [
     [9, '.............KJHSSSSSAAKKKKK..............'],
@@ -557,7 +557,7 @@ window.DD = window.DD || {};
     [33, '.........KTSSTSSSSSAAKKSTK................'],
   ]);
 
-  // ---- Treffer-Reaktion: Kopf und Oberkörper zurück ----
+  // ---- hit reaction: head and torso thrown back ----
 
   const K2_HURT = patch(K2_IDLE0, [
     [1, '.............KKKKKKK......................'],
@@ -579,7 +579,7 @@ window.DD = window.DD || {};
     [17, '.............KTTSSAK......KSSTK...........'],
   ]);
 
-  // ---- K.O.: rücklings fliegen + liegen ----
+  // ---- K.O.: flying backwards + lying down ----
 
   const K2_KOFALL = patch(K2_HURT, [
     [44, '..........KdGGGGGGGGGFYGgK................'],
@@ -622,7 +622,7 @@ window.DD = window.DD || {};
     return g;
   })();
 
-  // ---- Siegerpose: Faust in den Himmel ----
+  // ---- victory pose: fist to the sky ----
 
   const K2_WIN = patch(K2_IDLE0, [
     [0, '..........................KKKK............'],
@@ -645,7 +645,7 @@ window.DD = window.DD || {};
     [17, '...............KTTSSAKSTK.................'],
   ]);
 
-  // Energie-Stoss-Projektil der neuen Generation (18x12)
+  // energy-thrust projectile of the new generation (18x12)
   const K2_FB_A = [
     '......OOOOOO......',
     '....OOCCCCCCOO....',
@@ -676,7 +676,7 @@ window.DD = window.DD || {};
     '.....OOOOOO.......',
   ];
 
-  // ============================================ ALTE GENERATION (28x36, 2x)
+  // ============================================= OLD GENERATION (28x36, 2x)
 
   const KA_IDLE = [
     '............................',
@@ -1462,7 +1462,7 @@ window.DD = window.DD || {};
     '....OOOO....',
   ];
 
-  // Animations-Tabellen der alten Generation (1-2 Frames pro Aktion)
+  // animation tables of the old generation (1-2 frames per action)
   const LEGACY_ANIMS = {
     idle: { seq: [['idle', 16, 0], ['idle', 16, 1]] },
     walk: { seq: [['walkA', 9, 0], ['walkB', 9, 0]] },
@@ -1539,13 +1539,13 @@ window.DD = window.DD || {};
     const ctx = cv.getContext('2d');
     for (let y = 0; y < h; y++) {
       if (rows[y].length !== w) {
-        throw new Error(`Sprite "${name}", Zeile ${y}: ${rows[y].length} statt ${w} Zeichen`);
+        throw new Error(`Sprite "${name}", row ${y}: ${rows[y].length} instead of ${w} chars`);
       }
       for (let x = 0; x < w; x++) {
         const ch = rows[y][x];
         if (ch === '.') continue;
         const col = pal[ch];
-        if (!col) throw new Error(`Sprite "${name}": unbekanntes Zeichen "${ch}" in Zeile ${y}`);
+        if (!col) throw new Error(`Sprite "${name}": unknown character "${ch}" in row ${y}`);
         ctx.fillStyle = col;
         ctx.fillRect(x, y, 1, 1);
       }
@@ -1598,7 +1598,7 @@ window.DD = window.DD || {};
     }
   }
 
-  // Einen Frame an Weltposition (x = Fussmitte, y = Fusslinie) zeichnen
+  // draw a frame at a world position (x = foot center, y = foot line)
   function draw(ctx, charKey, skinKey, frameName, facing, x, y, dy) {
     const f = frames[charKey][skinKey][frameName];
     const m = meta[charKey][frameName];

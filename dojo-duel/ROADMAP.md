@@ -1,70 +1,73 @@
 # Dojo Duel – Roadmap
 
-Dieses Projekt wächst über Wochen in Meilensteinen. Der Projekt-Besitzer ist
-Creative Director (Referenzen, Feedback, Prioritäten), Claude setzt um.
-Jeder Meilenstein endet mit einem spielbaren Stand.
+This project grows over weeks, milestone by milestone. The project owner
+acts as creative director (references, feedback, priorities), Claude
+implements. Every milestone ends in a playable build.
 
-## Getroffene Entscheidungen
+## Decisions taken
 
-- **Stages:** Die generierten Panorama-Referenzen werden direkt als
-  scrollende Hintergründe verwendet (`assets/stage-N.png`); die
-  prozeduralen Code-Stages bleiben als Fallback und für Zusatz-Ebenen.
-- **Charakter-Art:** Hybrid-Workflow. Referenz-Sheets liefert der
-  Projekt-Besitzer, Claude setzt sie als editierbare Text-Grid-Sprites um
-  und animiert sie. Später werden die Sprites vergrössert und verfeinert.
-- **Roster bisher:** KLAUS VÖLKER (MMA, Deutschland — Heterochromie: von
-  rechts blau, von links braun) und ANTOINE MOREAU (Judo/GIGN, Frankreich —
-  wirft Granaten). Der Karate-Prototyp HANZO bleibt als Bonus-Set im Code.
+- **Stages:** The generated panorama references are used directly as
+  scrolling backgrounds (`assets/stage-N.png`); the procedural code
+  stages remain as fallback and for extra layers.
+- **Character art:** Hybrid workflow. The project owner provides
+  reference sheets, Claude turns them into editable text-grid sprites
+  and animates them. Target quality is the hand-pixeled "test pixel"
+  tier; animations aim for "fluid modern" (4-6 frames per action),
+  delivered package by package.
+- **Roster so far:** KLAUS VÖLKER (MMA, Germany — heterochromia: blue
+  eye from the right, brown from the left) and ANTOINE MOREAU
+  (judo/GIGN, France — throws grenades). The karate prototype HANZO
+  stays in the code as a bonus set.
+- **Language:** The entire repository is English — the project takes
+  part in an international game-dev community.
 
-## Meilensteine
+## Milestones
 
-### M1 – Kamera & echte Stages  *(in Arbeit)*
-- [x] Kamera-System: scrollende 640px-Arenen, sanfte Verfolgung, Titel-Schwenk
-- [x] Alle drei Code-Stages auf Parallax-Ebenen umgebaut (fern/mitte/nah/vorn)
-- [x] Vordergrund-Silhouetten (Strommasten, Holo-Banner, Gebetsfahnen)
-- [x] Panorama-Pipeline: `assets/stage-N.png` wird automatisch scrollende Welt
-- [ ] **Offen: Original-Panoramen als PNG in `assets/` hochladen** (siehe assets/README.md)
-- [ ] Feintuning nach Spieltest
+### M1 – Camera & real stages  *(done)*
+- [x] Camera system: scrolling arenas, soft follow, title pan
+- [x] All three code stages rebuilt on parallax layers (far/mid/near/front)
+- [x] Foreground silhouettes (utility poles, holo banners, prayer flags)
+- [x] Panorama pipeline: `assets/stage-N.png` becomes a scrolling world
+- [x] Original panoramas uploaded and integrated (flicker-free prerender,
+      world cap 832px, `--embed` build option)
 
-### M2 – Charakter-Grafik-Upgrade  *(in Arbeit)*
+### M2 – Character art upgrade  *(in progress)*
 
-Entschieden: Handarbeit in Testpixel-Qualität, Ziel „flüssig modern"
-(4–6 Frames pro Aktion, wird paketweise aufgestockt).
+**Package 1 (delivered): Klaus v2**
+- [x] New animation system: frame sequences, phase frames for attacks,
+      velocity-based jump frames, per-character pixel density
+- [x] Klaus fully redrawn: 42x68 at 1x density, 20 colors, anatomy
+      shading, beard texture, tattoo, flag patch — 20 frames
+- [x] 4-frame walk cycle, 4-phase breathing idle, attacks with
+      wind-up/hit/recover, new energy projectile
+- [x] Default match temporarily runs as a Klaus mirror (gold vs. crimson)
 
-**Paket 1 (geliefert): Klaus v2**
-- [x] Neues Animationssystem: Frame-Sequenzen, Phasen-Frames für Angriffe,
-      geschwindigkeitsbasierte Sprung-Frames, pro Charakter eigene Pixeldichte
-- [x] Klaus komplett neu: 42x68 in 1x-Dichte, 20 Farben, Anatomie-Schattierung,
-      Bart-Textur, Tattoo, Flaggen-Patch — 20 Frames
-- [x] 4-Frame-Laufzyklus, 4-phasige Idle-Atmung, Angriffe mit
-      Ausholen/Treffen/Zurückziehen, eigenes Energie-Projektil
-- [x] Übergangsweise Standard-Kampf als Klaus-Spiegelmatch (gold vs. crimson)
+**Package 2 (next): Antoine v2**
+- [ ] Antoine at the same quality tier (uniform, full beard, scar, boots)
+- [ ] Grenade projectile in the new style, then roster back to
+      Klaus vs. Antoine
 
-**Paket 2 (nächstes): Antoine v2**
-- [ ] Antoine in derselben Qualitätsstufe (Uniform, Vollbart, Narbe, Stiefel)
-- [ ] Granaten-Projektil im neuen Stil, danach Roster zurück auf Klaus vs. Antoine
+**Package 3: fleshing out**
+- [ ] Walk cycle to 6 frames, idle to 4 real poses
+- [ ] Attacks to 4-5 phases (impact frames, follow-through)
+- [ ] Extended hit reactions (2 levels), scar/detail pass per reference
 
-**Paket 3: Aufstockung**
-- [ ] Laufzyklus auf 6 Frames, Idle auf 4 echte Posen
-- [ ] Angriffe auf 4-5 Phasen (Impact-Frames, Follow-Through)
-- [ ] Treffer-Reaktion ausbauen (2 Stufen), Narbe/Detail-Pass nach Referenz
+### M3 – Effects & game feel
+- [ ] Super flash, slow-motion K.O., motion trails, landing dust
+- [ ] Animated hit-spark sprites instead of particle squares
+- [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
 
-### M3 – Effekte & Gamefeel („Grafik-Gewitter")
-- [ ] Superblitz, Zeitlupen-K.O., Bewegungs-Trails, Landestaub
-- [ ] Animierte Trefferfunken-Sprites statt Partikel-Quadrate
-- [ ] Stage-Reaktionen (Menge jubelt beim K.O.), Sieges-Splash mit Portrait
+### M4 – Fighting depth
+- [ ] Special-move inputs (e.g. quarter-circle + punch)
+- [ ] Antoine's judo throw as a grab mechanic, grenade arc trajectory
+- [ ] 2-3 specials per character, combos, super meter
 
-### M4 – Kampftiefe
-- [ ] Spezial-Eingaben (z.B. Viertelkreis + Schlag)
-- [ ] Antoines Judo-Wurf als Grab-Mechanik, Granaten-Wurfbahn (Bogen)
-- [ ] 2–3 Specials pro Charakter, Combos, Super-Leiste
+### M5 – Third character
+- [ ] Based on the project owner's next reference sheet
 
-### M5 – Dritter Charakter
-- [ ] Nach nächster Referenz des Projekt-Besitzers
+### M6 – Sound & music
+- [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants
 
-### M6 – Sound & Musik
-- [ ] Chiptune-Tracks pro Stage (WebAudio-Sequencer), mehr SFX-Varianten
-
-### M7 – Release-Polish
-- [ ] Charakterauswahl-Bildschirm, Arcade-Modus (Gegner-Reihe)
-- [ ] Gamepad-Unterstützung, itch.io-Build
+### M7 – Release polish
+- [ ] Character select screen, arcade mode (opponent ladder)
+- [ ] Gamepad support, itch.io build

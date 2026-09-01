@@ -1,22 +1,22 @@
-# assets/ – eigene Stage-Panoramen
+# assets/ – custom stage panoramas
 
-Lege hier deine Original-Panoramen ab, dann benutzt das Spiel sie
-automatisch als scrollende Stage-Hintergründe:
+Drop your panorama images here and the game automatically uses them as
+scrolling stage backgrounds:
 
-| Datei | ersetzt |
-| ----- | ------- |
+| File | replaces |
+| ---- | -------- |
 | `stage-1.png` | Tokyo Street |
 | `stage-2.png` | Neon Crossing |
 | `stage-3.png` | Wind Temple |
 
-**So geht's über die GitHub-Website:** Repository öffnen → oben den Branch
-wählen → in den Ordner `dojo-duel/assets/` gehen → „Add file" → „Upload
-files" → PNGs hineinziehen (mit exakt den Dateinamen oben) → Commit.
+**Via the GitHub website:** open the repository → pick the branch → browse
+into `dojo-duel/assets/` → "Add file" → "Upload files" → drag the PNGs in
+(using exactly the file names above) → commit.
 
-**Technik:** Das Bild wird beim Laden einmalig sauber (mit Glättung) auf
-180px Höhe vorgerechnet. Die Weltbreite ergibt sich aus der Bildbreite,
-gedeckelt bei 832px (≈ 2,6 Bildschirmbreiten); breitere Panoramen werden
-mittig beschnitten. Die Kampf-Fusslinie liegt bei y = 158 von 180 — ideal
-sind Panoramen, bei denen der Boden im unteren Bilddrittel liegt. Ein
-Neuladen der Seite genügt, kein Build nötig. Für den Single-File-Build
-bettet `node tools/build-single.mjs --embed` die Panoramen mit ein.
+**Tech notes:** On load, each image is downscaled once (with smoothing) to
+180px height. The world width follows from the image width, capped at
+832px (~2.6 screen widths); wider panoramas are cropped to the center.
+The fighting foot line sits at y = 158 of 180 — panoramas whose ground
+occupies the lower third of the image work best. Just reload the page,
+no build step needed. For the single-file build,
+`node tools/build-single.mjs --embed` inlines the panoramas as well.

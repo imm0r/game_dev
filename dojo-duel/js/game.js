@@ -1,4 +1,4 @@
-// Spielablauf: Titel -> Runden-Intro -> Kampf -> K.O./Zeit -> Sieger.
+// Game flow: title -> round intro -> fight -> K.O./time -> winner.
 window.DD = window.DD || {};
 
 (function () {
@@ -11,7 +11,7 @@ window.DD = window.DD || {};
       this.t = 0;
       this.state = 'title';
       this.stageIndex = 0;
-      this.menuMode = 0;          // 0 = gegen CPU, 1 = zwei Spieler
+      this.menuMode = 0;          // 0 = vs CPU, 1 = two players
       this.fighters = [];
       this.projectiles = [];
       this.particles = [];
@@ -35,7 +35,7 @@ window.DD = window.DD || {};
       this.worldW = DD.stage.worldW(this.stageIndex);
     }
 
-    // Kamera folgt der Mitte zwischen beiden Kämpfern, sanft gedämpft
+    // camera follows the midpoint between both fighters, softly damped
     updateCamera() {
       const [p1, p2] = this.fighters;
       const target = Math.max(0, Math.min(this.worldW - DD.C.VIEW_W,
@@ -43,7 +43,7 @@ window.DD = window.DD || {};
       this.cam += (target - this.cam) * 0.12;
     }
 
-    // Nur fürs Titelbild – echte Kämpfer entstehen bei Spielstart
+    // title screen only – real fighters are created on match start
     spawnTitleFighters() {
       this.fighters = [
         new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null),
@@ -142,7 +142,7 @@ window.DD = window.DD || {};
     }
 
     updateTitle() {
-      // langsamer Kameraschwenk über die Stage als lebendiger Hintergrund
+      // slow camera pan across the stage as a living backdrop
       this.refreshWorld();
       this.cam = ((1 - Math.cos(this.t / 300)) / 2) * (this.worldW - DD.C.VIEW_W);
       if (Input.wasPressed('ArrowUp') || Input.wasPressed('KeyW')
@@ -192,7 +192,7 @@ window.DD = window.DD || {};
       this.updateParticles();
       this.updateCamera();
 
-      if (this.state !== 'fight') return; // K.O. hat die Phase gewechselt
+      if (this.state !== 'fight') return; // a K.O. switched the phase
 
       this.timeFrames--;
       if (this.timeFrames <= 0) this.resolveTimeout();
@@ -248,7 +248,7 @@ window.DD = window.DD || {};
         p.x += p.vx;
         if (p.x < -30 || p.x > this.worldW + 30) { p.dead = true; continue; }
         const box = { x0: p.x - F.w / 2, y0: p.y - F.h / 2, x1: p.x + F.w / 2, y1: p.y + F.h / 2 };
-        // Feuerball gegen Feuerball: beide lösen sich auf
+        // projectile vs projectile: both dissolve
         for (const q of this.projectiles) {
           if (q === p || q.dead || q.owner === p.owner) continue;
           const qbox = { x0: q.x - F.w / 2, y0: q.y - F.h / 2, x1: q.x + F.w / 2, y1: q.y + F.h / 2 };
@@ -288,7 +288,7 @@ window.DD = window.DD || {};
     updateRoundEnd() {
       this.seqT++;
       const [p1, p2] = this.fighters;
-      // Verlierer fällt weiter / Physik läuft aus
+      // the loser keeps falling / physics settles
       const empty = DD.input.emptyPad();
       p1.update(this, empty, p2);
       p2.update(this, empty, p1);
@@ -312,7 +312,7 @@ window.DD = window.DD || {};
       }
     }
 
-    // ------------------------------------------------------------- Zeichnen
+    // ------------------------------------------------------------- Drawing
 
     draw() {
       const ctx = this.ctx;
@@ -334,11 +334,11 @@ window.DD = window.DD || {};
         return;
       }
 
-      // Welt-Ebene: alles hier scrollt mit der Kamera
+      // world layer: everything here scrolls with the camera
       ctx.save();
       ctx.translate(-cam, 0);
 
-      // Schatten, Kämpfer (der zuletzt Getroffene liegt "oben"), Projektile
+      // shadows, fighters (the one in hitstun draws on top), projectiles
       for (const f of this.fighters) f.drawShadow(ctx);
       const order = [...this.fighters].sort((a, b) => (a.state === 'hitstun' ? 1 : 0) - (b.state === 'hitstun' ? 1 : 0));
       for (const f of order) f.draw(ctx, this.t);
@@ -357,7 +357,7 @@ window.DD = window.DD || {};
 
       ctx.restore();
 
-      // Vordergrund-Silhouetten (ziehen schneller vorbei als die Kämpfer)
+      // foreground silhouettes (scroll faster than the fighters)
       DD.stage.drawFg(ctx, this.stageIndex, this.t, cam);
 
       DD.ui.drawHUD(ctx, this);
