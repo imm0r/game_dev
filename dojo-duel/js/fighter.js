@@ -33,6 +33,8 @@ window.DD = window.DD || {};
       this.fireCd = 0;
       this.kbVx = 0;              // Rückstoss
       this.pad = DD.input.emptyPad();
+      this.animT = 0;             // Frames im aktuellen Zustand (für Sequenzen)
+      this.prevState = 'idle';
     }
 
     get grounded() { return this.y >= C().GROUND_Y; }
@@ -52,6 +54,8 @@ window.DD = window.DD || {};
 
     update(game, pad, opp) {
       this.pad = pad;
+      if (this.state === this.prevState) this.animT++;
+      else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
       // Anzeige-HP läuft dem echten Wert langsam hinterher
       if (this.showHp > this.hp) this.showHp = Math.max(this.hp, this.showHp - 0.6);
@@ -246,30 +250,51 @@ window.DD = window.DD || {};
       return 'hit';
     }
 
-    frameName(t) {
+    // Frame + y-Versatz aus den Animations-Tabellen des Charakters bestimmen
+    resolveFrame() {
+      const anims = DD.sprites.CHARS[this.char].anims;
+
+      const seqPick = (anim, reverse) => {
+        const total = anim.seq.reduce((s, e) => s + e[1], 0);
+        let tt = this.animT % total;
+        const order = reverse ? [...anim.seq].reverse() : anim.seq;
+        for (const e of order) {
+          if (tt < e[1]) return { f: e[0], yo: e[2] };
+          tt -= e[1];
+        }
+        return { f: anim.seq[0][0], yo: 0 };
+      };
+
       switch (this.state) {
-        case 'idle': case 'intro': return 'idle';
-        case 'walkF': case 'walkB':
-          return ((t / 9 | 0) % 2) ? 'walkA' : 'walkB';
-        case 'crouch': return 'crouch';
-        case 'jump': return 'jump';
-        case 'attack': return this.atkName === 'special' ? 'special'
-                            : this.atkName === 'kick' ? 'kick' : 'punch';
-        case 'airkick': return 'kick';
-        case 'block': return 'block';
-        case 'hitstun': return 'hurt';
-        case 'kofall': return 'hurt';
-        case 'kolie': return 'ko';
-        case 'win': return 'win';
-        default: return 'idle';
+        case 'idle': case 'intro': return seqPick(anims.idle);
+        case 'walkF': return seqPick(anims.walk);
+        case 'walkB': return seqPick(anims.walk, true);
+        case 'crouch': return { f: anims.crouch, yo: 0 };
+        case 'jump': {
+          const fr = anims.jump.vel;
+          const f = this.vy < -0.8 ? fr[0] : this.vy < 0.8 ? fr[1] : fr[2];
+          return { f, yo: 0 };
+        }
+        case 'attack': {
+          const a = DD.ATTACKS[this.atkName];
+          const fr = anims[this.atkName].atk;
+          const f = this.atkT < a.startup ? fr[0]
+            : this.atkT < a.startup + a.active ? fr[1] : fr[2];
+          return { f, yo: 0 };
+        }
+        case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
+        case 'block': return { f: anims.block, yo: 0 };
+        case 'hitstun': return { f: anims.hurt.two[this.timer > 8 ? 0 : 1], yo: 0 };
+        case 'kofall': return { f: this.vy < 0 ? anims.kofall.vel2[0] : anims.kofall.vel2[1], yo: 0 };
+        case 'kolie': return { f: anims.ko, yo: 0 };
+        case 'win': return seqPick(anims.win);
+        default: return seqPick(anims.idle);
       }
     }
 
-    draw(ctx, t) {
-      let dy = 0;
-      if (this.state === 'idle' || this.state === 'intro') dy = (t / 32 | 0) % 2;
-      if (this.state === 'win') dy = (t / 16 | 0) % 2;
-      DD.sprites.draw(ctx, this.char, this.skin, this.frameName(t), this.facing, this.x, this.y, dy);
+    draw(ctx) {
+      const { f, yo } = this.resolveFrame();
+      DD.sprites.draw(ctx, this.char, this.skin, f, this.facing, this.x, this.y, yo);
     }
 
     drawShadow(ctx) {
