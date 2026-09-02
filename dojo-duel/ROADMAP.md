@@ -262,7 +262,19 @@ implements. Every milestone ends in a playable build.
       on the middle of its own feet, so each one recentres itself and some
       skate is inherent. It would take a per-frame anchor offset that
       follows the planted foot instead
-- [ ] Strips for the punch, the kick and the idle; the other two fighters
+- [x] Klaus punches on five drawn frames. An attack plays any number of
+      drawings now: whatever comes before `hit` runs through the wind-up,
+      `hit` is held for the whole hit window, the rest plays the recovery
+- [x] A strip brings its own timing, so adding one is a single entry
+- [x] Two more shapes of leftover background keyed out: a speck sealed by
+      a wall that happened to be thick enough, and the long thin channel
+      between a limb and a body, which was painting a magenta bar down
+      Klaus's side as he walked
+- [ ] **Open: the strips drift from the sheet.** A strip is a separate
+      generation, so Klaus's walk came back in gold shorts where his sheet
+      has black ones. Generating every movement for one fighter in one
+      image would at least make the strips agree with each other
+- [ ] Strips for the kick and the idle; the other two fighters
 
 ### M7 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants

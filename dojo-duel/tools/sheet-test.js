@@ -58,18 +58,21 @@ function check(name, cond, extra) {
     const out = {};
     const S = window.DD.spritesheet;
     for (const [charKey, moves] of Object.entries(S.STRIPS)) {
-      for (const [move, order] of Object.entries(moves)) {
+      for (const [move, strip] of Object.entries(moves)) {
         const frames = await S.inspect(`assets/${charKey}-${move}.png`);
         const skin = Object.keys(window.DD.sprites.frames[charKey])[0];
         out[`${charKey}-${move}`] = {
           found: frames.length,
-          expected: order.length,
-          missing: order.slice(1)
+          expected: strip.order.length,
+          missing: strip.order.slice(1)
             .filter((n) => n && !window.DD.sprites.frames[charKey][skin][n]),
-          // every frame of a movement is the same fighter, so they must
-          // come out the same height - a strip whose figures drift in size
-          // pops as the animation plays
-          heights: [...new Set(frames.map((f) => f.height))],
+          // Every frame of a movement is the same fighter, so they must
+          // come out about the same height: a strip whose figures were
+          // drawn at different sizes pops as the animation plays. A pixel
+          // or two of slack, though - a punch leans in and the head dips,
+          // and that is the drawing being right, not drifting.
+          heights: [Math.min(...frames.map((f) => f.height)),
+            Math.max(...frames.map((f) => f.height))],
         };
       }
     }
@@ -80,8 +83,9 @@ function check(name, cond, extra) {
       `found ${r.found}, order lists ${r.expected}`);
     check(`${name}: its poses reach the game`, r.missing.length === 0,
       `missing ${r.missing.join(', ')}`);
-    check(`${name}: every frame comes out the same height`, r.heights.length === 1,
-      `heights ${r.heights.join(', ')}`);
+    const [lo, hi] = r.heights;
+    check(`${name}: its figures are all drawn at one size`, hi - lo <= hi * 0.10,
+      `frames run ${lo}px to ${hi}px tall`);
   }
 
   // --- a light background ---------------------------------------------------

@@ -18,8 +18,11 @@ window.DD = window.DD || {};
   const THIN_MAX = 8;         // not a limb - measured per sheet, see thinness()
   const SHADE_MIN = 0.30;     // how dark a cast shadow of the field may get
   const SHADE_HUE = 0.995;    // ...and how exactly it must keep its colour
-  const POCKET = 3;           // a wall thinner than twice this does not seal
+  const POCKET = 5;           // a wall thinner than twice this does not seal
                               // a patch of background off from the outside
+  const SPECK = 60;           // a walled-in patch of the key colour smaller
+                              // than this was never drawn on purpose,
+  const CHANNEL = 2.5;        // nor was one this much longer than it is wide
   const BRIDGE = 3;           // close gaps this wide when a removed line cut
                               // a pose in two - wide enough for a drawn rule
                               // even where it crosses a figure's shins,
@@ -78,7 +81,27 @@ window.DD = window.DD || {};
   // It is never installed, so a strip cannot quietly replace the main
   // sheet's idle with a stance drawn in a different generation.
   const STRIPS = {
-    klaus: { walk: ['idle0', 'walk0', 'walk1', 'walk2', 'walk3'] },
+    klaus: {
+      walk: {
+        order: ['idle0', 'walk0', 'walk1', 'walk2', 'walk3'],
+        // The bob is in the art now, so no y-offset fakes one. Five ticks
+        // a pose: the stride is about 16px and he covers 1.25px a frame,
+        // so a shorter cycle skates less - though it can never plant a
+        // foot, since every frame is anchored on the middle of its own.
+        anims: {
+          walk: {
+            seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]],
+          },
+        },
+      },
+      punch: {
+        order: ['idle0', 'pun0', 'pun1', 'pun2', 'pun3', 'pun4'],
+        // `hit` is the drawing the arm is fully out in: held through the
+        // whole hit window, with the two before it playing the wind-up and
+        // the two after it the recovery.
+        anims: { punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 } },
+      },
+    },
   };
 
   // Poses reused from an imported one, so a small sheet still animates.
@@ -357,6 +380,11 @@ window.DD = window.DD || {};
     // color left enclosed by artwork is artwork: the white of a flag patch
     // on a white sheet, the white core of a flame. Without this, keying on
     // a color the drawing also uses punches holes straight through it.
+    // A first pass at the artwork, used only to measure how thick the
+    // walls around a pocket are.
+    const art0 = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) art0[p] = line[p] || field[p] ? 0 : 1;
+
     const outside = new Uint8Array(w * h);
     {
       const stack = [];
@@ -381,15 +409,76 @@ window.DD = window.DD || {};
 
     // A pocket only counts as artwork if real bulk seals it. The rule
     // above saves a patch of the key colour walled in by a drawing - the
-    // white of a flag patch on a white sheet - but a gap between an arm
-    // and a chest is walled in too, by the few pixels where they touch,
-    // and that gap is background showing through. Close the outside over
-    // thin walls: a pocket sealed by a hairline joins the outside, one
-    // sealed by a limb's worth of drawing does not. Only field pixels are
-    // ever added, so the artwork's own edge is untouched.
+    // white of a flag patch on a white sheet - but the channel between a
+    // fist and a hip is walled in too, and that is background showing
+    // through, not artwork.
+    //
+    // So flood a second time through the drawing's *core*: erode the
+    // artwork, and anything thinner than the erode is simply not there
+    // any more, which lets the outside run through a hairline wall while
+    // a limb's worth of drawing still seals. Only field pixels are ever
+    // added, so eroding the artwork cannot eat into the artwork itself.
+    //
+    // Closing the outside instead is the obvious version and does not
+    // work: a closing opens the wall and then erodes the pocket away
+    // again, so raising its radius changes nothing at all.
     {
-      const closed = erode(dilate(outside, w, h, POCKET), w, h, POCKET);
-      for (let p = 0; p < w * h; p++) if (closed[p] && field[p]) outside[p] = 1;
+      const core = erode(art0, w, h, POCKET);
+      const seen = new Uint8Array(w * h);
+      const stack = [];
+      const push = (p) => { if (seen[p] || core[p]) return; seen[p] = 1; stack.push(p); };
+      for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+      while (stack.length) {
+        const p = stack.pop();
+        const x = p % w, y = (p / w) | 0;
+        if (x > 0) push(p - 1);
+        if (x < w - 1) push(p + 1);
+        if (y > 0) push(p - w);
+        if (y < h - 1) push(p + w);
+      }
+      for (let p = 0; p < w * h; p++) if (seen[p] && field[p]) outside[p] = 1;
+    }
+
+    // Last pass over the pockets that are still sealed. They count as
+    // artwork - that is the rule that saves the white of a flag patch on a
+    // white sheet - but two shapes never are, and a patch of pure
+    // background left inside a fighter is the most visible thing a keyer
+    // can leave behind.
+    //
+    // A *speck* is what survives where a wall happened to be just thick
+    // enough to seal a few pixels. And a long thin *channel* is the gap
+    // between a limb and a body: Klaus's walk has one 25x91 between his
+    // fist and his hip, sealed at both ends by his own glove and shorts.
+    // Anything drawn in the key colour on purpose is a shape - roughly as
+    // wide as it is tall - not a sliver.
+    {
+      const seen = new Uint8Array(w * h);
+      const stack = [], px = [];
+      for (let p0 = 0; p0 < w * h; p0++) {
+        if (seen[p0] || !field[p0] || outside[p0]) continue;
+        px.length = 0;
+        let x0 = w, x1 = -1, y0 = h, y1 = -1;
+        seen[p0] = 1; stack.push(p0);
+        while (stack.length) {
+          const p = stack.pop();
+          px.push(p);
+          const x = p % w, y = (p / w) | 0;
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
+          const step = (q, ok) => {
+            if (!ok || seen[q] || !field[q] || outside[q]) return;
+            seen[q] = 1; stack.push(q);
+          };
+          step(p - 1, x > 0); step(p + 1, x < w - 1);
+          step(p - w, y > 0); step(p + w, y < h - 1);
+        }
+        const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+        const thin = Math.max(bw, bh) >= Math.min(bw, bh) * CHANNEL;
+        if (px.length < SPECK || thin) for (const p of px) outside[p] = 1;
+      }
     }
 
     const art = new Uint8Array(w * h);
@@ -721,12 +810,16 @@ window.DD = window.DD || {};
     return n;
   }
 
-  function loadSheet(charKey, file, order, rank, label) {
+  // A strip brings its timing with it. Until the file is actually in and
+  // its drawings are cut, the character keeps the animation it had - so a
+  // missing strip is a character with a shorter punch, not a broken one.
+  function loadSheet(charKey, file, order, rank, label, anims) {
     const src = (DD.SHEETS && DD.SHEETS[file]) || `assets/${file}.png`;
     const img = new Image();
     img.onload = () => {
       try {
         const n = install(charKey, img, order, rank);
+        if (n && anims) Object.assign(DD.sprites.CHARS[charKey].anims, anims);
         if (n) console.info(`[dojo] ${label}: ${n} frames from sprite sheet`);
       } catch (e) {
         console.warn(`[dojo] ${label}: sheet import failed`, e);
@@ -739,8 +832,9 @@ window.DD = window.DD || {};
   function load() {
     for (const charKey of Object.keys(DD.sprites.CHARS)) {
       loadSheet(charKey, charKey, SHEET_ORDER[charKey] || ORDER, 1, charKey);
-      for (const [move, order] of Object.entries(STRIPS[charKey] || {})) {
-        loadSheet(charKey, `${charKey}-${move}`, order, 2, `${charKey} ${move}`);
+      for (const [move, strip] of Object.entries(STRIPS[charKey] || {})) {
+        loadSheet(charKey, `${charKey}-${move}`, strip.order, 2,
+          `${charKey} ${move}`, strip.anims);
       }
     }
   }

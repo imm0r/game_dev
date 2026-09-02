@@ -273,6 +273,15 @@ naming the poses it fills. It is loaded beside that fighter's main sheet,
 and a pose on a strip wins over the same pose on the sheet whichever image
 the browser happens to finish first.
 
+**Keep a strip looking like the sheet.** This is the part that bites. A
+strip is a separate generation, so the character drifts between it and the
+main sheet — Klaus's first walk strip came back in gold shorts where his
+sheet has black ones, which flips his colours the moment he takes a step.
+Feed the existing sheet in as a reference image if your generator takes
+one, and check the strip against it before wiring it up: **colours,
+build, and any marking** — a tattoo that only exists on the strip appears
+and vanishes with the movement.
+
 **What the importer does about a cast shadow.** It removes it, however
 firmly the prompt asked for none. A shadow is the background colour with
 the light taken out of it — same colour, darker — and nothing in a drawing
@@ -282,6 +291,14 @@ into the sprite as a magenta wedge between the knees. The same rule draws
 a line under how much a pocket has to be sealed by: a gap between an arm
 and a chest is closed by the few pixels where they touch, and that is
 background showing through, not artwork.
+
+The rule that keeps a walled-in patch of the key colour — the white of a
+flag patch on a white sheet — now has two exceptions, both of them shapes
+nobody draws on purpose. A **speck** is what survives where a wall was
+just thick enough to seal a few pixels. A long thin **channel** is the gap
+between a limb and a body: Klaus's walk has one 25x91 pixels between his
+fist and his hip, sealed at both ends by his own glove and shorts, and
+left in it painted a magenta bar down his side.
 
 ### Poses that need two people
 

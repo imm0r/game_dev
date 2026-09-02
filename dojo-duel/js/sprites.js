@@ -4203,13 +4203,11 @@ window.DD = window.DD || {};
       }),
       anims: {
         idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
-        // Four real drawings from `assets/klaus-walk.png`; the bob is in
-        // the art now, so there is no y-offset to fake one with. Five
-        // ticks a pose: the art's stride is about 16px and he covers
-        // 1.25px a frame, so a shorter cycle skates less - but it cannot
-        // be made to plant a foot, because every frame is anchored on the
-        // middle of the feet and so recentres itself.
-        walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
+        // Without a strip this is one drawing and three aliases of the
+        // idle pose, faked into a gait with a y-offset bob. A strip
+        // replaces both the drawings and this timing - see STRIPS in
+        // js/spritesheet.js.
+        walk: { seq: [['walk0', 6, 0], ['walk1', 6, 1], ['walk2', 6, 0], ['walk3', 6, 0]] },
         win: { seq: [['win0', 14, 0], ['win0', 12, 1]] },
         punch: { atk: ['pun0', 'pun1', 'pun2'] },
         kick: { atk: ['kick0', 'kick1', 'kick0'] },

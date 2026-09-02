@@ -469,10 +469,28 @@ window.DD = window.DD || {};
           return { f, yo: 0 };
         }
         case 'attack': {
+          // The drawings spread over the move's own frame data: whatever
+          // comes before `hit` plays through the wind-up, `hit` itself is
+          // held for the whole hit window, and the rest plays out the
+          // recovery. Three drawings with hit at 1 - the shape every move
+          // had before any of them got a strip - lands exactly where it
+          // used to.
           const a = DD.ATTACKS[this.atkName];
-          const fr = anims[this.atkName].atk;
-          const f = this.atkT < a.startup ? fr[0]
-            : this.atkT < a.startup + a.active ? fr[1] : fr[2];
+          const an = anims[this.atkName];
+          const fr = an.atk;
+          const hit = Math.min(fr.length - 1, an.hit === undefined ? 1 : an.hit);
+          const span = (from, to, t, dur) => {
+            const lo = Math.max(0, from), hi = Math.min(fr.length - 1, to);
+            if (hi <= lo) return fr[Math.min(lo, fr.length - 1)];
+            const n = hi - lo + 1;
+            return fr[lo + Math.min(n - 1, Math.floor((t / Math.max(1, dur)) * n))];
+          };
+          const f = this.atkT < a.startup
+            ? span(0, hit - 1, this.atkT, a.startup)
+            : this.atkT < a.startup + a.active
+              ? fr[hit]
+              : span(hit + 1, fr.length - 1,
+                this.atkT - a.startup - a.active, a.recovery);
           return { f, yo: 0 };
         }
         case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
