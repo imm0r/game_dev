@@ -160,6 +160,81 @@ function check(name, cond, extra) {
   check('the dash locks you in while it runs', r.stillDashing);
   check('the dash ends and hands control back', r.after === 'idle', 'state=' + r.after);
 
+  // --- motion inputs ------------------------------------------------------
+  // A quarter circle is down, down-forward, forward; a dragon punch is
+  // forward, down, down-forward. Feeding one must never read as the other.
+  const roll = (dirs, btn) => `
+    R.place(140, 240);
+    ${dirs.map((d) => `R.set(0, {${d}}); R.step(2);`).join('\n')}
+    R.set(0, {${dirs[dirs.length - 1]}${btn ? ', ' + btn + ': true' : ''}});
+    R.step(1);`;
+
+  r = await run(new Function(`
+    const R = window.__rig, G = window.__DOJO.game;
+    ${roll(['down: true', 'down: true, right: true', 'right: true'], 'kick')}
+    return { name: G.fighters[0].atkName, state: G.fighters[0].state };
+  `));
+  check('quarter circle + kick is the rushing special', r.name === 'rush',
+    'atkName=' + r.name + ' state=' + r.state);
+
+  r = await run(new Function(`
+    const R = window.__rig, G = window.__DOJO.game;
+    ${roll(['right: true', 'down: true', 'down: true, right: true'], 'punch')}
+    return { name: G.fighters[0].atkName };
+  `));
+  check('dragon punch motion + punch is the uppercut', r.name === 'uppercut',
+    'atkName=' + r.name);
+
+  r = await run(new Function(`
+    const R = window.__rig, G = window.__DOJO.game;
+    ${roll(['down: true', 'down: true, right: true', 'right: true'], 'punch')}
+    return { name: G.fighters[0].atkName };
+  `));
+  check('quarter circle + punch throws the projectile', r.name === 'special',
+    'atkName=' + r.name);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(140, 240);
+    R.set(0, { right: true }); R.step(6);        // just walking forward
+    R.set(0, { right: true, punch: true }); R.step(1);
+    return { name: G.fighters[0].atkName };
+  });
+  check('walking forward and punching is still just a punch', r.name === 'punch',
+    'atkName=' + r.name);
+
+  // --- the uppercut is an anti-air ---------------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(150, 176);
+    const [a, b2] = G.fighters;
+    b2.vy = -3; b2.y -= 20; b2.state = 'jump';   // put him in the air
+    const airborne = b2.y;
+    R.set(0, { right: true }); R.step(2);
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true, punch: true }); R.step(1);
+    const name = a.atkName;
+    R.set(0, {}); R.step(10);
+    return { name, airborne, hit: b2.hp < 100, state: b2.state };
+  });
+  check('the uppercut reaches someone in the air', r.name === 'uppercut' && r.hit,
+    'atkName=' + r.name + ' state=' + r.state);
+
+  // --- the rush travels and stops on contact ------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(80, 300);
+    const x0 = G.fighters[0].x;
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true }); R.step(2);
+    R.set(0, { right: true, kick: true }); R.step(1);
+    R.set(0, {});
+    R.step(DD.ATTACKS.rush.startup + DD.ATTACKS.rush.active);
+    return { moved: G.fighters[0].x - x0, name: G.fighters[0].atkName };
+  });
+  check('the rushing special carries you forward', r.name === 'rush' && r.moved > 40,
+    'moved=' + (r.moved || 0).toFixed(1));
+
   // --- every pose the moves ask for really exists -------------------------
   r = await run(() => {
     const missing = [];

@@ -40,6 +40,19 @@ the point. Use the server.
 | **Sweep** | down + kick | slow, **must be blocked low**, knocks them down |
 | Flying kick | jump + kick | your way in |
 | Dash | tap forward or back twice | covers ground, but you cannot act during it |
+| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus) / grenade (Antoine) |
+| **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
+| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball |
+
+The two motions are the classics: a quarter circle forward for the
+projectile and the rush, the dragon-punch motion for the uppercut. They are
+read leniently — you have to pass through the directions in order and
+inside 20 frames, not hit each one cleanly. The special button stays as a
+shortcut for the projectile, so nothing is behind a motion you cannot do.
+
+| Uppercut catching a jump-in | Antoine's cannonball |
+| --- | --- |
+| ![Uppercut](docs/screenshots/doc-uppercut.png) | ![Rush](docs/screenshots/doc-rush.png) |
 
 That sweep is the whole reason to crouch. Blocking a low while standing
 does not work — hold back **and** down, or you end up on the floor. On the
@@ -71,9 +84,9 @@ a K.O.
   - **HANZO**, the karate fighter from the first prototype, remains as a
     bonus set (roster mapping is configurable in `js/constants.js`)
 
-  Each sheet carries 20 poses; eighteen are on screen. The uppercut and
-  each fighter's second special are drawn and imported, waiting for the
-  motion inputs that will trigger them.
+  Each sheet carries 20 poses and nineteen are on screen. The one left over
+  is Klaus's dash, which trails hot pink speed lines — the same color the
+  background is keyed on, so it cannot be separated from it.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard

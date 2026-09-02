@@ -4104,6 +4104,8 @@ window.DD = window.DD || {};
     kick: { atk: ['kick', 'kick', 'kick'] },
     cpunch: { atk: ['crouch', 'crouch', 'crouch'] },
     sweep: { atk: ['crouch', 'crouch', 'crouch'] },
+    uppercut: { atk: ['punch', 'punch', 'punch'] },
+    rush: { atk: ['special', 'special', 'special'] },
     special: { atk: ['special', 'special', 'special'] },
     airkick: { atk: ['kick', 'kick', 'kick'] },
     jump: { vel: ['jump', 'jump', 'jump'] },
@@ -4122,6 +4124,7 @@ window.DD = window.DD || {};
         // for them keeps the generated fallback playable.
         air0: GEN.klaus.kick1, run0: GEN.klaus.walk3,
         cpun0: GEN.klaus.crouch0, swp0: GEN.klaus.crouch0,
+        upp0: GEN.klaus.pun1, rush0: GEN.klaus.sp1,
       }),
       anims: {
         idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
@@ -4131,6 +4134,8 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
+        uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
+        rush: { atk: ['rush0', 'rush0', 'rush0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
@@ -4148,6 +4153,7 @@ window.DD = window.DD || {};
         fireballA: A2_GRENADE_A, fireballB: A2_GRENADE_B,
         air0: GEN.antoine.kick1, run0: GEN.antoine.walk3,
         cpun0: GEN.antoine.crouch0, swp0: GEN.antoine.crouch0,
+        upp0: GEN.antoine.pun1, rush0: GEN.antoine.sp1,
       }),
       anims: {
         idle: { seq: [['idle0', 13, 0], ['idle0', 10, 1], ['idle1', 13, 1], ['idle1', 10, 0]] },
@@ -4157,6 +4163,8 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
+        uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
+        rush: { atk: ['rush0', 'rush0', 'rush0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },

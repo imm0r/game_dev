@@ -29,6 +29,8 @@ DD.C = {
   KNOCKDOWN_LIE: 24,  // frames on the floor after a sweep
   KNOCKDOWN_GETUP: 11,// frames standing back up (still not actionable)
 
+  MOTION_WINDOW: 20,  // frames a stick motion may take before it goes stale
+
   FIREBALL_SPEED: 2.4,
   FIREBALL_COOLDOWN: 60,
 
@@ -81,12 +83,36 @@ DD.ATTACKS = {
     box: { x: 6, y: -39, w: 28, h: 15 },
     sfx: 'kick',
   },
+  // Anti-air. The hitbox is tall rather than long, so it beats someone
+  // coming down on you and loses to anyone standing back — and the 26
+  // frames of recovery are what you pay when you guess wrong.
+  uppercut: {
+    startup: 4, active: 8, recovery: 26,
+    dmg: 13, chip: 3, stun: 26, blockstun: 15, kb: 2.6,
+    box: { x: 3, y: -74, w: 24, h: 44 },
+    sfx: 'punch', knockdown: true,
+  },
+  // Each fighter's second special: Klaus charges wreathed in flame,
+  // Antoine turns himself into a cannonball. Same rules, different art.
+  rush: {
+    startup: 10, active: 20, recovery: 20,
+    dmg: 15, chip: 3, stun: 28, blockstun: 16, kb: 3.2,
+    box: { x: 0, y: -58, w: 32, h: 46 },
+    sfx: 'fireball', knockdown: true, rush: 3.1,
+  },
   special: {
     startup: 14, active: 2, recovery: 24,  // "active" = the frame that spawns the projectile
     dmg: 0, chip: 0, stun: 0, blockstun: 0, kb: 0,
     box: null,
     sfx: 'fireball',
   },
+};
+
+// Stick motions, in numpad notation relative to the way you are facing:
+// 6 = forward, 4 = back, 2 = down, 3 = down-forward, 8 = up.
+DD.MOTIONS = {
+  qcf: [2, 3, 6],   // quarter circle forward
+  dp: [6, 2, 3],    // the dragon-punch motion
 };
 
 DD.FIREBALL = { dmg: 8, chip: 2, stun: 20, blockstun: 12, kb: 2.4, w: 20, h: 14 };

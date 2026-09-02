@@ -80,6 +80,41 @@ window.DD = window.DD || {};
     }
   }
 
+  // Stick motions. The buffer records the direction as a numpad code
+  // relative to the fighter's facing, once per change, and matching walks
+  // that history backwards allowing anything in between. That leniency is
+  // what makes a quarter circle feel like a quarter circle: you have to
+  // pass through the directions in order and in time, not hit each one
+  // cleanly on its own frame.
+  class MotionBuffer {
+    constructor() { this.hist = []; this.t = 0; }
+
+    feed(pad, facing) {
+      this.t++;
+      const fwd = facing > 0 ? pad.right : pad.left;
+      const back = facing > 0 ? pad.left : pad.right;
+      const h = (fwd ? 1 : 0) - (back ? 1 : 0);
+      const v = pad.down ? -1 : (pad.up ? 1 : 0);
+      const dir = 5 + h + v * 3;                // 5 neutral, 6 fwd, 2 down, 3 down-fwd
+      const last = this.hist[this.hist.length - 1];
+      if (!last || last.dir !== dir) {
+        this.hist.push({ dir, t: this.t });
+        if (this.hist.length > 10) this.hist.shift();
+      }
+    }
+
+    has(seq, window) {
+      let i = seq.length - 1;
+      for (let k = this.hist.length - 1; k >= 0; k--) {
+        if (this.t - this.hist[k].t > window) break;
+        if (this.hist[k].dir === seq[i] && --i < 0) return true;
+      }
+      return false;
+    }
+
+    clear() { this.hist.length = 0; }
+  }
+
   class HumanController {
     constructor(keys) { this.keys = keys; this.taps = new TapWatch(); }
     read() {
@@ -98,5 +133,5 @@ window.DD = window.DD || {};
     }
   }
 
-  DD.input = { Input, HumanController, TapWatch, emptyPad };
+  DD.input = { Input, HumanController, TapWatch, MotionBuffer, emptyPad };
 })();

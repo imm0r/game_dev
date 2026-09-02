@@ -11,10 +11,24 @@ window.DD = window.DD || {};
       this.game = game;
       this.plan = DD.input.emptyPad();
       this.planTimer = 0;
+      this.queue = [];       // a stick motion, one pad per frame
+    }
+
+    // Motions are played on the stick, exactly as a human would - the CPU
+    // gets no private door into the special moves.
+    motion(dirs, toward, button) {
+      this.queue = dirs.map((d, i) => {
+        const p = DD.input.emptyPad();
+        if (d.f) p[toward] = true;
+        if (d.d) p.down = true;
+        if (i === dirs.length - 1) p[button] = true;
+        return p;
+      });
     }
 
     read() {
       const me = this.me, opp = this.opp;
+      if (this.queue.length) return this.queue.shift();
       const pad = DD.input.emptyPad();
       if (!me.controllable && me.state !== 'jump') { this.planTimer = 0; return pad; }
 
@@ -22,6 +36,12 @@ window.DD = window.DD || {};
       const dist = Math.abs(d);
       const toward = d > 0 ? 'right' : 'left';
       const away = d > 0 ? 'left' : 'right';
+
+      // someone is coming down on us -> dragon punch, sometimes
+      if (!opp.grounded && dist < 58 && me.grounded && Math.random() < 0.45) {
+        this.motion([{ f: 1 }, { d: 1 }, { d: 1, f: 1 }], toward, 'punch');
+        return this.queue.shift();
+      }
 
       // danger: incoming projectile -> jump or block
       for (const p of this.game.projectiles) {
@@ -43,6 +63,12 @@ window.DD = window.DD || {};
         const move = DD.ATTACKS[opp.atkName];
         if (move && move.low) pad.down = true;
         return pad;
+      }
+
+      // mid range, out of nowhere -> come in behind the rushing special
+      if (dist > 55 && dist < 130 && me.grounded && Math.random() < 0.035) {
+        this.motion([{ d: 1 }, { d: 1, f: 1 }, { f: 1 }], toward, 'kick');
+        return this.queue.shift();
       }
 
       if (--this.planTimer <= 0) {

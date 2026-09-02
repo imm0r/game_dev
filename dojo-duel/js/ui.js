@@ -83,7 +83,8 @@ window.DD = window.DD || {};
     }
 
     F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 160, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'DOWN + PUNCH/KICK = LOW   TAP TWICE = DASH', 160, 168, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'DOWN+ATTACK = LOW   TAP TWICE = DASH', 160, 168, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'QUARTER CIRCLE = SPECIAL   FWD-DOWN-FWD = UPPERCUT', 160, 152, 1, '#7a7488', 'center');
     F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 176, 1, '#8a8496', 'center');
   }
 

@@ -110,7 +110,7 @@ implements. Every milestone ends in a playable build.
 - [ ] Animated hit-spark sprites instead of particle squares
 - [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
 
-### M4 – Fighting depth  *(package 1 delivered)*
+### M4 – Fighting depth  *(packages 1-2 delivered)*
 
 **Package 1 (delivered): the ground game**
 - [x] Crouching punch (down + punch): the fastest move in the game
@@ -125,15 +125,27 @@ implements. Every milestone ends in a playable build.
 - [x] `tools/moves-test.js`: a second suite that drives the state machine
       with scripted pads and asserts the rules
 
-**Package 2: specials with motion inputs**
-- [ ] Motion input reader (quarter-circle, dragon-punch)
-- [ ] Uppercut as a rising anti-air — the art is already imported
-- [ ] A second special per character: Klaus's dragon kick, Antoine's
-      human cannonball
-- [ ] Grenade arc trajectory
+**Package 2 (delivered): specials with motion inputs**
+- [x] Motion reader: directions recorded as numpad codes relative to
+      facing, matched backwards so anything may happen in between — you
+      pass through the directions in order and in time, you do not hit
+      each one cleanly
+- [x] Quarter circle forward + punch = projectile, + kick = the rushing
+      special; dragon-punch motion + punch = uppercut. The special button
+      stays as a shortcut, so nothing is locked behind a motion
+- [x] Uppercut: tall hitbox that beats a jump-in, knocks down, and 26
+      frames of recovery when it whiffs
+- [x] Second special per character — Klaus charges wreathed in flame,
+      Antoine turns into a cannonball. It travels, and stops dead on
+      contact so one hit does not drag them across the arena
+- [x] The CPU performs motions on the stick like a human does, including
+      an anti-air dragon punch when you jump in
+- [x] Both remaining sheet poses are now in the game; only Klaus's pink
+      dash is unusable
 
 **Package 3: meter and combos**
 - [ ] Super meter, combo counter, juggle rules
+- [ ] Grenade arc trajectory
 
 **Package 4: throws**
 - [ ] Antoine's judo throw as a grab mechanic

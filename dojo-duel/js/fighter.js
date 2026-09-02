@@ -39,6 +39,7 @@ window.DD = window.DD || {};
       this.pad = DD.input.emptyPad();
       this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
+      this.motion = new DD.input.MotionBuffer();
     }
 
     get grounded() { return this.y >= C().GROUND_Y; }
@@ -71,8 +72,26 @@ window.DD = window.DD || {};
         || this.state === 'block');
     }
 
+    // The specials, in the order they get to claim a button press: the
+    // harder motion first, so a dragon punch is never read as a fireball.
+    trySpecial(game, pad) {
+      const w = C().MOTION_WINDOW, M = DD.MOTIONS;
+      if (pad.punch && this.motion.has(M.dp, w)) {
+        this.motion.clear(); this.startAttack('uppercut'); return true;
+      }
+      if (pad.kick && this.motion.has(M.qcf, w)) {
+        this.motion.clear(); this.startAttack('rush'); return true;
+      }
+      if (pad.punch && this.motion.has(M.qcf, w)
+          && this.fireCd === 0 && !game.hasProjectile(this)) {
+        this.motion.clear(); this.startAttack('special'); return true;
+      }
+      return false;
+    }
+
     update(game, pad, opp) {
       this.pad = pad;
+      this.motion.feed(pad, this.facing);
       if (this.state === this.prevState) this.animT++;
       else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
@@ -98,6 +117,8 @@ window.DD = window.DD || {};
             this.state = 'jump';
             this.airAttackUsed = false;
             DD.audio.play('jump');
+          } else if (this.trySpecial(game, pad)) {
+            /* a motion claimed the button */
           } else if (pad.down && pad.punch) {
             this.startAttack('cpunch');       // down+attack fires at once,
           } else if (pad.down && pad.kick) {  // no need to already be crouching
@@ -124,6 +145,7 @@ window.DD = window.DD || {};
         }
 
         case 'crouch':
+          if (this.trySpecial(game, pad)) break;   // a motion can end crouched
           if (pad.punch) this.startAttack('cpunch');
           else if (pad.kick) this.startAttack('sweep');
           else if (!pad.down) this.state = 'idle';
@@ -180,6 +202,13 @@ window.DD = window.DD || {};
           const a = A()[this.atkName];
           if (this.atkName === 'special' && this.atkT === a.startup) {
             game.spawnFireball(this);
+          }
+          // A rushing special travels while it is active, and stops dead
+          // the moment it connects - otherwise it drags them across the
+          // arena on a single hit.
+          if (a.rush && !this.hasHit
+              && this.atkT >= a.startup && this.atkT < a.startup + a.active) {
+            this.x += this.facing * a.rush;
           }
           if (this.atkT >= a.startup + a.active + a.recovery) {
             this.state = 'idle';
