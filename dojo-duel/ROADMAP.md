@@ -289,6 +289,15 @@ implements. Every milestone ends in a playable build.
 - [x] The other two fighters, on the same two sheets each. No two came
       back with the same figure counts and every one of them mapped in a
       line of `SHEET_ORDER`, which is the whole point of that list
+- [ ] **Maxim's moveset sheets do not look like Maxim.** Klaus and Antoine
+      came back close enough to their main sheets that the difference does
+      not read in play. Maxim did not: his main sheet has an olive field
+      jacket, grey hair and dark boots, and both moveset sheets have a
+      cream gi with a black belt, camo trousers, a bald head and bare
+      feet. The two agree with each other, so he is consistent while he
+      moves and changes clothes the moment he blocks, crouches, throws the
+      molotov, wins or goes down. His character line never named the
+      colours the way Klaus's did - that is the whole fix
 
 ### M7 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants
