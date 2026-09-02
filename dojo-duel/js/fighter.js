@@ -29,6 +29,11 @@ window.DD = window.DD || {};
       this.atkName = null;
       this.atkT = 0;
       this.hasHit = false;
+      this.hitCount = 0;          // hits this attack has landed
+      this.hitCd = 0;             // frames until it may hit again
+      this.meter = 0;             // super meter, 0..METER_MAX
+      this.combo = 0;             // hits in the current combo
+      this.comboT = 0;            // frames the counter stays on screen
       this.airAttackUsed = false;
       this.fireCd = 0;
       this.kbVx = 0;              // knockback
@@ -54,8 +59,22 @@ window.DD = window.DD || {};
       this.atkName = name;
       this.atkT = 0;
       this.hasHit = false;
+      this.hitCount = 0;
+      this.hitCd = 0;
       this.crouching = !!A()[name].crouch;
+      if (name === 'super') this.meter = 0;
       DD.audio.play(A()[name].sfx);
+    }
+
+    gainMeter(amount) {
+      this.meter = Math.min(C().METER_MAX, this.meter + amount);
+    }
+
+    // Invulnerable during a super's start-up: that is what the meter buys.
+    get invulnerable() {
+      if (this.state !== 'attack') return false;
+      const a = A()[this.atkName];
+      return !!a.invuln && this.atkT < a.invuln;
     }
 
     startDash(dir) {
@@ -76,6 +95,9 @@ window.DD = window.DD || {};
     // harder motion first, so a dragon punch is never read as a fireball.
     trySpecial(game, pad) {
       const w = C().MOTION_WINDOW, M = DD.MOTIONS;
+      if (pad.special && this.meter >= C().METER_MAX && this.motion.has(M.qcf, w)) {
+        this.motion.clear(); this.startAttack('super'); return true;
+      }
       if (pad.punch && this.motion.has(M.dp, w)) {
         this.motion.clear(); this.startAttack('uppercut'); return true;
       }
@@ -95,6 +117,7 @@ window.DD = window.DD || {};
       if (this.state === this.prevState) this.animT++;
       else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
+      if (this.comboT > 0 && --this.comboT === 0) this.combo = 0;
       // display HP slowly trails the real value
       if (this.showHp > this.hp) this.showHp = Math.max(this.hp, this.showHp - 0.6);
 
@@ -199,14 +222,21 @@ window.DD = window.DD || {};
 
         case 'attack': {
           this.atkT++;
+          if (this.hitCd > 0) this.hitCd--;
           const a = A()[this.atkName];
           if (this.atkName === 'special' && this.atkT === a.startup) {
             game.spawnFireball(this);
           }
-          // A rushing special travels while it is active, and stops dead
-          // the moment it connects - otherwise it drags them across the
-          // arena on a single hit.
-          if (a.rush && !this.hasHit
+          // Cancel a connected normal into a special: that is the whole
+          // combo engine. Only once it has hit, so a whiffed poke stays
+          // as punishable as it looks.
+          if (a.cancel && this.hasHit && this.atkT >= a.startup
+              && this.trySpecial(game, pad)) break;
+          // A rushing special travels while it is active. A single-hit one
+          // stops dead on contact, or it would drag them across the arena;
+          // a multi-hit one has to keep going, or it never lands its
+          // second hit.
+          if (a.rush && (a.hits > 1 || !this.hasHit)
               && this.atkT >= a.startup && this.atkT < a.startup + a.active) {
             this.x += this.facing * a.rush;
           }
@@ -272,6 +302,7 @@ window.DD = window.DD || {};
     hurtbox() {
       if (this.state === 'kolie' || this.state === 'kofall') return null;
       if (this.state === 'down') return null;          // floored = untouchable
+      if (this.invulnerable) return null;              // super start-up
       let top = 71, h = 71;
       if (this.low) { top = 47; h = 47; }
       if (this.state === 'jump' || this.state === 'airkick') { top = 40; h = 40; }
@@ -288,7 +319,8 @@ window.DD = window.DD || {};
         a = A().airkick;
         t = this.atkT;
       }
-      if (!a || !a.box || this.hasHit) return null;
+      if (!a || !a.box) return null;
+      if (this.hitCount >= (a.hits || 1) || this.hitCd > 0) return null;
       if (t < a.startup || t >= a.startup + a.active) return null;
       const b = a.box;
       const xA = this.x + this.facing * b.x;

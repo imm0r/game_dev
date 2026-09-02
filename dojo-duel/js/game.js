@@ -69,9 +69,10 @@ window.DD = window.DD || {};
       this.refreshWorld();
       const cx = this.worldW / 2;
       const [p1, p2] = this.fighters;
-      const w1 = p1.wins, w2 = p2.wins;
-      p1.reset(cx - 60, 1); p1.wins = w1;
-      p2.reset(cx + 60, -1); p2.wins = w2;
+      // wins and meter carry across rounds; everything else starts fresh
+      const w1 = p1.wins, w2 = p2.wins, m1 = p1.meter, m2 = p2.meter;
+      p1.reset(cx - 60, 1); p1.wins = w1; p1.meter = m1;
+      p2.reset(cx + 60, -1); p2.wins = w2; p2.meter = m2;
       this.cam = Math.max(0, Math.min(this.worldW - DD.C.VIEW_W, cx - DD.C.VIEW_W / 2));
       p1.state = 'intro'; p2.state = 'intro';
       this.projectiles = [];
@@ -90,11 +91,15 @@ window.DD = window.DD || {};
     }
 
     spawnFireball(f) {
+      const spec = DD.PROJECTILES[f.char] || DD.PROJECTILES.klaus;
       this.projectiles.push({
         owner: f,
         x: f.x + f.facing * 28,
         y: f.y - 42,
-        vx: f.facing * C().FIREBALL_SPEED,
+        vx: f.facing * spec.vx,
+        vy: spec.vy,
+        gravity: spec.gravity,
+        ground: spec.ground,   // goes off where it lands instead of flying on
         t: 0,
         dead: false,
       });
@@ -178,11 +183,20 @@ window.DD = window.DD || {};
       if (Input.wasPressed('KeyP')) this.paused = !this.paused;
       if (this.paused) return;
 
-      if (this.hitstop > 0) { this.hitstop--; return; }
-
       const [p1, p2] = this.fighters;
       const pad1 = p1.controller.read();
       const pad2 = p2.controller.read();
+
+      // Hitstop freezes the fight, but not the stick. Buffering a cancel
+      // during the freeze is exactly when a player does it, so the motion
+      // buffers keep reading even though nobody moves.
+      if (this.hitstop > 0) {
+        this.hitstop--;
+        p1.motion.feed(pad1, p1.facing);
+        p2.motion.feed(pad2, p2.facing);
+        return;
+      }
+
       p1.update(this, pad1, p2);
       p2.update(this, pad2, p1);
 
@@ -219,11 +233,31 @@ window.DD = window.DD || {};
       if (!hb) return;
       const dbox = def.hurtbox();
       if (!this.overlap(hb, dbox)) return;
+      const a = hb.data;
       att.hasHit = true;
+      att.hitCount++;
+      att.hitCd = a.hitGap || 0;
+      // A multi-hit move that knocks down on every hit would launch them
+      // out of its own remaining hits.
+      const last = att.hitCount >= (a.hits || 1);
+      const data = a.knockdown === 'last' && !last
+        ? Object.assign({}, a, { knockdown: false })
+        : a;
+
       const dir = def.x >= att.x ? 1 : -1;
       const cx = (Math.max(hb.x0, dbox.x0) + Math.min(hb.x1, dbox.x1)) / 2;
       const cy = (Math.max(hb.y0, dbox.y0) + Math.min(hb.y1, dbox.y1)) / 2;
-      const result = def.receiveHit(this, hb.data, dir);
+      const wasStunned = def.state === 'hitstun';
+      const result = def.receiveHit(this, data, dir);
+
+      if (result === 'hit' || result === 'ko') {
+        att.combo = wasStunned ? att.combo + 1 : 1;
+        att.comboT = C().COMBO_SHOW;
+        att.gainMeter(data.dmg * C().METER_DEALT);
+        def.gainMeter(data.dmg * C().METER_TAKEN);
+      } else if (result === 'block') {
+        def.gainMeter(data.chip * C().METER_BLOCK);
+      }
       this.afterHit(att, def, result, cx, cy);
     }
 
@@ -248,7 +282,15 @@ window.DD = window.DD || {};
         if (p.dead) continue;
         p.t++;
         p.x += p.vx;
+        if (p.gravity) { p.vy += p.gravity; p.y += p.vy; }
         if (p.x < -30 || p.x > this.worldW + 30) { p.dead = true; continue; }
+        // a lobbed grenade goes off where it lands
+        if (p.ground && p.y >= C().GROUND_Y - 6) {
+          p.dead = true;
+          this.spawnSparks(p.x, C().GROUND_Y - 6, 'hit');
+          DD.audio.play('hit');
+          continue;
+        }
         const box = { x0: p.x - F.w / 2, y0: p.y - F.h / 2, x1: p.x + F.w / 2, y1: p.y + F.h / 2 };
         // projectile vs projectile: both dissolve
         for (const q of this.projectiles) {

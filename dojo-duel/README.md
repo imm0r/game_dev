@@ -43,12 +43,26 @@ the point. Use the server.
 | Projectile | special, or ↓ ↘ → + punch | fireball (Klaus) / grenade (Antoine) |
 | **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
 | **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball |
+| **Super** | ↓ ↘ → + special, at full meter | four hits, and nothing touches you while it starts |
 
 The two motions are the classics: a quarter circle forward for the
-projectile and the rush, the dragon-punch motion for the uppercut. They are
-read leniently — you have to pass through the directions in order and
-inside 20 frames, not hit each one cleanly. The special button stays as a
-shortcut for the projectile, so nothing is behind a motion you cannot do.
+projectile, the rush and the super, the dragon-punch motion for the
+uppercut. They are read leniently — you have to pass through the directions
+in order and inside 20 frames, not hit each one cleanly. The special button
+stays as a shortcut for the projectile, so nothing is behind a motion you
+cannot do.
+
+**Cancels.** A normal that *connects* can be cancelled straight into a
+special — punch, then quarter-circle kick, and the rush comes out before
+they recover. That is the combo engine, and it only works on a hit: a
+whiffed poke stays as punishable as it looks.
+
+**Meter** builds from damage you deal, damage you take and chip you block,
+so losing a round still charges it, and it carries between rounds. Full, it
+flashes under your health bar.
+
+Klaus throws his fireball flat. Antoine lobs his grenade in an arc and it
+goes off where it lands — the same button, a different problem for you.
 
 | Uppercut catching a jump-in | Antoine's cannonball |
 | --- | --- |

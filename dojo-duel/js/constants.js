@@ -31,6 +31,12 @@ DD.C = {
 
   MOTION_WINDOW: 20,  // frames a stick motion may take before it goes stale
 
+  METER_MAX: 100,
+  METER_DEALT: 0.7,   // meter per point of damage dealt
+  METER_TAKEN: 0.5,   // ...and taken, so losing still builds towards a super
+  METER_BLOCK: 2.5,   // per point of chip damage blocked
+  COMBO_SHOW: 70,     // frames the hit counter stays up after the last hit
+
   FIREBALL_SPEED: 2.4,
   FIREBALL_COOLDOWN: 60,
 
@@ -54,20 +60,20 @@ DD.ATTACKS = {
     startup: 5, active: 4, recovery: 10,
     dmg: 6, chip: 1, stun: 16, blockstun: 9, kb: 2.0,
     box: { x: 8, y: -57, w: 26, h: 11 },
-    sfx: 'punch',
+    sfx: 'punch', cancel: true,
   },
   kick: {
     startup: 8, active: 5, recovery: 15,
     dmg: 10, chip: 2, stun: 22, blockstun: 12, kb: 2.6,
     box: { x: 10, y: -44, w: 30, h: 13 },
-    sfx: 'kick',
+    sfx: 'kick', cancel: true,
   },
   // Fast, short, safe. The poke you throw when you are not sure.
   cpunch: {
     startup: 4, active: 4, recovery: 8,
     dmg: 5, chip: 1, stun: 13, blockstun: 8, kb: 1.4,
     box: { x: 8, y: -34, w: 26, h: 11 },
-    sfx: 'punch', crouch: true,
+    sfx: 'punch', crouch: true, cancel: true,
   },
   // The classic: slow, has to be blocked low, and puts them on the floor.
   // Whiffing it is the worst thing that can happen to you.
@@ -100,12 +106,30 @@ DD.ATTACKS = {
     box: { x: 0, y: -58, w: 32, h: 46 },
     sfx: 'fireball', knockdown: true, rush: 3.1,
   },
+  // The super. Same charge as the rush, but it hits four times on the way
+  // through and cannot be interrupted while it starts up - a full meter
+  // buys you the one move nobody trades with.
+  super: {
+    startup: 12, active: 34, recovery: 26,
+    dmg: 7, chip: 2, stun: 20, blockstun: 12, kb: 1.4,
+    box: { x: -2, y: -66, w: 38, h: 56 },
+    sfx: 'fireball', rush: 2.8, hits: 4, hitGap: 8, invuln: 12,
+    knockdown: 'last',   // only the fourth hit puts them down
+  },
   special: {
     startup: 14, active: 2, recovery: 24,  // "active" = the frame that spawns the projectile
     dmg: 0, chip: 0, stun: 0, blockstun: 0, kb: 0,
     box: null,
     sfx: 'fireball',
   },
+};
+
+// Projectiles fly differently per fighter: Klaus throws a fireball
+// straight, Antoine lobs a grenade that arcs and goes off where it lands.
+DD.PROJECTILES = {
+  klaus: { vx: 2.4, vy: 0, gravity: 0 },
+  antoine: { vx: 2.1, vy: -2.6, gravity: 0.13, ground: true },
+  hanzo: { vx: 2.4, vy: 0, gravity: 0 },
 };
 
 // Stick motions, in numpad notation relative to the way you are facing:

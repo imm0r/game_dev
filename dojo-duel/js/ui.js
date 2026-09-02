@@ -34,14 +34,37 @@ window.DD = window.DD || {};
     }
   }
 
+  // Super meter. Full, it flashes — you should not have to check a number
+  // to know the move is available.
+  function meterBar(ctx, x, y, w, meter, fromLeft, t) {
+    const full = meter >= DD.C.METER_MAX;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(x - 1, y - 1, w + 2, 5);
+    ctx.fillStyle = '#181428';
+    ctx.fillRect(x, y, w, 3);
+    const mw = Math.round((meter / DD.C.METER_MAX) * w);
+    const mx = fromLeft ? x : x + w - mw;
+    ctx.fillStyle = full ? ((t % 16) < 8 ? '#f8f8b0' : '#40e8f8') : '#3878c8';
+    ctx.fillRect(mx, y, mw, 3);
+  }
+
+  function comboCount(ctx, f, x, align) {
+    if (f.combo < 2 || f.comboT <= 0) return;
+    F().drawTextShadow(ctx, f.combo + ' HITS', x, 46, 1, '#f8d020', align);
+  }
+
   function drawHUD(ctx, game) {
     const [p1, p2] = game.fighters;
     healthBar(ctx, 12, 10, 120, 8, p1.hp, p1.showHp, true);
     healthBar(ctx, 188, 10, 120, 8, p2.hp, p2.showHp, false);
-    F().drawTextShadow(ctx, DD.C.P1_NAME, 12, 21, 1, '#f8f8f8', 'left');
-    F().drawTextShadow(ctx, DD.C.P2_NAME, 308, 21, 1, '#f8f8f8', 'right');
-    pips(ctx, 12, 29, p1.wins, true);
-    pips(ctx, 308, 29, p2.wins, false);
+    meterBar(ctx, 12, 20, 120, p1.meter, true, game.t);
+    meterBar(ctx, 188, 20, 120, p2.meter, false, game.t);
+    F().drawTextShadow(ctx, DD.C.P1_NAME, 12, 27, 1, '#f8f8f8', 'left');
+    F().drawTextShadow(ctx, DD.C.P2_NAME, 308, 27, 1, '#f8f8f8', 'right');
+    pips(ctx, 12, 34, p1.wins, true);
+    pips(ctx, 308, 34, p2.wins, false);
+    comboCount(ctx, p1, 12, 'left');
+    comboCount(ctx, p2, 308, 'right');
 
     const secs = Math.max(0, Math.ceil(game.timeFrames / 60));
     const timeCol = secs <= 10 ? '#f85040' : '#f8f8f8';
@@ -84,7 +107,8 @@ window.DD = window.DD || {};
 
     F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 160, 1, '#8a8496', 'center');
     F().drawTextShadow(ctx, 'DOWN+ATTACK = LOW   TAP TWICE = DASH', 160, 168, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'QUARTER CIRCLE = SPECIAL   FWD-DOWN-FWD = UPPERCUT', 160, 152, 1, '#7a7488', 'center');
+    F().drawTextShadow(ctx, 'QUARTER CIRCLE = SPECIAL   FWD-DOWN-FWD = UPPERCUT', 160, 144, 1, '#7a7488', 'center');
+    F().drawTextShadow(ctx, 'FULL METER + QUARTER CIRCLE + SPECIAL = SUPER', 160, 152, 1, '#7a7488', 'center');
     F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 176, 1, '#8a8496', 'center');
   }
 

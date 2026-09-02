@@ -43,7 +43,13 @@ function check(name, cond, extra) {
       step(n) {
         const [a, b2] = G.fighters;
         for (let i = 0; i < n; i++) {
-          if (G.hitstop > 0) { G.hitstop--; continue; }
+          // mirrors updateFight: hitstop freezes the fight, not the stick
+          if (G.hitstop > 0) {
+            G.hitstop--;
+            a.motion.feed(this.pads[0], a.facing);
+            b2.motion.feed(this.pads[1], b2.facing);
+            continue;
+          }
           a.update(G, this.pads[0], b2);
           b2.update(G, this.pads[1], a);
           G.pushBodies(a, b2);
@@ -59,6 +65,11 @@ function check(name, cond, extra) {
         a.reset(x1, 1); b2.reset(x2, -1);
         a.state = 'idle'; b2.state = 'idle';
         this.pads = [DD.input.emptyPad(), DD.input.emptyPad()];
+        // hitstop left over from the previous case would eat the first
+        // input of this one
+        G.hitstop = 0;
+        G.projectiles = []; G.particles = [];
+        G.state = 'fight';
       },
     };
     G.state = 'fight';
@@ -234,6 +245,113 @@ function check(name, cond, extra) {
   });
   check('the rushing special carries you forward', r.name === 'rush' && r.moved > 40,
     'moved=' + (r.moved || 0).toFixed(1));
+
+  // --- meter ---------------------------------------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(140, 166);
+    G.fighters[0].meter = 0; G.fighters[1].meter = 0;
+    R.set(0, { punch: true }); R.step(1);
+    R.set(0, {}); R.step(20);
+    return { hitter: G.fighters[0].meter, hurt: G.fighters[1].meter };
+  });
+  check('landing a hit builds meter', r.hitter > 0, 'meter=' + r.hitter);
+  check('taking one builds meter too', r.hurt > 0, 'meter=' + r.hurt);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(140, 240);
+    G.fighters[0].meter = DD.C.METER_MAX - 1;
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true }); R.step(2);
+    R.set(0, { right: true, special: true }); R.step(1);
+    const denied = G.fighters[0].atkName;
+    R.place(140, 240);
+    G.fighters[0].meter = DD.C.METER_MAX;
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true }); R.step(2);
+    R.set(0, { right: true, special: true }); R.step(1);
+    return { denied, granted: G.fighters[0].atkName, left: G.fighters[0].meter };
+  });
+  check('no super without a full meter', r.denied !== 'super', 'atkName=' + r.denied);
+  check('a full meter buys the super', r.granted === 'super', 'atkName=' + r.granted);
+  check('and the super spends it', r.left === 0, 'meter=' + r.left);
+
+  // --- the super hits several times and is invulnerable on start-up -------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(120, 190);
+    const [a, b2] = G.fighters;
+    a.meter = DD.C.METER_MAX;
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true }); R.step(2);
+    R.set(0, { right: true, special: true }); R.step(1);
+    const safe = a.hurtbox() === null;                 // invulnerable start-up
+    R.set(0, {});
+    R.step(DD.ATTACKS.super.startup + DD.ATTACKS.super.active + 4);
+    return { safe, hits: a.hitCount, combo: a.combo, hp: b2.hp, down: b2.state };
+  });
+  check('the super is invulnerable while it starts', r.safe);
+  check('the super hits more than once', r.hits > 1, 'hits=' + r.hits);
+  check('those hits count as a combo', r.combo > 1, 'combo=' + r.combo);
+
+  // --- cancelling a normal into a special ---------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(140, 168);
+    const [a, b2] = G.fighters;
+    R.set(0, { punch: true }); R.step(1);              // punch...
+    R.set(0, {}); R.step(DD.ATTACKS.punch.startup + DD.ATTACKS.punch.active);
+    const landed = a.hasHit;
+    R.set(0, { down: true }); R.step(1);               // ...cancelled into
+    R.set(0, { down: true, right: true }); R.step(1);  //    a quarter circle
+    R.set(0, { right: true, kick: true }); R.step(1);
+    return { landed, name: a.atkName, combo: a.combo, hp: b2.hp };
+  });
+  check('a connected normal cancels into a special', r.landed && r.name === 'rush',
+    'landed=' + r.landed + ' atkName=' + r.name);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(60, 300);                                  // far apart: whiff
+    const a = G.fighters[0];
+    R.set(0, { punch: true }); R.step(1);
+    R.set(0, {}); R.step(DD.ATTACKS.punch.startup + DD.ATTACKS.punch.active);
+    R.set(0, { down: true }); R.step(1);
+    R.set(0, { down: true, right: true }); R.step(1);
+    R.set(0, { right: true, kick: true }); R.step(1);
+    return { name: a.atkName };
+  });
+  check('a whiffed normal does not cancel', r.name === 'punch', 'atkName=' + r.name);
+
+  // --- the grenade arcs, the fireball does not -----------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    const drop = (who) => {
+      R.place(80, 240);
+      const f = G.fighters[who];
+      f.fireCd = 0;
+      G.projectiles = [];
+      G.spawnFireball(f);
+      const p = G.projectiles[0];
+      const y0 = p.y;
+      let rose = 0, frames = 0;
+      // a lob goes up first and lands eventually; a fireball does neither
+      while (frames < 200 && !p.dead) {
+        G.updateProjectiles();
+        rose = Math.min(rose, p.y - y0);
+        frames++;
+      }
+      return { rose, landed: p.dead && p.x > 0 && p.x < G.worldW, frames };
+    };
+    return { klaus: drop(0), antoine: drop(1) };
+  });
+  check("Klaus's fireball flies flat", Math.abs(r.klaus.rose) < 1,
+    'rise=' + r.klaus.rose.toFixed(1));
+  check("Antoine's grenade arcs up", r.antoine.rose < -8,
+    'rise=' + r.antoine.rose.toFixed(1));
+  check('and goes off where it lands', r.antoine.landed,
+    'frames=' + r.antoine.frames);
 
   // --- every pose the moves ask for really exists -------------------------
   r = await run(() => {

@@ -110,7 +110,7 @@ implements. Every milestone ends in a playable build.
 - [ ] Animated hit-spark sprites instead of particle squares
 - [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
 
-### M4 – Fighting depth  *(packages 1-2 delivered)*
+### M4 – Fighting depth  *(packages 1-3 delivered)*
 
 **Package 1 (delivered): the ground game**
 - [x] Crouching punch (down + punch): the fastest move in the game
@@ -143,9 +143,21 @@ implements. Every milestone ends in a playable build.
 - [x] Both remaining sheet poses are now in the game; only Klaus's pink
       dash is unusable
 
-**Package 3: meter and combos**
-- [ ] Super meter, combo counter, juggle rules
-- [ ] Grenade arc trajectory
+**Package 3 (delivered): meter, combos, the grenade's arc**
+- [x] Super meter under each health bar: built from damage dealt, damage
+      taken and chip blocked, so losing a round still charges it. It
+      carries between rounds and flashes when it is full
+- [x] Super: quarter circle + the special button at full meter. Four hits,
+      invulnerable while it starts up — a full meter buys the one move
+      nobody trades with
+- [x] Cancels: a normal that *connects* cancels into a special. That is
+      the combo engine, and it needs the hit — a whiffed poke stays as
+      punishable as it looks
+- [x] Hit counter on screen
+- [x] Klaus's fireball flies flat; Antoine's grenade arcs and goes off
+      where it lands
+- [x] Hitstop no longer freezes the stick — buffering a cancel during the
+      freeze is exactly when a player does it, and it was being dropped
 
 **Package 4: throws**
 - [ ] Antoine's judo throw as a grab mechanic

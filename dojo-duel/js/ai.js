@@ -65,6 +65,13 @@ window.DD = window.DD || {};
         return pad;
       }
 
+      // a full meter is meant to be spent
+      if (me.meter >= DD.C.METER_MAX && dist < 95 && me.grounded
+          && Math.random() < 0.09) {
+        this.motion([{ d: 1 }, { d: 1, f: 1 }, { f: 1 }], toward, 'special');
+        return this.queue.shift();
+      }
+
       // mid range, out of nowhere -> come in behind the rushing special
       if (dist > 55 && dist < 130 && me.grounded && Math.random() < 0.035) {
         this.motion([{ d: 1 }, { d: 1, f: 1 }, { f: 1 }], toward, 'kick');
