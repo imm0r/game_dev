@@ -200,6 +200,60 @@ implements. Every milestone ends in a playable build.
 - [ ] Juggle rules, so air combos cannot run forever once there is
       anything that launches high enough to matter
 
+### M4b – The jump, the anti-air, and a CPU with more than one idea
+Everything below came out of one report: *"springen fühlt sich unnütz an -
+durch einen Sprung gewinnt man keine Vorteile"*. It was four separate
+symptoms and one cause.
+- [x] **The jump was seven pixels too short.** A fireball's box is y
+      109..123, an airborne fighter's is `y-40 .. y`, and the old apex was
+      116 - so a fireball could not be jumped at *any* point in the arc,
+      measured at 0 clear frames out of 38. `JUMP_VY` -4.6 → -5.3 gives
+      59px and 16 clear frames of 44: a read rather than a lottery, and a
+      commitment rather than a free escape
+- [x] **The anti-air lost a range race nobody could see.** A flying kick
+      reaches 34px from its owner's centre; the uppercut reached 27. With
+      hurtboxes 11 wide, the jump-in connected at a gap of 45 and the
+      uppercut needed 38 - so no timing existed that beat a jump-in, and
+      "anti-air" was a move that did not work rather than one that was
+      hard. Matched to 34, and invulnerable through its whole hit window
+      (12 frames, covering start-up 4 + active 8) rather than start-up
+      only, because a flying attack stays active until it lands and would
+      otherwise always trade
+- [x] **The air attacks pointed the wrong way.** Their boxes were short
+      bands at the jumper's own hip height, which only ever worked because
+      the jump was low enough that a hip was a standing opponent's
+      shoulder. They hang downwards now, hip to just above the feet - a
+      bug the taller jump found rather than caused
+- [x] **A lob passes over a crouch, a flat fireball never does.** That is
+      what makes the three projectiles three different problems. Maxim's
+      molotov had a 7px stretch where a crouch cleared it, which is an
+      accident, not a window; thrown higher and falling slower it keeps
+      its short range and gains a real one
+- [x] Jumping over the other fighter already worked, at every distance -
+      there was just never a reason to find out
+- [x] **The CPU holds a stance** for a couple of seconds instead of
+      rerolling a table of moves every few frames. Rerolling averages out
+      to one behaviour, and that behaviour is *walk forward and attack*.
+      A stance decides what a distance means: to a zoner 120px is where it
+      wants to be and it will back-dash to keep it, to a rusher it is a
+      gap to close
+- [x] **Temperament per fighter, and it follows their projectile.**
+      Antoine's grenade dies at 107px so he has no long game and comes at
+      you; Klaus throws flat down the whole screen so keeping you out is a
+      real plan; Maxim throws to make you move. Measured over five CPU
+      rounds each: Klaus vs Maxim sits at 84px average, 31% of the time
+      beyond 110px, 67 projectiles thrown - anything with Antoine in it
+      sits at ~50px and half the round inside 50px
+- [x] Being behind on health, or late on the clock, pushes any of them
+      forward. Sitting on a lead is a plan; sitting on a deficit is losing
+      slower
+- [x] The CPU jumps a projectile *in the middle of its arc* rather than
+      as soon as it sees one - the clearance runs frames 13 to 31, so
+      leaving early is how you land on it. Far enough out it answers with
+      its own instead, and the two cancel
+- [x] Twelve checks in `moves-test.js` now hold these numbers down. The
+      whole thing was invisible for months because nothing measured it
+
 ### M5 – Third character  *(done)*
 
 **The character**

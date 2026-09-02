@@ -10,7 +10,15 @@ DD.C = {
   WALL_MARGIN: 16,    // fighter margin to the world edge (world width per stage)
 
   GRAVITY: 0.24,
-  JUMP_VY: -4.6,      // yields ~44px of jump height
+  // ~59px of jump height over 44 frames. The number that matters is not
+  // the height, it is what it clears: a fireball's box is y 109..123 and
+  // an airborne fighter's is `y-40 .. y`, so the feet have to get above
+  // 109 for the jump to be worth anything. At the old -4.6 the apex was
+  // 116 - seven pixels short, every time, which meant a fireball could
+  // not be jumped at any point in the arc. With it, there are 16 frames
+  // of clearance in the middle of the jump: enough to be a read, tight
+  // enough to be a commitment.
+  JUMP_VY: -5.3,
   JUMP_VX: 1.5,       // horizontal jump speed (locked while airborne)
   WALK_F: 1.25,       // walking forward beats backing up – like the classics
   WALK_B: 0.95,
@@ -94,10 +102,17 @@ DD.ATTACKS = {
     box: { x: 8, y: -15, w: 36, h: 13 },
     sfx: 'kick', crouch: true, low: true, knockdown: true,
   },
+  // Both air attacks hang *downwards*, from about the jumper's hip to
+  // just above their feet, because that is the direction a jumping attack
+  // points: you are above them. They used to be short bands at hip height
+  // and got away with it only because the jump was low enough that a hip
+  // was a standing opponent's shoulder. Raise the jump and the same box
+  // sails over their head from the apex - the bug the taller jump found
+  // rather than caused.
   airkick: {
     startup: 6, active: 999, recovery: 0,  // active until landing
     dmg: 8, chip: 2, stun: 18, blockstun: 10, kb: 2.2,
-    box: { x: 6, y: -39, w: 28, h: 15 },
+    box: { x: 6, y: -34, w: 28, h: 30 },
     sfx: 'kick',
   },
   // The other way in. It comes out faster than the flying kick and does
@@ -106,7 +121,7 @@ DD.ATTACKS = {
   airpunch: {
     startup: 4, active: 999, recovery: 0,
     dmg: 6, chip: 1, stun: 15, blockstun: 9, kb: 1.8,
-    box: { x: 6, y: -44, w: 22, h: 14 },
+    box: { x: 6, y: -36, w: 22, h: 28 },
     sfx: 'punch',
   },
   // The answer to someone who only blocks: a grab goes through guard
@@ -117,14 +132,32 @@ DD.ATTACKS = {
     box: { x: 4, y: -60, w: 24, h: 44 },
     sfx: 'kick', grab: true, knockdown: true,
   },
-  // Anti-air. The hitbox is tall rather than long, so it beats someone
-  // coming down on you and loses to anyone standing back — and the 26
-  // frames of recovery are what you pay when you guess wrong.
+  // Anti-air. Tall rather than long, so it beats someone coming down on
+  // you and loses to anyone standing back — and the 26 frames of recovery
+  // are what you pay when you guess wrong.
+  //
+  // It reaches 34px, which is not a round number: it is exactly what a
+  // flying kick reaches. At 27 it lost the range race outright - the
+  // jump-in connected at a gap of 45 and the uppercut needed 38, so no
+  // timing existed that beat a jump-in, and anti-air was a move that did
+  // not work rather than one that was hard. Matched reach makes it a
+  // read, and the invulnerability below is what breaks the tie.
+  //
+  // The invulnerability is what makes it an *answer* rather than a race.
+  // Without it a flying kick and an uppercut are two boxes arriving at
+  // the same place and both land, so the reward for reading a jump-in was
+  // a trade - and there was no reason to learn the motion.
+  //
+  // 12 covers start-up *and* the whole hit window (4 + 8), and it has to:
+  // a flying attack stays active until it lands, so its box is out at
+  // whatever moment the uppercut connects. Cover only the start-up and
+  // every anti-air is still a trade, just a later one. What it costs is
+  // the 26 recovery frames - whiff this and you are a free hit.
   uppercut: {
     startup: 4, active: 8, recovery: 26,
     dmg: 13, chip: 3, stun: 26, blockstun: 15, kb: 2.6,
-    box: { x: 3, y: -74, w: 24, h: 44 },
-    sfx: 'punch', knockdown: true,
+    box: { x: 2, y: -76, w: 32, h: 48 },
+    sfx: 'punch', knockdown: true, invuln: 12,
   },
   // Each fighter's second special: Klaus charges wreathed in flame,
   // Antoine turns himself into a cannonball. Same rules, different art.
@@ -152,15 +185,21 @@ DD.ATTACKS = {
   },
 };
 
-// Projectiles fly differently per fighter: Klaus throws a fireball
-// straight, Antoine lobs a grenade that arcs and goes off where it lands.
+// Projectiles fly differently per fighter, and the difference is what you
+// have to answer with. Klaus throws a fireball flat down the screen: it
+// never goes over a crouching head, so the only answers are to block it,
+// to jump it, or to throw your own. The other two lob, and a lob passes
+// over a crouch for part of its flight - which is the whole reason to
+// crouch at all, and why their range is short in exchange.
 DD.PROJECTILES = {
   klaus: { vx: 2.4, vy: 0, gravity: 0 },
   antoine: { vx: 2.1, vy: -2.6, gravity: 0.13, ground: true },
-  // A bottle is heavier than a grenade: flatter out of the hand, and it
-  // comes down sooner, so Maxim's molotov covers less ground than
-  // Antoine's lob and is harder to walk under.
-  maxim: { vx: 2.3, vy: -2.1, gravity: 0.16, ground: true },
+  // A bottle is heavier than a grenade: it comes down sooner, so Maxim's
+  // molotov covers less ground than Antoine's lob. It used to be flatter
+  // too, which left a 7px stretch where a crouch cleared it - not a
+  // window, an accident. Thrown higher and falling slower it keeps its
+  // short range and gains a stretch you can actually duck in.
+  maxim: { vx: 2.3, vy: -2.7, gravity: 0.135, ground: true },
   hanzo: { vx: 2.4, vy: 0, gravity: 0 },
 };
 

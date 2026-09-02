@@ -487,6 +487,151 @@ function check(name, cond, extra) {
   });
   check('every animation frame resolves', r.missing.length === 0, r.missing.join(', '));
 
+  // --- the jump has to be worth taking -------------------------------------
+  // The whole rock-paper-scissors of a fighting game hangs off one number:
+  // whether a jump clears a projectile. It did not for a long time - the
+  // apex was seven pixels short - and because nothing measured it, the
+  // symptom read as "jumping feels pointless" rather than as a number
+  // being wrong. So it is a number now.
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game, C = DD.C;
+    const F = DD.FIREBALL, band = { y0: C.GROUND_Y - 42 - F.h / 2, y1: C.GROUND_Y - 42 + F.h / 2 };
+    R.place(140, 260);
+    const a = G.fighters[0];
+    R.set(0, { up: true }); R.step(1); R.set(0, {});
+    let clear = 0, frames = 0, apex = 999;
+    while (!a.grounded && frames < 200) {
+      R.step(1); frames++;
+      apex = Math.min(apex, a.y);
+      const h = a.hurtbox();
+      if (h && (h.y1 <= band.y0 || h.y0 >= band.y1)) clear++;
+    }
+    // and a fighter standing in the same spot is squarely in the way
+    R.place(140, 260);
+    const sb = G.fighters[0].hurtbox();
+    const standHit = sb.y0 < band.y1 && sb.y1 > band.y0;
+    return { clear, frames, apex: Math.round(apex), standHit, band };
+  });
+  check('a jump clears a fireball', r.clear >= 8,
+    `${r.clear} clear frames of ${r.frames}, apex y=${r.apex}, band ${r.band.y0}..${r.band.y1}`);
+  check('...but not for the whole jump', r.clear < r.frames - 8,
+    `${r.clear} of ${r.frames}`);
+  check('standing there does not clear it', r.standHit);
+
+  // --- an anti-air that actually answers ------------------------------------
+  // Reach parity is the load-bearing part: a flying kick reaches 34px and
+  // the uppercut used to reach 27, which meant no timing beat a jump-in.
+  r = await run(() => {
+    const up = DD.ATTACKS.uppercut.box, ak = DD.ATTACKS.airkick.box;
+    return { up: up.x + up.w, ak: ak.x + ak.w, invuln: DD.ATTACKS.uppercut.invuln,
+             cover: DD.ATTACKS.uppercut.startup + DD.ATTACKS.uppercut.active };
+  });
+  check('the uppercut reaches as far as a flying kick', r.up >= r.ak,
+    `uppercut ${r.up}px vs flying kick ${r.ak}px`);
+  check('and is invulnerable through its whole hit window', r.invuln >= r.cover,
+    `invuln ${r.invuln} covers ${r.cover} frames`);
+
+  // Timed right it wins clean; too late it loses. Both halves matter - an
+  // anti-air that always works is not a read, it is a button.
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    const [a, d] = G.fighters;
+    const trial = (t) => {
+      R.place(150, 228);
+      let hitMe = -1, hitThem = -1;
+      for (let f = 0; f < 90; f++) {
+        R.set(1, f === 0 ? { up: true, left: true }
+          : f === 1 ? { left: true, kick: true } : { left: true });
+        if (f === t) a.startAttack('uppercut');
+        const ha = a.hp, hd = d.hp;
+        R.step(1);
+        if (a.hp < ha && hitMe < 0) hitMe = f;
+        if (d.hp < hd && hitThem < 0) hitThem = f;
+      }
+      return { hitMe, hitThem };
+    };
+    const good = trial(18), late = trial(30);
+    return { good, late };
+  });
+  check('a well-timed uppercut beats a jump-in clean',
+    r.good.hitThem >= 0 && r.good.hitMe < 0,
+    `landed at ${r.good.hitThem}, took a hit at ${r.good.hitMe}`);
+  check('...and a late one does not', r.late.hitMe >= 0,
+    `took a hit at ${r.late.hitMe}`);
+
+  // --- what a crouch is for --------------------------------------------------
+  // A lob passes over a ducking head for part of its flight; a flat
+  // fireball never does. That difference is the reason the three fighters
+  // play differently at range, so it is worth pinning down.
+  r = await run(() => {
+    const C = DD.C, F = DD.FIREBALL;
+    const crouchTop = C.GROUND_Y - 47;      // hurtbox top while crouching
+    const out = {};
+    for (const who of Object.keys(DD.PROJECTILES)) {
+      const s = DD.PROJECTILES[who];
+      let x = 0, y = C.GROUND_Y - 42, vy = s.vy, over = 0, t = 0;
+      while (t++ < 300) {
+        if (s.gravity) { vy += s.gravity; y += vy; }
+        x += s.vx;
+        if (s.ground && y >= C.GROUND_Y - 6) break;
+        if (x > 340) break;
+        if (y + F.h / 2 < crouchTop) over++;
+      }
+      out[who] = { over, travel: Math.round(x) };
+    }
+    return out;
+  });
+  check('Klaus\'s flat fireball can never be ducked', r.klaus.over === 0,
+    `${r.klaus.over} frames over a crouch`);
+  check('Antoine\'s grenade passes over a crouch', r.antoine.over >= 15,
+    `${r.antoine.over} frames`);
+  check('so does Maxim\'s molotov', r.maxim.over >= 15, `${r.maxim.over} frames`);
+  check('and both lobs stay shorter than the flat one',
+    r.antoine.travel < r.klaus.travel && r.maxim.travel < r.klaus.travel,
+    `${r.antoine.travel} / ${r.maxim.travel} vs ${r.klaus.travel}`);
+
+  // --- jumping over the other fighter ---------------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    const [a, d] = G.fighters;
+    R.place(150, 150 + DD.C.PUSH_DIST);
+    R.set(0, { up: true, right: true }); R.step(1);
+    R.set(0, { right: true });
+    let n = 0;
+    while (!a.grounded && n++ < 200) R.step(1);
+    return { crossed: a.x > d.x, me: Math.round(a.x), opp: Math.round(d.x) };
+  });
+  check('you can jump over the other fighter', r.crossed, `${r.me} vs ${r.opp}`);
+
+  // --- the CPU has more than one idea ---------------------------------------
+  // Antoine comes forward, Maxim wants the gap. Run each of them against
+  // the same still opponent and the average distance has to separate them,
+  // or all three fighters are one fighter.
+  r = await run(() => {
+    const G = window.__DOJO.game;
+    const spacing = (pick) => {
+      G.pick = [pick, 0];
+      G.startMatch(2);
+      const [a, d] = G.fighters;
+      const ai = new DD.AIController(a, d, G);
+      a.reset(120, 1); d.reset(240, -1); a.state = 'idle'; d.state = 'idle';
+      G.projectiles = []; G.state = 'fight'; G.hitstop = 0;
+      let sum = 0, n = 0;
+      const idle = DD.input.emptyPad();
+      for (let f = 0; f < 2400; f++) {
+        a.update(G, ai.read(), d);
+        d.update(G, idle, a);     // a post to work against, so only the
+        d.hp = DD.C.MAX_HP;       // CPU's own spacing shows up
+        G.pushBodies(a, d); G.updateProjectiles();
+        sum += Math.abs(d.x - a.x); n++;
+      }
+      return Math.round(sum / n);
+    };
+    return { antoine: spacing(1), maxim: spacing(2) };
+  });
+  check('the CPU fighters do not all play the same', r.maxim > r.antoine + 12,
+    `Antoine holds ${r.antoine}px, Maxim ${r.maxim}px`);
+
   // --- every roster entry can take the field -------------------------------
   // The title screen hands these straight to the Fighter constructor, so a
   // name that has no character or no such color scheme is a crash on pick.

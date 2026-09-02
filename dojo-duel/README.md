@@ -70,10 +70,29 @@ of range the same input is just a punch. The catch is that anyone who
 pressed punch in the last six frames shrugs the grab off — so mashing throw
 at a mashing opponent loses, which is the point.
 
-Klaus throws his fireball flat. Antoine lobs his grenade in an arc and it
-goes off where it lands. Maxim's molotov is heavier than a grenade: it
-leaves his hand flatter and comes down sooner, so it covers less ground but
-is harder to walk under. The same button, three different problems.
+**The jump is a read, and the whole game hangs off it.** From about frame
+13 to frame 31 of a 44-frame jump your feet are above a fireball — so
+jumping a projectile is a real answer, and a badly timed one lands you
+straight into it. That is what makes throwing one a question rather than
+free damage: they might be over it before it arrives.
+
+**And the answer to the jump is the uppercut.** → ↓ ↘ + punch, invulnerable
+through its whole hit window, reaching exactly as far as a flying kick. Get
+it out while they are coming down and it beats the jump-in clean; get it
+out late and you eat the kick anyway, standing in 26 frames of recovery.
+Fireball, jump, anti-air: each one beats the one before it, and that
+triangle is the game.
+
+Klaus throws his fireball flat down the whole screen — it never passes over
+a crouching head, so it can only be blocked, jumped or answered with one of
+your own. Antoine lobs his grenade and it goes off where it lands. Maxim's
+molotov is heavier: it comes down sooner and covers less ground. Both lobs
+sail over a crouch for part of their flight, which is the other reason to
+duck. The same button, three different problems.
+
+| A jump clearing a fireball | An uppercut answering the jump |
+| --- | --- |
+| ![Jumping over a fireball](docs/screenshots/doc-jumpover.png) | ![Anti-air uppercut](docs/screenshots/doc-antiair.png) |
 
 | Uppercut catching a jump-in | Antoine's cannonball |
 | --- | --- |
@@ -148,9 +167,19 @@ a K.O.
   `SHEET_ORDER` is for: a spare guard, a second drawing of a kick already
   fully out, three hit-reaction poses on a sheet that never asked for
   them. `null` drops each of those in one line.
-- **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
-  projectiles — and is deliberately beatable) plus **local two-player
-  mode** on one keyboard
+- **Single-player vs CPU**, and the three of them do not play alike. The
+  AI holds a **stance** for a couple of seconds rather than rerolling a
+  table of moves every few frames, which is the difference between having
+  a plan and having an average. Antoine comes forward and stays there —
+  his grenade dies at 107px, so he has no long game and does not pretend
+  to. Klaus and Maxim will hold the gap, back-dash out of your reach and
+  throw from range, and two of them at it is a corner-to-corner fireball
+  war. Falling behind on health, or on the clock, pushes any of them
+  forward. It is still deliberately beatable.
+
+  ![Two zoners at range](docs/screenshots/doc-zoning.png)
+
+  Plus **local two-player mode** on one keyboard.
 - **3 scrolling stages**, each an 832px-wide painted panorama from
   `assets/`, with a camera that follows the fighters:
 
@@ -358,6 +387,15 @@ rules directly — that a sweep knocks down, that a standing block loses to
 a low and a crouching one does not, that a downed fighter cannot be hit,
 that a dash outruns a walk, and that every frame an animation asks for
 actually exists.
+
+It also holds down the numbers the fight is balanced on, because those are
+the ones that break quietly. A jump has to clear a fireball **and not for
+its whole length**; an uppercut has to reach as far as a flying kick and
+beat a jump-in clean when it is timed right and lose when it is late; a
+lob has to pass over a crouch and a flat fireball must never; the three
+CPUs have to hold visibly different distances. Every one of those was
+wrong at some point and none of it showed up as a bug report — it showed
+up as "jumping feels pointless", which is a much harder thing to find.
 
 ```bash
 node tools/moves-test.js
