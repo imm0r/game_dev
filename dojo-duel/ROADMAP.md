@@ -100,10 +100,15 @@ implements. Every milestone ends in a playable build.
 - [x] `DD.spritesheet.keysOf()` reports what the importer took for
       background, for when a sheet comes out wrong
 
-**Package 7: fleshing out the animation**
-- [ ] Walk cycle to 6 frames, idle to 4 real poses
-- [ ] Attacks to 4-5 phases (impact frames, follow-through)
-- [ ] Extended hit reactions (2 levels)
+**Package 7: fleshing out the animation** *(delivered by M6's strips)*
+- [x] Idle on 4 real poses, walk on 4 drawn frames — for all three
+      fighters, off `<fighter>-moves.png`. Six walk frames were the
+      original target and four is what the sheets carry; the cycle reads
+      as a walk, so the two extra are not worth a regeneration
+- [x] Attacks on 5 phases with a held impact frame and a follow-through
+- [x] Hit reactions on 3 drawn frames, spread over however long hitstun
+      lasts. The second *level* (a light and a heavy reaction) is still
+      one reaction played at one length
 - [ ] Palette swaps for imported sheets — right now both color schemes of a
       character share the same frames, so a future mirror match would be
       two identical fighters
@@ -270,10 +275,15 @@ implements. Every milestone ends in a playable build.
       a wall that happened to be thick enough, and the long thin channel
       between a limb and a body, which was painting a magenta bar down
       Klaus's side as he walked
-- [ ] **Open: the strips drift from the sheet.** A strip is a separate
-      generation, so Klaus's walk came back in gold shorts where his sheet
-      has black ones. Generating every movement for one fighter in one
-      image would at least make the strips agree with each other
+- [x] **Solved: the strips no longer drift from the sheet.** A strip is a
+      separate generation, so Klaus's walk came back in gold shorts where
+      his sheet has black ones. Two things fixed it. Generating every
+      movement for a fighter in *one* image makes the strips agree with
+      each other, which is a layout decision. Making them agree with the
+      main sheet is a prompt decision: **name the colours**, because a
+      generator asked for "black-and-gold trunks" picks which is which
+      itself, and one asked for Maxim without "always holding a bottle"
+      hands him back empty-handed in a different jacket
 - [x] One sheet for every movement instead of one per movement: Klaus's
       idle, walk, punch, kick and hit reaction come off `klaus-moves.png`,
       his jump and both air attacks off `klaus-jump.png`
