@@ -42,19 +42,19 @@ big classics) it cannot score a K.O.
 - **The roster**, drawn as sprite sheets and imported straight from
   `assets/` (see [Bring your own art](#bring-your-own-art)):
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks
-    with a flag patch, MMA gloves, full beard. 14 poses on the sheet — the
-    spare stances go into a four-frame walk cycle.
+    with a flag patch, MMA gloves, full beard. His special throws a
+    **fireball**.
     ![Klaus frames](docs/screenshots/klaus-frames.png)
-  - **ANTOINE MOREAU** (judo/GIGN, France): heavier and a little taller,
-    olive uniform with rolled-up sleeves, French flag patch on the
-    shoulder, fingerless gloves, heavy boots, full beard. 12 poses. His
-    special hurls a **grenade**.
+  - **ANTOINE MOREAU** (judo/GIGN, France): heavier, olive uniform with
+    rolled-up sleeves, French flag patch on the shoulder, fingerless
+    gloves, heavy boots, full beard. His special hurls a **grenade**.
     ![Antoine frames](docs/screenshots/antoine-frames.png)
   - **HANZO**, the karate fighter from the first prototype, remains as a
     bonus set (roster mapping is configurable in `js/constants.js`)
 
-  One pose is on neither sheet: a knocked-out fighter is the hit reaction
-  tipped onto its back.
+  Each sheet carries 20 poses. Fifteen are on screen today; the uppercut,
+  the two crouching attacks, the second special and the running stride are
+  drawn and imported, waiting for the moves that use them.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard
@@ -98,9 +98,10 @@ import step, no atlas to rebuild, no metadata file to keep in sync.
 - **A fighter** is one sheet with the poses laid out next to each other on
   a flat background, `klaus.png` / `antoine.png` / `hanzo.png`. The
   importer finds each pose as a connected shape — so the rows may even
-  overlap — keys the background out with a soft edge, lines every pose up
-  on its feet and scales the sheet to fighter height. A partial sheet is
-  fine: whatever it leaves out keeps the generated art.
+  overlap, and a drawn grid around the poses is found and removed — keys
+  the background out with a soft edge, lines every pose up on its feet and
+  scales the sheet so the fighting stance comes out at the right height. A
+  partial sheet is fine: whatever it leaves out keeps the generated art.
 
 Pose order, the exact image requirements and a ready-made generator prompt
 are in [`assets/README.md`](assets/README.md).
@@ -138,15 +139,31 @@ as a shape rather than by cutting the image into strips; that is what lets
 the sheets have several rows and lets those rows overlap. Each pose is then
 cut out with only its own pixels, matted (see below), aligned on the middle
 of its feet and scaled by one factor shared across the sheet, so a crouch
-stays shorter than a stance.
+stays shorter than a stance. The reference for that factor is the fighting
+stance, not the tallest frame — a special wrapped in flames is far taller
+than the fighter, and measuring against it would shrink everybody.
 
 Keying the background is the part that decides whether the result looks
-bought or homemade. A yes/no test on "is this pixel magenta" leaves a
-colored rim wherever the art fades into the background. Instead each pixel
-within a few steps of the background gets a **fractional** alpha, measured
-against the solid artwork right next to it, and the key color is then
-mixed back out of what survives — so a soft edge stays soft, and a black
-boot next to magenta comes out black rather than purple.
+bought or homemade, and it is three problems, not one.
+
+*The soft edge.* A yes/no test on "is this pixel magenta" leaves a colored
+rim wherever the art fades into the background. Instead each pixel within a
+few steps of the background gets a **fractional** alpha, measured against
+the solid artwork right next to it, and the key color is then mixed back
+out of what survives — so a soft edge stays soft, and a black boot next to
+magenta comes out black rather than purple.
+
+*The grid.* Generators like to draw a frame around each pose, and a line
+that touches two poses would fuse them into one region. A drawn line gives
+itself away twice over: it vanishes when you erase everything thinner than
+a limb, and it floats free of any body. Both tests together separate it
+from the gold trim on a pair of trunks, which is every bit as thin but
+never floats. Where a line was drawn *across* a figure, the slit it leaves
+is painted over from the artwork on either side.
+
+*The background is not one color.* The field itself is read as the most
+common color in the sheet rather than off the corners, because a grid
+drawn to the image edge puts its own color in every corner.
 
 **Generated in code** — the fallback for a fighter with no sheet, and
 Hanzo's whole bonus set. Every frame is a text grid, one character per
