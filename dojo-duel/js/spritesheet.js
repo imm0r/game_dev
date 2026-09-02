@@ -158,33 +158,34 @@ window.DD = window.DD || {};
     },
 
     maxim: {
-      // 22: his kick came back in six steps rather than five.
+      // 21 figures, exactly as asked: 4 / 4 / 5 / 5 / 3. The sheet came
+      // back in three rows fenced off by thick black bars - the line pass
+      // keys them out, so they cost nothing.
       moves: {
         order: [
           'idle0', 'idle1', 'idle2', 'idle3',
           'walk0', 'walk1', 'walk2', 'walk3',
           'pun0', 'pun1', 'pun2', 'pun3', 'pun4',
-          'kick0', 'kick1', 'kick2', 'kick3', 'kick4', 'kick5',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
           'hurt0', 'hurt1', 'hurt2',
         ],
         anims: {
           idle: { seq: [['idle0', 14, 0], ['idle1', 14, 0], ['idle2', 14, 0], ['idle3', 14, 0]] },
           walk: { seq: [['walk0', 6, 0], ['walk1', 6, 0], ['walk2', 6, 0], ['walk3', 6, 0]] },
           punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
-          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4', 'kick5'], hit: 3 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
           hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
         },
       },
-      // 15, and the loosest of the three: it carries a spare guard before
-      // the punch, a second drawing of the kick fully out, and three at
-      // the end that are a hit reaction nobody asked this sheet for.
+      // 12: the air punch came back as two swings back to back, so the
+      // first one is the move and the second one is spare.
       jump: {
         order: [
           ANCHOR,
           'jmp0', 'jmp1', 'jmp2',
-          null, 'apun0', 'apun1', 'apun2',
-          'air0', 'air1', null, 'air2',
-          null, null, null,
+          'apun0', 'apun1', 'apun2',
+          null, null,
+          'air0', 'air1', 'air2',
         ],
         anims: {
           jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },

@@ -286,6 +286,12 @@ into the next has changed nothing that matters. Asking for a row layout
 only adds an instruction it can fail. Ask for **one numbered sequence**
 and let it fall where it falls.
 
+Nor does it matter how emphatically a generator draws the rows it invented
+anyway. Maxim's moveset came back with three rows fenced off by thick
+black bars, which is the same thing as the box some generators draw around
+each pose, only seen edge on — the line pass keys them out and the figures
+that stand on them keep their boots.
+
 What does matter for the reading order is that every figure **stands on
 the same invisible ground line**. A figure floating well above its
 neighbours can sort into the row above and land in the wrong place in the
@@ -408,6 +414,11 @@ Check the **count per movement** rather than the layout. If a movement
 comes back with a figure more or less than asked, everything after it
 shifts by that much - which `SHEET_ORDER` absorbs in one line, but only
 once somebody has noticed.
+
+None of that needs an expensive model. Maxim's pair — the two sheets that
+finally look like him — came back from a free one, and one of them is the
+only sheet in the project that returned the exact counts asked for.
+Naming the colours is what carries these prompts; the model is not.
 
 ---
 
