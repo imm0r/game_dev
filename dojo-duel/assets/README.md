@@ -297,7 +297,7 @@ trunks because "black-and-gold trunks" does not say which is which. Write
 "black trunks with a gold waistband and a gold side stripe" and the
 question never comes up.
 
-> A pixel art sprite sheet of a single character in **24 poses**, side
+> A pixel art sprite sheet of a single character in **21 poses**, side
 > view, all figures facing right, on a flat solid magenta background
 > (#FF00FF). No scenery, no ground shadow, no text, no labels. **Every
 > figure is the same character at the same size and in the same
@@ -305,7 +305,7 @@ question never comes up.
 > line**. Lay them out in reading order, left to right and top to bottom,
 > over as many lines as they need, with clear empty space between them.
 >
-> The 24 poses are six movements, each **broken into even in-between
+> The 21 poses are five movements, each **broken into even in-between
 > steps**. Within a movement the character **does not travel**: the
 > supporting foot stays in exactly the same place.
 >
@@ -331,18 +331,32 @@ question never comes up.
 > to counterbalance; 17 the shin folding back in; 18 the foot coming down
 > towards the floor.
 >
-> **Jump, 19-21:** 19 rising, knees tucked up and arms drawn in; 20 the
-> top of the arc, the body at its most compact; 21 falling, the legs
-> reaching down for the ground.
->
-> **Hit reaction, 22-24:** 22 the head snapping back from a blow to the
-> face; 23 the deepest point of the recoil, the body folded away from it;
-> 24 straightening up again.
+> **Hit reaction, 19-21:** 19 the head snapping back from a blow to the
+> face; 20 the deepest point of the recoil, the body folded away from it;
+> 21 straightening up again.
 >
 > Character: **[your description here, colours named]**.
 
 Save it as `<fighter>-moves.png`. Pose 1 is both the idle stance and the
-figure the whole sheet is scaled by.
+figure the whole sheet is scaled by. The jump strip has no stance in it,
+so it is scaled against the moves sheet - save it as
+`<fighter>-jump.png`, and it takes `@anchor` in place of a stance.
+
+**The jump is not on this sheet, and cannot be.** Every other figure
+stands on the same ground line - that is what keeps the reading order
+unambiguous - and a jump is off the ground by definition. Asked for both
+at once, the generator drops the one it cannot reconcile, which is exactly
+what happened the first time. It gets its own image, with the ground line
+rule replaced:
+
+> A pixel art animation strip of a single character in **3 poses in one
+> row**, side view, facing right, on a flat solid magenta background
+> (#FF00FF). No scenery, no ground shadow, no text, no labels. The same
+> character at the same size in all three, **all three drawn at the same
+> height in the picture, none of them touching the ground**: 1 rising,
+> knees tucked up and arms drawn in; 2 the top of the arc, the body at its
+> most compact; 3 falling, the legs reaching down for the ground.
+> Character: **[your description here, colours named]**.
 
 Check the **count per movement** rather than the layout. If a movement
 comes back with a figure more or less than asked, everything after it
