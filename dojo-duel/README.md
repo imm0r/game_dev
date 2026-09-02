@@ -136,13 +136,18 @@ a K.O.
   grab, the lift and the slam included, so a throw is drawn rather than
   borrowed from another move. Klaus's sheet even carries his fireball as a
   picture of its own, and that is what the game puts in the air.
-- **Animation strips.** A pose per movement is a switch, not an animation,
+- **Animation sheets.** A pose per movement is a switch, not an animation,
   so movement comes on extra sheets, `assets/<fighter>-<move>.png`, whose
-  poses beat the main sheet's. Klaus has two: 22 figures covering his idle,
-  walk, punch, kick and hit reaction, and 10 more for the jump and the two
-  air attacks. Each brings its own timing along with its drawings, and an
-  attack plays as many drawings as it has — the one the arm is fully out in
-  is held through the whole hit window.
+  poses beat the main sheet's. All three fighters have two: about 21
+  figures covering the idle, walk, punch, kick and hit reaction, and about
+  10 more for the jump and both air attacks. Each brings its own timing
+  along with its drawings, and an attack plays as many drawings as it has
+  — the one the arm is fully out in is held through the whole hit window.
+
+  No two came back with the same figure counts, which is what
+  `SHEET_ORDER` is for: a spare guard, a second drawing of a kick already
+  fully out, three hit-reaction poses on a sheet that never asked for
+  them. `null` drops each of those in one line.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard

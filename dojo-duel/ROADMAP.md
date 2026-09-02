@@ -286,7 +286,9 @@ implements. Every milestone ends in a playable build.
       share of its figure. That one rule replaced three thresholds and
       cleared the last of the magenta - a wedge at the crotch of every
       airborne frame, which nothing before it caught
-- [ ] The other two fighters
+- [x] The other two fighters, on the same two sheets each. No two came
+      back with the same figure counts and every one of them mapped in a
+      line of `SHEET_ORDER`, which is the whole point of that list
 
 ### M7 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants

@@ -291,11 +291,15 @@ the same invisible ground line**. A figure floating well above its
 neighbours can sort into the row above and land in the wrong place in the
 sequence, and that is worth insisting on.
 
-**Name the colours.** This is the cheap lever and it is worth more than
-any wording about consistency. Klaus's first walk strip came back in gold
-trunks because "black-and-gold trunks" does not say which is which. Write
-"black trunks with a gold waistband and a gold side stripe" and the
-question never comes up.
+**Name the colours, and name what the character is holding.** This is the
+cheap lever and it is worth more than any wording about consistency.
+Klaus's first walk strip came back in gold trunks because "black-and-gold
+trunks" does not say which is which; write "black trunks with a gold
+waistband and a gold side stripe" and the question never comes up. The
+same goes for anything the character never puts down - Maxim has a bottle
+in his fist in every pose on his main sheet, and a moveset generated
+without "always holding a bottle in one hand" came back empty-handed and
+in a different jacket.
 
 > A pixel art sprite sheet of a single character in **21 poses**, side
 > view, all figures facing right, on a flat solid magenta background
@@ -395,6 +399,10 @@ the same reason and belong in the same generation:
 > folding back in, **the knee still raised**.
 >
 > Character: **[your description here, colours named]**.
+
+**No text, no labels, no numbers.** A generator that helpfully numbers the
+figures has put ten more shapes on the sheet, and the importer finds poses
+by shape - it has no way to know a "3" is not a pose.
 
 Check the **count per movement** rather than the layout. If a movement
 comes back with a figure more or less than asked, everything after it

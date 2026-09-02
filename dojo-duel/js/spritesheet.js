@@ -86,9 +86,9 @@ window.DD = window.DD || {};
     klaus: {
       // 22 figures: idle 4, walk 4, punch 6, kick 5, hit reaction 3. The
       // punch came back as two punches back to back rather than one in
-      // five steps, so the arm goes out through 8-10 and comes back
-      // through the tail of the second one - the spare guard between them
-      // is dropped.
+      // five steps, so the arm goes out through the first and comes back
+      // through the tail of the second - the spare guard between them is
+      // dropped.
       moves: {
         order: [
           'idle0', 'idle1', 'idle2', 'idle3',
@@ -102,9 +102,7 @@ window.DD = window.DD || {};
           walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
           punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
           kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
-          // A hit reaction runs backwards through its own drawings: the
-          // head snaps back first and straightens as the stun runs out.
-          hurt: { two: ['hurt1', 'hurt2'] },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
         },
       },
       // 10 figures, all but the first off the ground: a stance to measure
@@ -123,8 +121,79 @@ window.DD = window.DD || {};
         },
       },
     },
-  };
 
+    antoine: {
+      // 21 figures, exactly as asked: 4 / 4 / 5 / 5 / 3.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
+        anims: {
+          idle: { seq: [['idle0', 13, 0], ['idle1', 13, 0], ['idle2', 13, 0], ['idle3', 13, 0]] },
+          walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
+        },
+      },
+      // 11: one spare tuck between the punch and the kick.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          'apun0', 'apun1', 'apun2',
+          null,
+          'air0', 'air1', 'air2',
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+    },
+
+    maxim: {
+      // 22: his kick came back in six steps rather than five.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4', 'kick5',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
+        anims: {
+          idle: { seq: [['idle0', 14, 0], ['idle1', 14, 0], ['idle2', 14, 0], ['idle3', 14, 0]] },
+          walk: { seq: [['walk0', 6, 0], ['walk1', 6, 0], ['walk2', 6, 0], ['walk3', 6, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4', 'kick5'], hit: 3 },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
+        },
+      },
+      // 15, and the loosest of the three: it carries a spare guard before
+      // the punch, a second drawing of the kick fully out, and three at
+      // the end that are a hit reaction nobody asked this sheet for.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          null, 'apun0', 'apun1', 'apun2',
+          'air0', 'air1', null, 'air2',
+          null, null, null,
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+    },
+  };
   // Poses reused from an imported one, so a small sheet still animates.
   // Order matters: an entry may lean on one resolved above it.
   const ALIAS = {
