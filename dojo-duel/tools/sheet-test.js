@@ -64,8 +64,9 @@ function check(name, cond, extra) {
         out[`${charKey}-${move}`] = {
           found: frames.length,
           expected: strip.order.length,
-          missing: strip.order.slice(1)
-            .filter((n) => n && !window.DD.sprites.frames[charKey][skin][n]),
+          missing: strip.order
+            .filter((n) => n && n !== S.ANCHOR
+              && !window.DD.sprites.frames[charKey][skin][n]),
           // Every frame of a movement is the same fighter, so they must
           // come out about the same height: a strip whose figures were
           // drawn at different sizes pops as the animation plays. A pixel

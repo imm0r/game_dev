@@ -267,7 +267,74 @@ drawings and gets them however long the arc lasts.
 > tucked up and arms drawn in; 3 the top of the arc, the body at its most
 > compact; 4 falling, the legs reaching down for the ground.
 
-Save each strip as `<fighter>-<move>.png` — `klaus-walk.png`,
+### One sheet for every movement
+
+A strip per movement means a generation per movement, and the character
+drifts between them. Asking for **all the movements in one image** costs
+one generation and gets one look: 24 figures in six rows is the same
+order of magnitude as the 23-pose sheets that came back clean.
+
+It does not make the drift go away — it moves it. What the moves sheet
+covers becomes internally consistent, and what is left on the main sheet
+(the special, the throw, the victory pose, the K.O.) is what you see for a
+moment rather than all match long.
+
+**Name the colours.** This is the cheap lever and it is worth more than
+any wording about consistency. Klaus's first walk strip came back in gold
+trunks because "black-and-gold trunks" does not say which is which. Write
+"black trunks with a gold waistband and a gold side stripe" and the
+question never comes up.
+
+> A pixel art sprite sheet of a single character, side view, all figures
+> facing right, on a flat solid magenta background (#FF00FF). No scenery,
+> no ground shadow, no text, no labels. **Every figure is the same
+> character at the same size and in the same colours**, standing on the
+> same invisible ground line. Lay it out in **6 rows**, read left to
+> right, top to bottom, with clear empty space between figures and
+> between rows.
+>
+> Each row is **one movement broken into even in-between steps**, and
+> within a row the character **does not travel across the strip**: the
+> supporting foot stays in exactly the same place.
+>
+> **Row 1, idle, 4 figures:** 1 the neutral fighting stance, guard up;
+> 2 the chest rising and the guard lifting slightly; 3 the top of the
+> breath, shoulders at their highest; 4 the chest settling back down. The
+> feet do not move at all.
+>
+> **Row 2, walk, 4 figures:** 1 the near leg forward and planted with the
+> weight on it, the far leg trailing; 2 both legs passing under the body;
+> 3 the far leg forward and planted, the near leg trailing; 4 both legs
+> passing under the body again. The hips stay at the same horizontal
+> position in all four.
+>
+> **Row 3, straight punch, 5 figures:** 1 winding up, the punching fist
+> drawn back to the hip and the shoulder turning away; 2 the fist starting
+> forward; 3 the arm fully extended at maximum reach, the body committed
+> behind it; 4 the arm bending back halfway; 5 returning to the guard.
+>
+> **Row 4, high kick, 5 figures:** 1 the weight shifting onto the standing
+> leg, the kicking knee lifting; 2 the knee chambered high, the shin still
+> folded; 3 the leg fully extended forward at head height, the body
+> leaning back to counterbalance; 4 the shin folding back in; 5 the foot
+> coming down towards the floor.
+>
+> **Row 5, jump, 3 figures:** 1 rising, knees tucked up and arms drawn in;
+> 2 the top of the arc, the body at its most compact; 3 falling, the legs
+> reaching down for the ground.
+>
+> **Row 6, hit reaction, 3 figures:** 1 the head snapping back from a
+> blow to the face; 2 the deepest point of the recoil, the body folded
+> away from it; 3 straightening up again.
+>
+> Character: **[your description here, colours named]**.
+
+Save it as `<fighter>-moves.png`. The stance at the very front of row 1 is
+both the idle pose and the figure the whole sheet is scaled by.
+
+---
+
+Save each single-movement strip as `<fighter>-<move>.png` — `klaus-walk.png`,
 `maxim-punch.png` — and add one line to `STRIPS` in `js/spritesheet.js`
 naming the poses it fills. It is loaded beside that fighter's main sheet,
 and a pose on a strip wins over the same pose on the sheet whichever image

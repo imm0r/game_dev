@@ -70,20 +70,23 @@ window.DD = window.DD || {};
       'grab0', 'lift0', 'slam0',
     ],
   };
-  // Extra sheets that carry one movement each, `<fighter>-<move>.png`.
-  // A pose on a strip beats the same pose on the main sheet, so a strip
-  // upgrades a movement without the main sheet being touched.
-  //
-  // Frame 1 of a strip is the fighting stance and is listed as `idle0`,
-  // but it is an anchor, not a pose: a sheet is scaled by one factor
-  // measured from the stance, and a strip with no stance in it would come
-  // into the game at whatever size its own tallest frame happened to be.
-  // It is never installed, so a strip cannot quietly replace the main
-  // sheet's idle with a stance drawn in a different generation.
+  // A sheet is scaled by one factor measured from the fighting stance, so
+  // every sheet needs a stance in it somewhere. A sheet of movements has
+  // one at the front purely to be measured against: `@anchor` says scale
+  // by this figure and do not install it, which keeps a strip from
+  // quietly replacing the main sheet's idle with a stance drawn in a
+  // different generation. A sheet that means its stance to *be* the idle
+  // just lists it as `idle0`.
+  const ANCHOR = '@anchor';
+
+  // Extra sheets that carry movement, `<fighter>-<move>.png`. A pose on
+  // one of these beats the same pose on the main sheet, so a movement is
+  // upgraded without the main sheet being touched, and each brings its own
+  // timing along with its drawings.
   const STRIPS = {
     klaus: {
       walk: {
-        order: ['idle0', 'walk0', 'walk1', 'walk2', 'walk3'],
+        order: [ANCHOR, 'walk0', 'walk1', 'walk2', 'walk3'],
         // The bob is in the art now, so no y-offset fakes one. Five ticks
         // a pose: the stride is about 16px and he covers 1.25px a frame,
         // so a shorter cycle skates less - though it can never plant a
@@ -95,7 +98,7 @@ window.DD = window.DD || {};
         },
       },
       punch: {
-        order: ['idle0', 'pun0', 'pun1', 'pun2', 'pun3', 'pun4'],
+        order: [ANCHOR, 'pun0', 'pun1', 'pun2', 'pun3', 'pun4'],
         // `hit` is the drawing the arm is fully out in: held through the
         // whole hit window, with the two before it playing the wind-up and
         // the two after it the recovery.
@@ -767,22 +770,25 @@ window.DD = window.DD || {};
     if (!frames.length) return 0;
 
     const S = DD.sprites;
-    const strip = rank > 1;
+    const strip = rank > 1;         // a strip does not run the aliases: its
+                                    // job is the movement it carries, not
+                                    // standing in for what a sheet lacks
 
     // One scale for the whole sheet, so the poses keep their relative
     // sizes - a crouch really does stay shorter than a stance. The
     // reference is the fighting stance, not the tallest frame: a special
     // wrapped in flames or trailing a rocket plume is far taller than the
     // fighter, and measuring against it would shrink everybody.
-    const stand = frames[order.indexOf('idle0')];   // the anchor, on a strip
+    let at = order.indexOf('idle0');
+    if (at < 0) at = order.indexOf(ANCHOR);
+    const stand = frames[at];
     const ref = stand ? stand.bottom - stand.top + 1
       : Math.max(...frames.map((f) => f.bottom - f.top + 1));
     const scale = STAND_H / ref;
     const cut = {};
     frames.forEach((f, i) => {
       const pose = order[i];
-      if (!pose || cut[pose]) return;
-      if (strip && i === 0) return;              // the anchor, not a pose
+      if (!pose || pose === ANCHOR || cut[pose]) return;
       cut[pose] = cutFrame(img, f, scale);
     });
     if (!strip) {
@@ -888,7 +894,7 @@ window.DD = window.DD || {};
   // to agree with the sheets about that, so they borrow the decision
   // rather than making a second one that can drift.
   DD.spritesheet = {
-    load, inspect, keysOf, ORDER, SHEET_ORDER, STRIPS, STAND_H,
+    load, inspect, keysOf, ORDER, SHEET_ORDER, STRIPS, ANCHOR, STAND_H,
     pixels, dominant, isBg,
   };
 })();
