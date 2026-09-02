@@ -113,6 +113,47 @@ function check(name, cond, extra) {
     white.pixels[1] >= white.pixels[0],
     `${white.pixels[0]} px -> ${white.pixels[1]} px`);
 
+  // --- a ground rule under each row ----------------------------------------
+  // Some sheets come back with a line under every row of poses instead of a
+  // box around each one. Every figure stands on it, so it welds the row
+  // into one region unless it is recognised. Draw one in the outline's own
+  // colour, which is the case colour alone cannot solve.
+  const ruled = await p.evaluate(async () => {
+    const name = Object.keys(window.DD.spritesheet.SHEET_ORDER)[0];
+    const img = await new Promise((res) => {
+      const i = new Image(); i.onload = () => res(i); i.src = `assets/${name}.png`;
+    });
+    const before = await window.DD.spritesheet.inspect(`assets/${name}.png`);
+
+    const cv = document.createElement('canvas');
+    cv.width = img.width; cv.height = img.height;
+    const c = cv.getContext('2d', { willReadFrequently: true });
+    c.drawImage(img, 0, 0);
+    const d = c.getImageData(0, 0, img.width, img.height).data;
+
+    // Draw the rules in a colour the artwork itself uses - the second most
+    // common colour in the sheet, the first being the background. That is
+    // the hard case: telling the rule apart by colour is impossible, so
+    // only its shape can give it away.
+    const bins = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      const k = `${d[i] >> 3},${d[i + 1] >> 3},${d[i + 2] >> 3}`;
+      bins.set(k, (bins.get(k) || 0) + 1);
+    }
+    const top = [...bins.entries()].sort((a, e) => e[1] - a[1]);
+    const [r2, g2, b2] = top[1][0].split(',').map((v) => v * 8 + 4);
+    c.fillStyle = `rgb(${r2},${g2},${b2})`;
+    const rows = 4;
+    for (let r = 1; r <= rows; r++) {
+      c.fillRect(0, Math.round((img.height / rows) * r) - 4, img.width, 3);
+    }
+    const after = await window.DD.spritesheet.inspect(cv.toDataURL('image/png'));
+    return { before: before.length, after: after.length, rule: `${r2},${g2},${b2}` };
+  });
+  check('a ground rule does not fuse a row into one pose',
+    ruled.after === ruled.before,
+    `${ruled.before} poses without the rule, ${ruled.after} with it`);
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await b.close();

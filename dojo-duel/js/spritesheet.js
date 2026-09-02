@@ -17,7 +17,8 @@ window.DD = window.DD || {};
   const THIN = 5;             // anything thinner than this is a drawn line,
                               // not a limb
   const BRIDGE = 3;           // close gaps this wide when a removed line cut
-                              // a pose in two - wide enough for the line,
+                              // a pose in two - wide enough for a drawn rule
+                              // even where it crosses a figure's shins,
                               // narrow enough to keep two poses apart
 
   // Frames are mapped in reading order. The default follows the pose list
@@ -126,6 +127,49 @@ window.DD = window.DD || {};
   const erode = (m, w, h, r) => morph(m, w, h, r, true);
   const dilate = (m, w, h, r) => morph(m, w, h, r, false);
 
+  // Rules drawn by shape rather than colour. A generator sometimes puts a
+  // ground line under each row of poses instead of a box around each one,
+  // and a line every figure stands on is worse than a box: it welds the
+  // whole row into a single region. Colour cannot always find it either -
+  // a dark rule and a dark outline land in the same bucket - so find it by
+  // shape. A rule is a hairline running across a large part of the sheet,
+  // and no part of a character is: a body always has something directly
+  // above or below it.
+  function findRules(mask, w, h) {
+    const out = new Uint8Array(w * h);
+    const GAP = 4;        // clear space required above and below
+    const SHARE = 0.25;   // of the sheet's width (or height)
+
+    const scan = (n, m, at) => {
+      // off the edge of the sheet counts as empty, so a rule drawn right
+      // against the border is found like any other
+      const empty = (i, j) => j < 0 || j >= m || !mask[at(i, j)];
+      const hair = (i, j) => !empty(i, j) && empty(i, j - GAP) && empty(i, j + GAP);
+      for (let j = 0; j < m; j++) {
+        let hits = 0;
+        for (let i = 0; i < n; i++) if (hair(i, j)) hits++;
+        if (hits < n * SHARE) continue;
+        if (DD.spritesheet && DD.spritesheet.verbose) {
+          console.info(`[dojo] rule at ${n === w ? 'y' : 'x'}=${j} (${hits}/${n})`);
+        }
+        // only the hairline itself: where a figure crosses the rule its
+        // pixels have body above and below, so they are never in here
+        for (let i = 0; i < n; i++) {
+          if (!hair(i, j)) continue;
+          for (let d = -2; d <= 2; d++) {
+            const y = j + d;
+            if (y < 0 || y >= m) continue;
+            const p = at(i, y);
+            if (mask[p]) out[p] = 1;
+          }
+        }
+      }
+    };
+    scan(w, h, (i, j) => j * w + i);
+    scan(h, w, (i, j) => i * w + j);
+    return out;
+  }
+
   // Frame lines. Generators like to draw a grid or a box around each pose,
   // and those lines are poison here: they run through several poses at
   // once, so labelling would fuse the whole sheet into one region.
@@ -186,11 +230,16 @@ window.DD = window.DD || {};
     //          fills the notch between a glove and a hip, and what it
     //          fills there is background, not art.
     const field = new Uint8Array(w * h), line = new Uint8Array(w * h);
+    const drawn = new Uint8Array(w * h);
     for (let p = 0; p < w * h; p++) {
       const i = p * 4;
       if (isBg(data, i, [bg])) field[p] = 1;         // the flat field
-      else if (isBg(data, i, keys)) line[p] = 1;     // a frame line
+      else if (isBg(data, i, keys)) line[p] = 1;     // a frame line by colour
+      else drawn[p] = 1;
     }
+    // ...and any rule the colour test missed, found by its shape
+    const rules = findRules(drawn, w, h);
+    for (let p = 0; p < w * h; p++) if (rules[p]) line[p] = 1;
 
     // Background is not "every pixel of the key color" - it is the key
     // color the background can actually reach. Flood it in from the edges,

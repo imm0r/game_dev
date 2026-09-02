@@ -52,9 +52,11 @@ to see what one looks like before making your own.
 Poses may sit at different heights — the importer aligns them by their
 feet. Soft, anti-aliased edges are fine: the background is removed with a
 fractional alpha and the key color is mixed back out, so no magenta rim
-survives. **Frame lines are fine too** — generators love to draw a grid or
-a box around each pose, and those are found and removed, including where
-one runs across a figure.
+survives. **Frame lines are fine too** — generators love to draw a box
+around each pose, or a ground line under each row, and both are found and
+removed, including where one runs across a figure. Boxes are recognised by
+colour; a ground line the figures stand on is recognised by shape, since a
+dark rule and a dark outline can be the same colour.
 
 **The background does not have to be magenta.** Whatever color fills most
 of the image is taken as the key, so a white or grey sheet works as well as
@@ -177,4 +179,6 @@ DD.spritesheet.inspect('assets/klaus.png').then((f) => f.forEach((c) => document
 in the console — it returns the frames as canvases, in the order they are
 mapped onto the pose list. `DD.spritesheet.keysOf('assets/klaus.png')`
 reports what it decided is background: the flat field first, then every
-frame-line color it found.
+frame-line color it found. Setting `DD.spritesheet.verbose = true` before
+either call also logs any ground rule it strips, with the row or column it
+found it on.
