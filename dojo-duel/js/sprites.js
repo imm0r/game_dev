@@ -4115,6 +4115,8 @@ window.DD = window.DD || {};
       scale: 1,
       grids: Object.assign({}, GEN.klaus, {
         fireballA: K2_FB_A, fireballB: K2_FB_B,
+        // The rig has no jump kick of its own; an imported sheet does.
+        air0: GEN.klaus.kick1,
       }),
       anims: {
         idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
@@ -4123,7 +4125,7 @@ window.DD = window.DD || {};
         punch: { atk: ['pun0', 'pun1', 'pun2'] },
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
-        airkick: { atk: ['kick1', 'kick1', 'kick1'] },
+        airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0',
@@ -4134,6 +4136,7 @@ window.DD = window.DD || {};
       scale: 1,
       grids: Object.assign({}, GEN.antoine, {
         fireballA: A2_GRENADE_A, fireballB: A2_GRENADE_B,
+        air0: GEN.antoine.kick1,
       }),
       anims: {
         idle: { seq: [['idle0', 13, 0], ['idle0', 10, 1], ['idle1', 13, 1], ['idle1', 10, 0]] },
@@ -4142,7 +4145,7 @@ window.DD = window.DD || {};
         punch: { atk: ['pun0', 'pun1', 'pun2'] },
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
-        airkick: { atk: ['kick1', 'kick1', 'kick1'] },
+        airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0',

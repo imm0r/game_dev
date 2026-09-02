@@ -5,7 +5,13 @@ const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const GAME = 'file://' + path.join(__dirname, '..', 'index.html');
+// By default the test opens the game straight off disk. Pass a URL to test
+// a served copy instead - a browser only lets the sprite sheet importer read
+// the pixels of `assets/*.png` over http, so that run also covers the
+// imported artwork:
+//     python3 -m http.server 8000        (in dojo-duel/)
+//     node tools/smoke-test.js http://localhost:8000/
+const GAME = process.argv[2] || 'file://' + path.join(__dirname, '..', 'index.html');
 const SHOTS = path.join(__dirname, '..', 'dist', 'smoke-shots');
 fs.mkdirSync(SHOTS, { recursive: true });
 

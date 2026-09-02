@@ -678,7 +678,9 @@ window.DD = window.DD || {};
 
   // ================================================================ Management
 
-  const stages = [makeTokyo(), makeNeon(), makeTemple()];
+  // Order matters: stage N is announced by the name below and backed by
+  // assets/stage-N.png, so the two have to describe the same place.
+  const stages = [makeTokyo(), makeTemple(), makeNeon()];
   const bgImgs = stages.map(() => ({ img: null, ok: false, canvas: null }));
 
   const MAX_IMG_WORLD = 832; // ~2.6 screen widths
