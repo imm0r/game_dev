@@ -31,6 +31,9 @@ DD.C = {
 
   MOTION_WINDOW: 20,  // frames a stick motion may take before it goes stale
 
+  THROW_RANGE: 30,    // how close a grab reaches
+  THROW_TECH: 6,      // frames after your own punch in which a grab breaks
+
   METER_MAX: 100,
   METER_DEALT: 0.7,   // meter per point of damage dealt
   METER_TAKEN: 0.5,   // ...and taken, so losing still builds towards a super
@@ -88,6 +91,14 @@ DD.ATTACKS = {
     dmg: 8, chip: 2, stun: 18, blockstun: 10, kb: 2.2,
     box: { x: 6, y: -39, w: 28, h: 15 },
     sfx: 'kick',
+  },
+  // The answer to someone who only blocks: a grab goes through guard
+  // entirely. It only reaches at arm's length, and it can be broken.
+  throw: {
+    startup: 2, active: 3, recovery: 20,
+    dmg: 14, chip: 0, stun: 0, blockstun: 0, kb: 1.0,
+    box: { x: 4, y: -60, w: 24, h: 44 },
+    sfx: 'kick', grab: true, knockdown: true,
   },
   // Anti-air. The hitbox is tall rather than long, so it beats someone
   // coming down on you and loses to anyone standing back — and the 26

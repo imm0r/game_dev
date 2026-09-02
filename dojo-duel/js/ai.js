@@ -65,6 +65,14 @@ window.DD = window.DD || {};
         return pad;
       }
 
+      // sitting on block at arm's length -> grab them out of it
+      if (opp.state === 'block' && dist < DD.C.THROW_RANGE - 3 && me.grounded
+          && Math.random() < 0.3) {
+        pad[toward] = true;
+        pad.punch = true;
+        return pad;
+      }
+
       // a full meter is meant to be spent
       if (me.meter >= DD.C.METER_MAX && dist < 95 && me.grounded
           && Math.random() < 0.09) {

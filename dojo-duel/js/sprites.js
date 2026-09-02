@@ -4104,6 +4104,7 @@ window.DD = window.DD || {};
     kick: { atk: ['kick', 'kick', 'kick'] },
     cpunch: { atk: ['crouch', 'crouch', 'crouch'] },
     sweep: { atk: ['crouch', 'crouch', 'crouch'] },
+    throw: { atk: ['punch', 'punch', 'punch'] },
     uppercut: { atk: ['punch', 'punch', 'punch'] },
     rush: { atk: ['special', 'special', 'special'] },
     super: { atk: ['special', 'special', 'special'] },
@@ -4135,6 +4136,9 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
+        // No sheet has a throw drawn; the special's throwing motion is
+        // the closest thing to one. Noted in the roadmap as an art gap.
+        throw: { atk: ['sp1', 'sp1', 'upp0'] },
         uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
         rush: { atk: ['rush0', 'rush0', 'rush0'] },
         super: { atk: ['sp1', 'rush0', 'rush0'] },
@@ -4165,6 +4169,9 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
+        // No sheet has a throw drawn; the special's throwing motion is
+        // the closest thing to one. Noted in the roadmap as an art gap.
+        throw: { atk: ['sp1', 'sp1', 'upp0'] },
         uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
         rush: { atk: ['rush0', 'rush0', 'rush0'] },
         super: { atk: ['sp1', 'rush0', 'rush0'] },

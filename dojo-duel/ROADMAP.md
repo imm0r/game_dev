@@ -110,7 +110,7 @@ implements. Every milestone ends in a playable build.
 - [ ] Animated hit-spark sprites instead of particle squares
 - [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
 
-### M4 – Fighting depth  *(packages 1-3 delivered)*
+### M4 – Fighting depth  *(packages 1-4 delivered)*
 
 **Package 1 (delivered): the ground game**
 - [x] Crouching punch (down + punch): the fastest move in the game
@@ -159,8 +159,22 @@ implements. Every milestone ends in a playable build.
 - [x] Hitstop no longer freezes the stick — buffering a cancel during the
       freeze is exactly when a player does it, and it was being dropped
 
-**Package 4: throws**
-- [ ] Antoine's judo throw as a grab mechanic
+**Package 4 (delivered): throws**
+- [x] Walk into them and press punch: a grab that goes through guard
+      entirely, lands them behind you on the floor, and out of range is
+      just a punch
+- [x] Breakable — anyone who pressed punch in the last six frames shrugs
+      it off, so mashing throw at a mashing opponent loses
+- [x] Cannot pick someone out of hitstun, which would be a throw loop
+- [x] The CPU grabs an opponent who is sitting on block
+- [ ] **Art gap:** no sheet has a throw drawn, so the thrower borrows the
+      special's throwing motion. A real throw animation (grab, lift,
+      slam) is the obvious next art request — it is the one move in the
+      game that does not look like what it is
+
+### M4 remainder
+- [ ] Juggle rules, so air combos cannot run forever once there is
+      anything that launches high enough to matter
 
 ### M5 – Third character
 - [ ] Based on the project owner's next reference sheet

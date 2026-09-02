@@ -38,6 +38,7 @@ window.DD = window.DD || {};
       this.fireCd = 0;
       this.kbVx = 0;              // knockback
       this.crouching = false;     // this attack came out of a crouch
+      this.techT = 0;             // frames left in which a grab would break
       this.dashT = 0;             // frames left in a dash
       this.dashDir = 0;
       this.downT = 0;             // frames left lying / getting up after a sweep
@@ -68,6 +69,16 @@ window.DD = window.DD || {};
 
     gainMeter(amount) {
       this.meter = Math.min(C().METER_MAX, this.meter + amount);
+    }
+
+    // A grab reaches about an arm's length, needs you walking into them,
+    // and will not pick someone out of hitstun - that would be a loop.
+    canThrow(opp) {
+      if (!opp || !opp.grounded || !this.grounded) return false;
+      if (Math.abs(opp.x - this.x) > C().THROW_RANGE) return false;
+      const fwd = this.facing > 0 ? this.pad.right : this.pad.left;
+      if (!fwd) return false;
+      return opp.controllable || opp.state === 'block';
     }
 
     // Invulnerable during a super's start-up: that is what the meter buys.
@@ -118,6 +129,9 @@ window.DD = window.DD || {};
       else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
       if (this.comboT > 0 && --this.comboT === 0) this.combo = 0;
+      // pressing punch leaves a short window in which a grab breaks
+      if (pad.punch) this.techT = C().THROW_TECH;
+      else if (this.techT > 0) this.techT--;
       // display HP slowly trails the real value
       if (this.showHp > this.hp) this.showHp = Math.max(this.hp, this.showHp - 0.6);
 
@@ -142,6 +156,8 @@ window.DD = window.DD || {};
             DD.audio.play('jump');
           } else if (this.trySpecial(game, pad)) {
             /* a motion claimed the button */
+          } else if (pad.punch && this.canThrow(opp)) {
+            this.startAttack('throw');        // walk into them and punch
           } else if (pad.down && pad.punch) {
             this.startAttack('cpunch');       // down+attack fires at once,
           } else if (pad.down && pad.kick) {  // no need to already be crouching
@@ -336,6 +352,29 @@ window.DD = window.DD || {};
     receiveHit(game, data, dir) {
       if (this.state === 'kolie' || this.state === 'kofall') return 'none';
       if (this.state === 'down' || this.state === 'getup') return 'none';
+
+      // A grab ignores guard entirely - that is the point of it - but
+      // whoever pressed punch a moment ago shrugs it off.
+      if (data.grab) {
+        if (this.techT > 0) { DD.audio.play('block'); return 'tech'; }
+        this.hp -= data.dmg;
+        if (this.hp <= 0) {
+          this.hp = 0;
+          this.state = 'kofall';
+          this.kbVx = dir * 1.8;
+          this.vy = -2.6;
+          this.y -= 0.01;
+          return 'ko';
+        }
+        this.state = 'down';
+        this.crouching = false;
+        this.kbVx = dir * data.kb;
+        this.vy = -2.4;
+        this.y -= 0.01;
+        this.downT = C().KNOCKDOWN_LIE;
+        DD.audio.play('hit');
+        return 'throw';
+      }
 
       const away = dir > 0 ? this.pad.right : this.pad.left;
       const canBlock = this.grounded && this.controllable

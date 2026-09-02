@@ -353,6 +353,54 @@ function check(name, cond, extra) {
   check('and goes off where it lands', r.antoine.landed,
     'frames=' + r.antoine.frames);
 
+  // --- throws --------------------------------------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(150, 172);                       // arm's length
+    const [a, b2] = G.fighters;
+    R.set(1, { right: true });               // they hold back: blocking
+    R.set(0, { right: true, punch: true }); R.step(1);
+    const name = a.atkName;
+    R.set(0, { right: true }); R.step(8);
+    return { name, state: b2.state, hp: b2.hp, behind: b2.x < a.x };
+  });
+  check('walking into them and punching is a throw', r.name === 'throw',
+    'atkName=' + r.name);
+  check('a throw goes through a block', r.hp < 100, 'hp=' + r.hp);
+  check('and puts them behind you, on the floor', r.behind && r.state === 'down',
+    'state=' + r.state + ' behind=' + r.behind);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(60, 300);                        // nowhere near
+    R.set(0, { right: true, punch: true }); R.step(1);
+    return { name: G.fighters[0].atkName };
+  });
+  check('out of range it is only a punch', r.name === 'punch', 'atkName=' + r.name);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(150, 172);
+    const [a, b2] = G.fighters;
+    R.set(1, { punch: true }); R.step(1);    // they punch, so they are teching
+    R.set(1, {});
+    R.set(0, { right: true, punch: true }); R.step(1);
+    R.set(0, { right: true }); R.step(6);
+    return { hp: b2.hp, state: b2.state };
+  });
+  check('a grab breaks if they just pressed punch', r.hp === 100 && r.state !== 'down',
+    'hp=' + r.hp + ' state=' + r.state);
+
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(150, 172);
+    const [a, b2] = G.fighters;
+    b2.state = 'hitstun'; b2.timer = 30;     // already being hit
+    const can = a.canThrow ? (a.pad.right = true, a.canThrow(b2)) : null;
+    return { can };
+  });
+  check('you cannot grab someone out of hitstun', r.can === false, 'canThrow=' + r.can);
+
   // --- every pose the moves ask for really exists -------------------------
   r = await run(() => {
     const missing = [];

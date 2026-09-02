@@ -44,6 +44,7 @@ the point. Use the server.
 | **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
 | **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball |
 | **Super** | ↓ ↘ → + special, at full meter | four hits, and nothing touches you while it starts |
+| **Throw** | walk into them + punch | goes straight through a block |
 
 The two motions are the classics: a quarter circle forward for the
 projectile, the rush and the super, the dragon-punch motion for the
@@ -60,6 +61,12 @@ whiffed poke stays as punishable as it looks.
 **Meter** builds from damage you deal, damage you take and chip you block,
 so losing a round still charges it, and it carries between rounds. Full, it
 flashes under your health bar.
+
+**Throws** are the answer to someone who only blocks. Walk into them and
+press punch: guard does not stop it, they land behind you on the floor. Out
+of range the same input is just a punch. The catch is that anyone who
+pressed punch in the last six frames shrugs the grab off — so mashing throw
+at a mashing opponent loses, which is the point.
 
 Klaus throws his fireball flat. Antoine lobs his grenade in an arc and it
 goes off where it lands — the same button, a different problem for you.

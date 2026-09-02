@@ -250,7 +250,22 @@ window.DD = window.DD || {};
       const wasStunned = def.state === 'hitstun';
       const result = def.receiveHit(this, data, dir);
 
-      if (result === 'hit' || result === 'ko') {
+      if (result === 'throw') {
+        // over the shoulder: they land behind you, facing back at you
+        const m = C().WALL_MARGIN;
+        def.x = Math.max(m, Math.min(this.worldW - m, att.x - att.facing * 24));
+        def.facing = att.facing;
+        att.combo = 1;
+        att.comboT = C().COMBO_SHOW;
+        att.gainMeter(data.dmg * C().METER_DEALT);
+        def.gainMeter(data.dmg * C().METER_TAKEN);
+      } else if (result === 'tech') {
+        // both shoved apart, nobody hurt
+        att.kbVx = -att.facing * 1.6;
+        def.kbVx = att.facing * 1.6;
+        att.state = 'hitstun'; att.timer = 10;
+        def.state = 'hitstun'; def.timer = 10;
+      } else if (result === 'hit' || result === 'ko') {
         att.combo = wasStunned ? att.combo + 1 : 1;
         att.comboT = C().COMBO_SHOW;
         att.gainMeter(data.dmg * C().METER_DEALT);
@@ -263,7 +278,7 @@ window.DD = window.DD || {};
 
     afterHit(att, def, result, cx, cy) {
       if (result === 'none') return;
-      this.spawnSparks(cx, cy, result === 'block' ? 'block' : 'hit');
+      this.spawnSparks(cx, cy, result === 'block' || result === 'tech' ? 'block' : 'hit');
       this.hitstop = C().HITSTOP;
       if (result === 'ko') {
         this.hitstop = C().HITSTOP + 8;
