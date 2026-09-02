@@ -56,11 +56,20 @@ survives. **Frame lines are fine too** — generators love to draw a grid or
 a box around each pose, and those are found and removed, including where
 one runs across a figure.
 
-One thing genuinely does break: **artwork in the key color**. Pick a key
-the character never wears. Magenta suits Antoine's olive uniform; it does
-not suit an effect drawn in hot pink, because nothing can tell that apart
-from the background. If the character or the effects are pink, key on
-green instead — and if they are green, key on magenta.
+**The background does not have to be magenta.** Whatever color fills most
+of the image is taken as the key, so a white or grey sheet works as well as
+a magenta one — the generator picking its own background is not a problem.
+
+The key color may even appear *inside* the drawing: only key-colored pixels
+the background can actually reach are removed, so the white of a flag patch
+survives on a white sheet, and so does the white core of a flame.
+
+What still breaks is the key color **touching the outline** — an effect
+drawn in the same color as the background, running off the edge of the
+figure into it. Nothing can tell those apart. Klaus's dash trails hot pink
+speed lines on a magenta field and is the one pose in the game that had to
+be dropped. So: keep the effects a different color from the background, and
+it does not matter much which color that is.
 
 ### Pose order
 
@@ -118,6 +127,26 @@ description:
 > down by a low kick, 19 victory pose with both fists raised, 20 knocked
 > out, lying on the ground. Effects must not use magenta or pink.
 > Character: **[your description here]**.
+
+### Poses that need two people
+
+A generator asked for a "throw" will draw two characters, every time, and
+arguing with it does not help: a throw is two people, so it draws two
+people. The way round it is to never name the interaction. Ask for the
+**gesture**, against an invisible object:
+
+> 21 reaching forward with both arms out at chest height, hands open, as
+> if about to take hold of a heavy sack. 22 standing upright with both
+> arms raised over one shoulder, as if hoisting a heavy sack. 23 twisting
+> hard at the waist with both arms swung down past the hip, as if hurling
+> a heavy sack at the ground.
+
+Same trick for anything else that implies a partner. Describe the body,
+not the fight.
+
+A two-character image is not useless, but it is only usable for a mirror
+match — the game draws Klaus against Antoine, and a picture of Antoine
+throwing Antoine puts the wrong man on the floor.
 
 Generators drift, so check what came back before wiring it up — count the
 figures, and make sure the later poses still look like the same person. If

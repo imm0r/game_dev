@@ -185,12 +185,45 @@ window.DD = window.DD || {};
     //          again. Only ever used to tell the poses apart: closing also
     //          fills the notch between a glove and a hip, and what it
     //          fills there is background, not art.
-    const art = new Uint8Array(w * h), line = new Uint8Array(w * h);
+    const field = new Uint8Array(w * h), line = new Uint8Array(w * h);
     for (let p = 0; p < w * h; p++) {
       const i = p * 4;
-      if (isBg(data, i, [bg])) continue;             // the flat field
-      if (isBg(data, i, keys)) line[p] = 1;          // a frame line
-      else art[p] = 1;
+      if (isBg(data, i, [bg])) field[p] = 1;         // the flat field
+      else if (isBg(data, i, keys)) line[p] = 1;     // a frame line
+    }
+
+    // Background is not "every pixel of the key color" - it is the key
+    // color the background can actually reach. Flood it in from the edges,
+    // through the frame lines as well as the field, and anything of that
+    // color left enclosed by artwork is artwork: the white of a flag patch
+    // on a white sheet, the white core of a flame. Without this, keying on
+    // a color the drawing also uses punches holes straight through it.
+    const outside = new Uint8Array(w * h);
+    {
+      const stack = [];
+      const push = (p) => {
+        if (outside[p] || !(field[p] || line[p])) return;
+        outside[p] = 1; stack.push(p);
+      };
+      for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+      while (stack.length) {
+        const p = stack.pop();
+        const x = p % w, y = (p / w) | 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            push(ny * w + nx);
+          }
+        }
+      }
+    }
+
+    const art = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) {
+      if (line[p]) continue;                          // frame lines never stay
+      art[p] = field[p] && outside[p] ? 0 : 1;
     }
     const lines = keys.length > 1 ? dilate(line, w, h, 2) : line;
     const solid = keys.length > 1

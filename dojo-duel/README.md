@@ -309,6 +309,15 @@ actually exists.
 node tools/moves-test.js
 ```
 
+`tools/sheet-test.js` is the third. It covers the art import: that every
+pose a `SHEET_ORDER` lists is actually found, that drawn frame lines are
+recognised, and that keying still works when the background color also
+appears inside the drawing. It needs a served copy.
+
+```bash
+node tools/sheet-test.js http://localhost:8000/
+```
+
 ## Roadmap
 
 The project grows in milestones — plan, decisions and status live in
