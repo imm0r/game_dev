@@ -191,10 +191,10 @@ window.DD = window.DD || {};
     // body box (where you can be hit), world coordinates
     hurtbox() {
       if (this.state === 'kolie' || this.state === 'kofall') return null;
-      let top = 64, h = 64;
-      if (this.state === 'crouch') { top = 42; h = 42; }
-      if (this.state === 'jump' || this.state === 'airkick') { top = 36; h = 36; }
-      return { x0: this.x - 10, y0: this.y - top, x1: this.x + 10, y1: this.y - top + h };
+      let top = 71, h = 71;
+      if (this.state === 'crouch') { top = 47; h = 47; }
+      if (this.state === 'jump' || this.state === 'airkick') { top = 40; h = 40; }
+      return { x0: this.x - 11, y0: this.y - top, x1: this.x + 11, y1: this.y - top + h };
     }
 
     // active attack box or null

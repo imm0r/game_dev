@@ -10,9 +10,10 @@ implements. Every milestone ends in a playable build.
   scrolling backgrounds (`assets/stage-N.png`); the procedural code
   stages remain as fallback and for extra layers.
 - **Character art:** Hybrid workflow. The project owner provides
-  reference sheets, Claude turns them into editable text-grid sprites
-  and animates them. Target quality is the hand-pixeled "test pixel"
-  tier; animations aim for "fluid modern" (4-6 frames per action),
+  reference sheets, Claude turns them into sprites. Since M2 package 3
+  the fighters are produced by a skeleton rig (`tools/rig.py`) instead of
+  hand-typed pixel rows — hand-typing could not hold believable
+  proportions. Animations aim for "fluid modern" (4-6 frames per action),
   delivered package by package.
 - **Roster so far:** KLAUS VÖLKER (MMA, Germany — heterochromia: blue
   eye from the right, brown from the left) and ANTOINE MOREAU
@@ -31,7 +32,7 @@ implements. Every milestone ends in a playable build.
 - [x] Original panoramas uploaded and integrated (flicker-free prerender,
       world cap 832px, `--embed` build option)
 
-### M2 – Character art upgrade  *(packages 1+2 delivered)*
+### M2 – Character art upgrade  *(packages 1-3 delivered)*
 
 **Package 1 (delivered): Klaus v2**
 - [x] New animation system: frame sequences, phase frames for attacks,
@@ -49,10 +50,19 @@ implements. Every milestone ends in a playable build.
 - [x] Grenade projectile in the new style, wind-up/throw special poses
 - [x] Roster back to Klaus vs. Antoine
 
-**Package 3: fleshing out**
+**Package 3 (delivered): the skeleton rig**
+- [x] Hand-typed grids replaced by `tools/rig.py`: poses are joint
+      positions, limbs are tapered capsules with cylindrical shading, the
+      torso has a real waist, each part carries its own outline
+- [x] Both fighters rebuilt on the rig at ~73px tall (7 heads) with a
+      proper fighting stance; 22 poses each, generated
+- [x] Hurt/hit boxes retuned for the taller sprites; both eyes visible,
+      so Klaus's heterochromia now flips with the facing direction
+
+**Package 4: fleshing out the animation**
 - [ ] Walk cycle to 6 frames, idle to 4 real poses
 - [ ] Attacks to 4-5 phases (impact frames, follow-through)
-- [ ] Extended hit reactions (2 levels), scar/detail pass per reference
+- [ ] Extended hit reactions (2 levels), per-character face detail pass
 
 ### M3 – Effects & game feel
 - [ ] Super flash, slow-motion K.O., motion trails, landing dust
