@@ -50,10 +50,14 @@ function check(name, cond, extra) {
   }
 
   // --- the animation strips -------------------------------------------------
-  // A strip carries one movement, and its first frame is the fighting
-  // stance: an anchor to scale the sheet by, never installed as a pose. So
-  // a strip must hold exactly as many figures as its order lists, and the
-  // poses after the anchor must reach the game.
+  // A strip has to hold exactly as many figures as its order lists, and
+  // every pose it names has to reach the game. That is all that can be
+  // checked here: an earlier version also demanded the figures come out
+  // about the same height, to catch a generator drawing them at different
+  // sizes - but a tucked jump really is shorter than a stance and a
+  // crouching hit reaction really is shorter than both, and nothing tells
+  // that apart from drift. Size drift is caught by eye, on the contact
+  // sheet, which is where the order has to be read anyway.
   const strips = await p.evaluate(async () => {
     const out = {};
     const S = window.DD.spritesheet;
@@ -67,13 +71,6 @@ function check(name, cond, extra) {
           missing: strip.order
             .filter((n) => n && n !== S.ANCHOR
               && !window.DD.sprites.frames[charKey][skin][n]),
-          // Every frame of a movement is the same fighter, so they must
-          // come out about the same height: a strip whose figures were
-          // drawn at different sizes pops as the animation plays. A pixel
-          // or two of slack, though - a punch leans in and the head dips,
-          // and that is the drawing being right, not drifting.
-          heights: [Math.min(...frames.map((f) => f.height)),
-            Math.max(...frames.map((f) => f.height))],
         };
       }
     }
@@ -84,9 +81,6 @@ function check(name, cond, extra) {
       `found ${r.found}, order lists ${r.expected}`);
     check(`${name}: its poses reach the game`, r.missing.length === 0,
       `missing ${r.missing.join(', ')}`);
-    const [lo, hi] = r.heights;
-    check(`${name}: its figures are all drawn at one size`, hi - lo <= hi * 0.10,
-      `frames run ${lo}px to ${hi}px tall`);
   }
 
   // --- a light background ---------------------------------------------------
@@ -121,22 +115,30 @@ function check(name, cond, extra) {
     `found ${white.found}, drew ${white.want}`);
 
   // --- the key color inside the drawing ------------------------------------
-  // Drawn from scratch so the geometry is known exactly: one solid figure
-  // on a white field, with a white square walled in inside it and a white
-  // notch cut in from the outside. The walled-in square is artwork and has
-  // to survive; the notch is background reaching in and has to go.
+  // Drawn from scratch so the geometry is known exactly. One solid figure
+  // on a white field with three white regions in it: a garment-sized patch
+  // walled in, a small gap walled in, and a notch cut in from the outside.
+  //
+  // The garment is what the rule is for - a white shirt on a white sheet
+  // is walled in by the fighter's own outline, and losing it leaves a
+  // hollow figure. The small one is what the rule kept getting wrong: a
+  // gap between a thigh and a chest is walled in the same way and is
+  // background seen through the figure. Share is what separates them, so
+  // the test pins both ends.
   const enclosed = await p.evaluate(async () => {
-    const W = 240, H = 220;
-    const BODY = { x: 60, y: 40, w: 90, h: 130 };
-    const HOLE = { x: 90, y: 70, w: 24, h: 24 };     // walled in
-    const NOTCH = { x: 120, y: 120, w: 40, h: 18 };  // open to the right edge
+    const W = 260, H = 260;
+    const BODY = { x: 50, y: 35, w: 120, h: 180 };
+    const SHIRT = { x: 70, y: 55, w: 48, h: 86 };    // walled in, a fifth of it
+    const GAP = { x: 75, y: 160, w: 34, h: 40 };     // walled in, a few percent
+    const NOTCH = { x: 135, y: 60, w: 45, h: 16 };   // open to the right edge
     const cv = document.createElement('canvas');
     cv.width = W; cv.height = H;
     const c = cv.getContext('2d', { willReadFrequently: true });
     c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
     c.fillStyle = '#3a5a2a'; c.fillRect(BODY.x, BODY.y, BODY.w, BODY.h);
     c.fillStyle = '#ffffff';
-    c.fillRect(HOLE.x, HOLE.y, HOLE.w, HOLE.h);
+    c.fillRect(SHIRT.x, SHIRT.y, SHIRT.w, SHIRT.h);
+    c.fillRect(GAP.x, GAP.y, GAP.w, GAP.h);
     c.fillRect(NOTCH.x, NOTCH.y, NOTCH.w, NOTCH.h);
 
     const frames = await window.DD.spritesheet.inspect(cv.toDataURL('image/png'));
@@ -151,25 +153,28 @@ function check(name, cond, extra) {
     for (let i = 3; i < px.length; i += 4) if (px[i] > 128) opaque++;
 
     // the frame is scaled down, so compare as a share of the body's area
-    const scale = (f.width * f.height) / (BODY.w * BODY.h);
     const body = BODY.w * BODY.h;
+    const scale = (f.width * f.height) / body;
     const notchIn = NOTCH.w - (NOTCH.x + NOTCH.w - (BODY.x + BODY.w));
     return {
       poses: 1,
       share: opaque / (body * scale),
-      holeShare: (HOLE.w * HOLE.h) / body,
+      gapShare: (GAP.w * GAP.h) / body,
       notchShare: (notchIn * NOTCH.h) / body,
     };
   });
   check('a walled-in patch of the key colour is one pose', enclosed.poses === 1,
     `${enclosed.poses} poses`);
-  check('a walled-in patch of the key colour survives',
-    enclosed.share > 1 - enclosed.notchShare - 0.04,
-    `kept ${(enclosed.share * 100).toFixed(1)}% of the body`);
-  check('a notch open to the outside is still removed',
-    enclosed.share < 1 - enclosed.notchShare + 0.04,
-    `kept ${(enclosed.share * 100).toFixed(1)}%, expected about ` +
-    `${((1 - enclosed.notchShare) * 100).toFixed(1)}%`);
+  {
+    const want = 1 - enclosed.notchShare - enclosed.gapShare;
+    const got = (enclosed.share * 100).toFixed(1);
+    const aim = (want * 100).toFixed(1);
+    check('a garment-sized patch of the key colour survives',
+      enclosed.share > want - 0.04, `kept ${got}% of the body, wanted about ${aim}%`);
+    check('a gap-sized one does not',
+      enclosed.share < want + 0.04, `kept ${got}%, wanted about ${aim}%`);
+  }
+
 
   // --- every fighter still has a head --------------------------------------
   // The tests that tell a drawn line from a limb work by eroding, and the

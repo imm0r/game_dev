@@ -435,6 +435,36 @@ function check(name, cond, extra) {
   check('the super flashes and dims the stage', r.flash);
   check('a dash leaves a trail', r.trail > 1, 'ghosts=' + r.trail);
 
+  // --- the two air attacks --------------------------------------------------
+  // One attack per jump, either one: kick reaches further, punch comes out
+  // sooner. Both have to connect on the way down, and the second press
+  // must not start a second attack.
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    const out = {};
+    for (const [key, btn] of [['kick', 'kick'], ['punch', 'punch']]) {
+      R.place(150, 178);
+      R.set(0, { up: true, right: true }); R.step(1);
+      R.set(0, { right: true }); R.step(7);
+      R.set(0, Object.assign({ right: true }, { [btn]: true })); R.step(1);
+      R.set(0, { right: true }); R.step(2);
+      const name = G.fighters[0].atkName;
+      // pressing the other button now must not start a second one
+      R.set(0, { right: true, kick: true, punch: true }); R.step(1);
+      R.set(0, { right: true }); R.step(40);
+      out[key] = { name, hp: G.fighters[1].hp, back: G.fighters[0].controllable };
+    }
+    return out;
+  });
+  check('kick in the air is the flying kick', r.kick.name === 'airkick',
+    'atkName=' + r.kick.name);
+  check('...and it connects', r.kick.hp < 100, 'hp=' + r.kick.hp);
+  check('punch in the air is the flying punch', r.punch.name === 'airpunch',
+    'atkName=' + r.punch.name);
+  check('...and it connects', r.punch.hp < 100, 'hp=' + r.punch.hp);
+  check('one air attack per jump, and you land out of it',
+    r.kick.back && r.punch.back);
+
   // --- every pose the moves ask for really exists -------------------------
   r = await run(() => {
     const missing = [];

@@ -100,6 +100,15 @@ DD.ATTACKS = {
     box: { x: 6, y: -39, w: 28, h: 15 },
     sfx: 'kick',
   },
+  // The other way in. It comes out faster than the flying kick and does
+  // not reach as far, which is the trade every game makes between the two:
+  // the kick wins the approach, the punch beats a late anti-air.
+  airpunch: {
+    startup: 4, active: 999, recovery: 0,
+    dmg: 6, chip: 1, stun: 15, blockstun: 9, kb: 1.8,
+    box: { x: 6, y: -44, w: 22, h: 14 },
+    sfx: 'punch',
+  },
   // The answer to someone who only blocks: a grab goes through guard
   // entirely. It only reaches at arm's length, and it can be broken.
   throw: {

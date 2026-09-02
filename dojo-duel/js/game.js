@@ -340,8 +340,8 @@ window.DD = window.DD || {};
         // both shoved apart, nobody hurt
         att.kbVx = -att.facing * 1.6;
         def.kbVx = att.facing * 1.6;
-        att.state = 'hitstun'; att.timer = 10;
-        def.state = 'hitstun'; def.timer = 10;
+        att.state = 'hitstun'; att.timer = 10; att.stunMax = 10;
+        def.state = 'hitstun'; def.timer = 10; def.stunMax = 10;
       } else if (result === 'hit' || result === 'ko') {
         att.combo = wasStunned ? att.combo + 1 : 1;
         att.comboT = C().COMBO_SHOW;

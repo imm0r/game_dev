@@ -39,7 +39,8 @@ the point. Use the server.
 | High kick | kick | slower, hurts more |
 | Crouching punch | down + punch | the fastest thing you have |
 | **Sweep** | down + kick | slow, **must be blocked low**, knocks them down |
-| Flying kick | jump + kick | your way in |
+| Flying kick | jump + kick | your way in — the longer reach |
+| Flying punch | jump + punch | the other way in: faster, shorter |
 | Dash | tap forward or back twice | covers ground, but you cannot act during it |
 | Projectile | special, or ↓ ↘ → + punch | fireball (Klaus), grenade (Antoine), molotov (Maxim) |
 | **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
@@ -136,10 +137,12 @@ a K.O.
   borrowed from another move. Klaus's sheet even carries his fireball as a
   picture of its own, and that is what the game puts in the air.
 - **Animation strips.** A pose per movement is a switch, not an animation,
-  so a movement can bring its own in-between frames as an extra sheet,
-  `assets/<fighter>-<move>.png`. Klaus walks on four drawn frames this way.
-  A strip's first frame is the fighting stance — an anchor to scale the
-  sheet by, never used as a pose — and its poses beat the main sheet's.
+  so movement comes on extra sheets, `assets/<fighter>-<move>.png`, whose
+  poses beat the main sheet's. Klaus has two: 22 figures covering his idle,
+  walk, punch, kick and hit reaction, and 10 more for the jump and the two
+  air attacks. Each brings its own timing along with its drawings, and an
+  attack plays as many drawings as it has — the one the arm is fully out in
+  is held through the whole hit window.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard

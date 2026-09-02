@@ -20,9 +20,8 @@ window.DD = window.DD || {};
   const SHADE_HUE = 0.995;    // ...and how exactly it must keep its colour
   const POCKET = 5;           // a wall thinner than twice this does not seal
                               // a patch of background off from the outside
-  const SPECK = 60;           // a walled-in patch of the key colour smaller
-                              // than this was never drawn on purpose,
-  const CHANNEL = 2.5;        // nor was one this much longer than it is wide
+  const HOLE_SHARE = 0.15;    // a walled-in patch of the key colour is only
+                              // artwork if it is this much of its figure
   const BRIDGE = 3;           // close gaps this wide when a removed line cut
                               // a pose in two - wide enough for a drawn rule
                               // even where it crosses a figure's shins,
@@ -85,24 +84,43 @@ window.DD = window.DD || {};
   // timing along with its drawings.
   const STRIPS = {
     klaus: {
-      walk: {
-        order: [ANCHOR, 'walk0', 'walk1', 'walk2', 'walk3'],
-        // The bob is in the art now, so no y-offset fakes one. Five ticks
-        // a pose: the stride is about 16px and he covers 1.25px a frame,
-        // so a shorter cycle skates less - though it can never plant a
-        // foot, since every frame is anchored on the middle of its own.
+      // 22 figures: idle 4, walk 4, punch 6, kick 5, hit reaction 3. The
+      // punch came back as two punches back to back rather than one in
+      // five steps, so the arm goes out through 8-10 and comes back
+      // through the tail of the second one - the spare guard between them
+      // is dropped.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', null, 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
         anims: {
-          walk: {
-            seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]],
-          },
+          idle: { seq: [['idle0', 12, 0], ['idle1', 12, 0], ['idle2', 12, 0], ['idle3', 12, 0]] },
+          walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
+          // A hit reaction runs backwards through its own drawings: the
+          // head snaps back first and straightens as the stun runs out.
+          hurt: { two: ['hurt1', 'hurt2'] },
         },
       },
-      punch: {
-        order: [ANCHOR, 'pun0', 'pun1', 'pun2', 'pun3', 'pun4'],
-        // `hit` is the drawing the arm is fully out in: held through the
-        // whole hit window, with the two before it playing the wind-up and
-        // the two after it the recovery.
-        anims: { punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 } },
+      // 10 figures, all but the first off the ground: a stance to measure
+      // by, the jump arc, then the two air attacks.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          'apun0', 'apun1', 'apun2',
+          'air0', 'air1', 'air2',
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
       },
     },
   };
@@ -443,44 +461,66 @@ window.DD = window.DD || {};
       for (let p = 0; p < w * h; p++) if (seen[p] && field[p]) outside[p] = 1;
     }
 
-    // Last pass over the pockets that are still sealed. They count as
-    // artwork - that is the rule that saves the white of a flag patch on a
-    // white sheet - but two shapes never are, and a patch of pure
-    // background left inside a fighter is the most visible thing a keyer
-    // can leave behind.
+    // An enclosed patch of the key colour counts as artwork - that is the
+    // rule that saves a white shirt on a white sheet, where the whole
+    // inside of the fighter is walled in by its own outline. A gap between
+    // a thigh and a chest is walled in exactly the same way and is not
+    // artwork at all, and left in it is the brightest artifact a keyer can
+    // produce: a magenta wedge at the crotch of every airborne frame.
     //
-    // A *speck* is what survives where a wall happened to be just thick
-    // enough to seal a few pixels. And a long thin *channel* is the gap
-    // between a limb and a body: Klaus's walk has one 25x91 between his
-    // fist and his hip, sealed at both ends by his own glove and shorts.
-    // Anything drawn in the key colour on purpose is a shape - roughly as
-    // wide as it is tall - not a sliver.
+    // What tells them apart is not size but *share*. A garment is most of
+    // a figure; a gap is a few percent of one. So measure each pocket
+    // against the drawn region that encloses it. This also covers the two
+    // shapes that used to have rules of their own - a speck sealed by a
+    // wall that happened to be thick enough, and the long channel between
+    // a fist and a hip - because both are small in exactly this sense.
     {
+      const host = new Int32Array(w * h).fill(-1);
+      const area = [];
+      const stack = [];
+      for (let p0 = 0; p0 < w * h; p0++) {
+        if (host[p0] >= 0 || !art0[p0]) continue;
+        const id = area.length;
+        let n = 0;
+        host[p0] = id; stack.push(p0);
+        while (stack.length) {
+          const p = stack.pop();
+          n++;
+          const x = p % w, y = (p / w) | 0;
+          const step = (q, ok) => {
+            if (!ok || host[q] >= 0 || !art0[q]) return;
+            host[q] = id; stack.push(q);
+          };
+          step(p - 1, x > 0); step(p + 1, x < w - 1);
+          step(p - w, y > 0); step(p + w, y < h - 1);
+        }
+        area.push(n);
+      }
+
       const seen = new Uint8Array(w * h);
-      const stack = [], px = [];
+      const px = [];
       for (let p0 = 0; p0 < w * h; p0++) {
         if (seen[p0] || !field[p0] || outside[p0]) continue;
         px.length = 0;
-        let x0 = w, x1 = -1, y0 = h, y1 = -1;
+        let around = -1;
         seen[p0] = 1; stack.push(p0);
         while (stack.length) {
           const p = stack.pop();
           px.push(p);
           const x = p % w, y = (p / w) | 0;
-          if (x < x0) x0 = x;
-          if (x > x1) x1 = x;
-          if (y < y0) y0 = y;
-          if (y > y1) y1 = y;
           const step = (q, ok) => {
-            if (!ok || seen[q] || !field[q] || outside[q]) return;
+            if (!ok) return;
+            if (host[q] >= 0 && area[host[q]] > (around < 0 ? -1 : area[around])) {
+              around = host[q];               // the biggest thing it touches
+            }
+            if (seen[q] || !field[q] || outside[q]) return;
             seen[q] = 1; stack.push(q);
           };
           step(p - 1, x > 0); step(p + 1, x < w - 1);
           step(p - w, y > 0); step(p + w, y < h - 1);
         }
-        const bw = x1 - x0 + 1, bh = y1 - y0 + 1;
-        const thin = Math.max(bw, bh) >= Math.min(bw, bh) * CHANNEL;
-        if (px.length < SPECK || thin) for (const p of px) outside[p] = 1;
+        const big = around >= 0 && px.length >= area[around] * HOLE_SHARE;
+        if (!big) for (const p of px) outside[p] = 1;
       }
     }
 

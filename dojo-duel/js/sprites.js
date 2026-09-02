@@ -4181,11 +4181,12 @@ window.DD = window.DD || {};
     super: { atk: ['special', 'special', 'special'] },
     special: { atk: ['special', 'special', 'special'] },
     airkick: { atk: ['kick', 'kick', 'kick'] },
+    airpunch: { atk: ['punch', 'punch', 'punch'] },
     jump: { vel: ['jump', 'jump', 'jump'] },
     kofall: { vel2: ['hurt', 'hurt'] },
     crouch: 'crouch', block: 'block', dash: 'walkA', cblock: 'crouch',
     down: 'hurt', getup: 'crouch',
-    hurt: { two: ['hurt', 'hurt'] }, ko: 'ko',
+    hurt: { hit: ['hurt', 'hurt'] }, ko: 'ko',
   };
 
   const CHARS = {
@@ -4221,6 +4222,7 @@ window.DD = window.DD || {};
         super: { atk: ['sp1', 'rush0', 'rush0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
+        airpunch: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0', dash: 'run0',
@@ -4230,7 +4232,7 @@ window.DD = window.DD || {};
         // A sweep uses the knockdown pose, never the K.O. one - that one is
         // drawn bloodied, which a swept leg has not earned.
         down: 'kof0', getup: 'crouch0',
-        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
+        hurt: { hit: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },
     antoine: {
@@ -4259,6 +4261,7 @@ window.DD = window.DD || {};
         super: { atk: ['sp1', 'rush0', 'rush0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
+        airpunch: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0', dash: 'run0',
@@ -4268,7 +4271,7 @@ window.DD = window.DD || {};
         // A sweep uses the knockdown pose, never the K.O. one - that one is
         // drawn bloodied, which a swept leg has not earned.
         down: 'kof0', getup: 'crouch0',
-        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
+        hurt: { hit: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },
     // MAXIM. Sheet-only: every frame comes from assets/maxim.png, and the
@@ -4298,6 +4301,7 @@ window.DD = window.DD || {};
         throw: { atk: ['grab0', 'lift0', 'slam0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
+        airpunch: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0', dash: 'run0',
@@ -4305,7 +4309,7 @@ window.DD = window.DD || {};
         // ALIAS falls it back to the plain crouch where it does not.
         cblock: 'cblock0',
         down: 'kof0', getup: 'crouch0',
-        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
+        hurt: { hit: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },
     hanzo: {

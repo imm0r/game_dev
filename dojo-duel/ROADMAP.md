@@ -274,7 +274,19 @@ implements. Every milestone ends in a playable build.
       generation, so Klaus's walk came back in gold shorts where his sheet
       has black ones. Generating every movement for one fighter in one
       image would at least make the strips agree with each other
-- [ ] Strips for the kick and the idle; the other two fighters
+- [x] One sheet for every movement instead of one per movement: Klaus's
+      idle, walk, punch, kick and hit reaction come off `klaus-moves.png`,
+      his jump and both air attacks off `klaus-jump.png`
+- [x] A flying punch, which the game did not have - faster and shorter
+      than the flying kick, so the kick wins the approach and the punch
+      beats a late anti-air
+- [x] The hit reaction plays out over the stun instead of holding one
+      drawing until it ends
+- [x] An enclosed patch of the key colour is artwork only if it is a real
+      share of its figure. That one rule replaced three thresholds and
+      cleared the last of the magenta - a wedge at the crotch of every
+      airborne frame, which nothing before it caught
+- [ ] The other two fighters
 
 ### M7 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants

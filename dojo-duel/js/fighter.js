@@ -42,6 +42,7 @@ window.DD = window.DD || {};
       this.dashT = 0;             // frames left in a dash
       this.dashDir = 0;
       this.downT = 0;             // frames left lying / getting up after a sweep
+      this.stunMax = 0;           // the stun this hit started with
       this.pad = DD.input.emptyPad();
       this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
@@ -232,19 +233,22 @@ window.DD = window.DD || {};
 
         case 'jump': {
           this.applyGravity();
-          if (pad.kick && !this.airAttackUsed) {
+          // One attack per jump, either one. The kick reaches further, the
+          // punch comes out sooner.
+          const air = pad.kick ? 'airkick' : pad.punch ? 'airpunch' : null;
+          if (air && !this.airAttackUsed) {
             this.airAttackUsed = true;
-            this.state = 'airkick';
-            this.atkName = 'airkick';
+            this.state = 'airatk';
+            this.atkName = air;
             this.atkT = 0;
             this.hasHit = false;
-            DD.audio.play('kick');
+            DD.audio.play(A()[air].sfx);
           }
           if (this.grounded) this.land();
           break;
         }
 
-        case 'airkick':
+        case 'airatk':
           this.applyGravity();
           this.atkT++;
           if (this.grounded) this.land();
@@ -344,7 +348,7 @@ window.DD = window.DD || {};
       if (this.invulnerable) return null;              // super start-up
       let top = 71, h = 71;
       if (this.low) { top = 47; h = 47; }
-      if (this.state === 'jump' || this.state === 'airkick') { top = 40; h = 40; }
+      if (this.state === 'jump' || this.state === 'airatk') { top = 40; h = 40; }
       return { x0: this.x - 11, y0: this.y - top, x1: this.x + 11, y1: this.y - top + h };
     }
 
@@ -354,8 +358,8 @@ window.DD = window.DD || {};
       if (this.state === 'attack' && this.atkName !== 'special') {
         a = A()[this.atkName];
         t = this.atkT;
-      } else if (this.state === 'airkick') {
-        a = A().airkick;
+      } else if (this.state === 'airatk') {
+        a = A()[this.atkName];
         t = this.atkT;
       }
       if (!a || !a.box) return null;
@@ -435,6 +439,7 @@ window.DD = window.DD || {};
       }
       this.state = 'hitstun';
       this.timer = data.stun;
+      this.stunMax = data.stun;
       this.kbVx = dir * data.kb;
       DD.audio.play('hit');
       return 'hit';
@@ -443,6 +448,29 @@ window.DD = window.DD || {};
     // resolve frame + y offset from the character's animation tables
     resolveFrame() {
       const anims = DD.sprites.CHARS[this.char].anims;
+
+      // The drawings spread over the move's own frame data: whatever comes
+      // before `hit` plays through the wind-up, `hit` itself is held for
+      // the whole hit window, and the rest plays out the recovery. Three
+      // drawings with hit at 1 - the shape every move had before any of
+      // them got a strip - lands exactly where it used to.
+      const atkFrame = (an) => {
+        const a = DD.ATTACKS[this.atkName];
+        const fr = an.atk;
+        const hit = Math.min(fr.length - 1, an.hit === undefined ? 1 : an.hit);
+        const span = (from, to, t, dur) => {
+          const lo = Math.max(0, from), hi = Math.min(fr.length - 1, to);
+          if (hi <= lo) return fr[Math.min(lo, fr.length - 1)];
+          const n = hi - lo + 1;
+          return fr[lo + Math.min(n - 1, Math.floor((t / Math.max(1, dur)) * n))];
+        };
+        return this.atkT < a.startup
+          ? span(0, hit - 1, this.atkT, a.startup)
+          : this.atkT < a.startup + a.active
+            ? fr[hit]
+            : span(hit + 1, fr.length - 1,
+              this.atkT - a.startup - a.active, a.recovery);
+      };
 
       const seqPick = (anim, reverse) => {
         const total = anim.seq.reduce((s, e) => s + e[1], 0);
@@ -468,34 +496,19 @@ window.DD = window.DD || {};
           const f = this.vy < -0.8 ? fr[0] : this.vy < 0.8 ? fr[1] : fr[2];
           return { f, yo: 0 };
         }
-        case 'attack': {
-          // The drawings spread over the move's own frame data: whatever
-          // comes before `hit` plays through the wind-up, `hit` itself is
-          // held for the whole hit window, and the rest plays out the
-          // recovery. Three drawings with hit at 1 - the shape every move
-          // had before any of them got a strip - lands exactly where it
-          // used to.
-          const a = DD.ATTACKS[this.atkName];
-          const an = anims[this.atkName];
-          const fr = an.atk;
-          const hit = Math.min(fr.length - 1, an.hit === undefined ? 1 : an.hit);
-          const span = (from, to, t, dur) => {
-            const lo = Math.max(0, from), hi = Math.min(fr.length - 1, to);
-            if (hi <= lo) return fr[Math.min(lo, fr.length - 1)];
-            const n = hi - lo + 1;
-            return fr[lo + Math.min(n - 1, Math.floor((t / Math.max(1, dur)) * n))];
-          };
-          const f = this.atkT < a.startup
-            ? span(0, hit - 1, this.atkT, a.startup)
-            : this.atkT < a.startup + a.active
-              ? fr[hit]
-              : span(hit + 1, fr.length - 1,
-                this.atkT - a.startup - a.active, a.recovery);
-          return { f, yo: 0 };
-        }
-        case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
+        case 'attack': return { f: atkFrame(anims[this.atkName]), yo: 0 };
+        case 'airatk': return { f: atkFrame(anims[this.atkName]), yo: 0 };
         case 'block': return { f: this.crouching ? anims.cblock : anims.block, yo: 0 };
-        case 'hitstun': return { f: anims.hurt.two[this.timer > 8 ? 0 : 1], yo: 0 };
+        case 'hitstun': {
+          // Spread over the stun as it runs down, so a hit plays out
+          // instead of holding one drawing until it ends. Different moves
+          // stun for different lengths, so it goes by how much of *this*
+          // one is left.
+          const fr = anims.hurt.hit;
+          const max = this.stunMax || this.timer || 1;
+          const gone = Math.max(0, max - this.timer) / max;
+          return { f: fr[Math.min(fr.length - 1, Math.floor(gone * fr.length))], yo: 0 };
+        }
         case 'kofall': return { f: this.vy < 0 ? anims.kofall.vel2[0] : anims.kofall.vel2[1], yo: 0 };
         case 'kolie': return { f: anims.ko, yo: 0 };
         case 'win': return seqPick(anims.win);
