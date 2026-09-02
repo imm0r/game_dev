@@ -347,6 +347,13 @@ is scaled so its stance comes out 66 game pixels tall, and a jump pose
 with the knees tucked is shorter than a stance, so measuring against one
 would bring the whole jump in oversized.
 
+**What makes an air attack read as one** is the leg that is *not*
+attacking. Folded up under the body, the figure is flying; reaching back
+and down, it is running, and the same drawing stops reading as airborne at
+all. Antoine's and Maxim's `air0` on their main sheets have it right and
+are worth pointing a generator at. Klaus's `air0` is not a kick at all -
+it is a flying punch, and a good one.
+
 **The jump is not on this sheet, and cannot be.** Every other figure
 stands on the same ground line - that is what keeps the reading order
 unambiguous - and a jump is off the ground by definition. Asked for both
@@ -372,15 +379,20 @@ the same reason and belong in the same generation:
 > the arc, the body at its most compact; 4 falling, the legs reaching down
 > for the ground.
 >
-> **Jumping punch, 5-7:** the character is falling forward and punching
-> **downwards and forwards** at someone below. 5 the fist drawn back and
-> the shoulder cocked, knees still tucked; 6 the arm fully extended down
-> and forward at maximum reach; 7 the arm folding back in.
+> **Jumping punch, 5-7:** falling forward and punching **downwards and
+> forwards** at someone below, **both legs folded up under the body**.
+> 5 the fist drawn back and the shoulder cocked; 6 the arm fully extended
+> down and forward at maximum reach, angled below horizontal; 7 the arm
+> folding back in.
 >
-> **Jumping kick, 8-10:** the character is falling forward and kicking
-> **downwards and forwards** at someone below. 8 the knee chambered up
-> against the chest; 9 the leg fully extended down and forward at maximum
-> reach; 10 the shin folding back in.
+> **Jumping kick, 8-10:** falling forward and kicking **downwards and
+> forwards** at someone below. In all three the **non-kicking leg is
+> folded up underneath the body, knee tucked toward the chest - never
+> trailing out behind** - and the body leans slightly forward over the
+> kick with the arms held in a guard. 8 the kicking knee chambered up
+> against the chest, foot not yet out; 9 the kicking leg fully extended
+> down and forward at maximum reach, angled below horizontal; 10 the shin
+> folding back in, **the knee still raised**.
 >
 > Character: **[your description here, colours named]**.
 
