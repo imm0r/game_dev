@@ -209,9 +209,10 @@ window.DD = window.DD || {};
     F().drawTextShadow(ctx, 'STAGE: UP/DOWN     ESC: BACK', 160, 172, 1, '#7a7488', 'center');
   }
 
-  // Victory splash. No portrait art exists, so the winner's own victory
-  // pose is blown up to stand in for one — it is the most characterful
-  // frame either fighter has.
+  // Victory splash: the winner's select-screen portrait, framed, against a
+  // turning sunburst. Without a portrait their own victory pose is blown
+  // up instead — the most characterful frame either fighter has, and what
+  // this screen used before there was any portrait art.
   function drawMatchEnd(ctx, game, t) {
     ctx.fillStyle = 'rgba(8, 4, 16, 0.62)';
     ctx.fillRect(0, 0, 320, 180);
@@ -224,11 +225,8 @@ window.DD = window.DD || {};
       return;
     }
 
-    const frames = DD.sprites.frames[w.char][w.skin];
-    const pose = frames.win0 ? 'win0' : DD.sprites.idleFrame(w.char);
-    const meta = DD.sprites.meta[w.char][pose];
-    const scale = Math.min(2.0, 116 / meta.h);
-    const bh = Math.round(meta.h * scale);
+    const P = DD.portraits;
+    const art = P.splash(w.char);
     const cx = 82, cy = 92;
 
     // sunburst behind the winner, turning slowly. Wedges rather than
@@ -248,10 +246,29 @@ window.DD = window.DD || {};
     }
     ctx.restore();
 
-    DD.sprites.draw(ctx, w.char, w.skin, pose, 1, cx, cy + bh / 2, 0, scale);
+    if (art) {
+      const px = Math.round(cx - art.width / 2), py = Math.round(cy - art.height / 2);
+      ctx.fillStyle = '#141020';
+      ctx.fillRect(px, py, art.width, art.height);
+      ctx.drawImage(art, px, py);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = '#f8d020';
+      ctx.strokeRect(px + 0.5, py + 0.5, art.width - 1, art.height - 1);
+      ctx.strokeStyle = '#8a6a10';
+      ctx.strokeRect(px - 1.5, py - 1.5, art.width + 3, art.height + 3);
+    } else {
+      const frames = DD.sprites.frames[w.char][w.skin];
+      const pose = frames.win0 ? 'win0' : DD.sprites.idleFrame(w.char);
+      const meta = DD.sprites.meta[w.char][pose];
+      const scale = Math.min(2.0, 116 / meta.h);
+      DD.sprites.draw(ctx, w.char, w.skin, pose, 1,
+        cx, cy + Math.round(meta.h * scale) / 2, 0, scale);
+    }
 
-    F().drawTextShadow(ctx, w.name, 218, 66, 3, '#f8d020', 'center');
-    F().drawTextShadow(ctx, 'WINS!', 218, 88, 3, '#f8f8f8', 'center');
+    F().drawTextShadow(ctx, w.name, 218, 60, 3, '#f8d020', 'center');
+    F().drawTextShadow(ctx, 'WINS!', 218, 82, 3, '#f8f8f8', 'center');
+    const style = (DD.C.ROSTER.find((e) => e.char === w.char) || {}).style;
+    if (style) F().drawTextShadow(ctx, style, 218, 104, 1, '#8a8496', 'center');
     if ((t % 60) < 40) {
       F().drawTextShadow(ctx, 'ENTER: BACK TO TITLE', 218, 124, 1, '#b8b0c0', 'center');
     }

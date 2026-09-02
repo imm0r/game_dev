@@ -109,8 +109,9 @@ a K.O.
 
   The portraits are one image per fighter, `assets/portrait-<name>.png`,
   painted on the same flat field as the sprite sheets and keyed out the
-  same way. Without one a panel falls back to that fighter's own victory
-  pose, so the screen works before any portrait art exists.
+  same way. The victory splash uses them too. Without one, a panel falls
+  back to that fighter's own victory pose, so both screens work before any
+  portrait art exists.
 - **The roster**, drawn as sprite sheets and imported straight from
   `assets/` (see [Bring your own art](#bring-your-own-art)):
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks
@@ -162,8 +163,8 @@ a K.O.
   dashes and rushing specials leave motion trails; landing raises dust; a
   super flashes the screen and dims the stage under the fighters. It all
   lives in `js/fx.js`, so the game loop only says what happened
-- Victory splash: the winner's own victory pose, blown up against a
-  turning sunburst
+- Victory splash: the winner's select-screen portrait, framed against a
+  turning sunburst — or, without one, their own victory pose blown up
 - Synthesized chiptune sound effects (WebAudio, no audio files)
 - A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 

@@ -43,8 +43,10 @@ There is no need to draw a frame, a name or a label. The screen draws all
 of that itself, from the roster — which is also why a generator inventing
 names for your fighters does no harm.
 
-No file, no problem: that panel falls back to the fighter's own victory
-pose until the art shows up.
+The victory splash uses the same picture, at a larger size.
+
+No file, no problem: both fall back to the fighter's own victory pose
+until the art shows up.
 
 > A pixel art character portrait, head and upper body, facing the viewer,
 > on a flat solid magenta background (#FF00FF). No frame, no border, no

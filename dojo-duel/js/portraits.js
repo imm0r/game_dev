@@ -16,8 +16,11 @@ window.DD = window.DD || {};
 (function () {
   const PANEL_W = 72;         // the select screen's panel, in game pixels
   const PANEL_H = 98;
+  const SPLASH_W = 94;        // ...and the victory splash's, which is bigger
+  const SPLASH_H = 126;
 
-  const frames = {};          // by character key
+  const cutouts = {};         // keyed and cropped, at source resolution
+  const sized = {};           // scaled copies, by `char:WxH`
   let pending = 0;
 
   // Everything the flat field can reach from the edge of the image is
@@ -58,28 +61,35 @@ window.DD = window.DD || {};
     }
     if (x1 < x0) return null;                    // the whole image is field
 
-    const src = document.createElement('canvas');
-    src.width = w; src.height = h;
-    src.getContext('2d').putImageData(id, 0, 0);
-
-    // Fill the panel rather than fit inside it, so three portraits drawn
-    // at three different aspect ratios still make one tidy row. What is
-    // over is cropped off the sides and the bottom - a portrait is framed
-    // on the face, and it is the belt that can go.
-    //
-    // Painted art needs the smoothed downscale; nearest-neighbour on a
-    // brush stroke is noise, not pixel art.
     const cw = x1 - x0 + 1, ch = y1 - y0 + 1;
-    const scale = Math.max(PANEL_W / cw, PANEL_H / ch);
-    const sw = Math.min(cw, PANEL_W / scale);
-    const sh = Math.min(ch, PANEL_H / scale);
+    const out = document.createElement('canvas');
+    out.width = cw; out.height = ch;
+    const c = out.getContext('2d');
+    const full = document.createElement('canvas');
+    full.width = w; full.height = h;
+    full.getContext('2d').putImageData(id, 0, 0);
+    c.drawImage(full, x0, y0, cw, ch, 0, 0, cw, ch);
+    return out;
+  }
+
+  // Fill the box rather than fit inside it, so portraits drawn at
+  // different aspect ratios still make one tidy row. What is over is
+  // cropped off the sides and the bottom - a portrait is framed on the
+  // face, and it is the belt that can go.
+  //
+  // Painted art needs the smoothed downscale; nearest-neighbour on a
+  // brush stroke is noise, not pixel art.
+  function fit(cut, bw, bh) {
+    const scale = Math.max(bw / cut.width, bh / cut.height);
+    const sw = Math.min(cut.width, bw / scale);
+    const sh = Math.min(cut.height, bh / scale);
     const out = document.createElement('canvas');
     out.width = Math.max(1, Math.round(sw * scale));
     out.height = Math.max(1, Math.round(sh * scale));
     const c = out.getContext('2d');
     c.imageSmoothingEnabled = true;
     c.imageSmoothingQuality = 'high';
-    c.drawImage(src, x0 + (cw - sw) / 2, y0, sw, sh, 0, 0, out.width, out.height);
+    c.drawImage(cut, (cut.width - sw) / 2, 0, sw, sh, 0, 0, out.width, out.height);
     return out;
   }
 
@@ -92,12 +102,12 @@ window.DD = window.DD || {};
       img.onload = () => {
         try {
           const cv = keyOut(img);
-          if (cv) frames[e.char] = cv;
+          if (cv) cutouts[e.char] = cv;
         } catch (err) {
           console.warn(`[dojo] ${e.char}: portrait failed`, err);
         }
         if (--pending === 0) {
-          const n = Object.keys(frames).length;
+          const n = Object.keys(cutouts).length;
           if (n) console.info(`[dojo] portraits: ${n} loaded`);
         }
       };
@@ -106,10 +116,23 @@ window.DD = window.DD || {};
     }
   }
 
+  // Scaled copies are cached: two sizes are ever asked for, and a portrait
+  // is resampled once rather than every frame it is on screen.
+  function at(charKey, bw, bh) {
+    const cut = cutouts[charKey];
+    if (!cut) return null;
+    const key = `${charKey}:${bw}x${bh}`;
+    if (!sized[key]) sized[key] = fit(cut, bw, bh);
+    return sized[key];
+  }
+
   DD.portraits = {
     load,
     PANEL_W,
     PANEL_H,
-    get(charKey) { return frames[charKey] || null; },
+    SPLASH_W,
+    SPLASH_H,
+    get(charKey) { return at(charKey, PANEL_W, PANEL_H); },
+    splash(charKey) { return at(charKey, SPLASH_W, SPLASH_H); },
   };
 })();

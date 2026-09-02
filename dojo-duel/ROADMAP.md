@@ -122,9 +122,9 @@ implements. Every milestone ends in a playable build.
       ended the round is something you watch
 - [x] Motion trails behind a dash and a rushing special
 - [x] Landing dust, and screen shake scaled to the hit
-- [x] Victory splash: the winner's own victory pose blown up against a
-      turning sunburst — no portrait art exists, and that pose is the most
-      characterful frame either fighter has
+- [x] Victory splash: the winner blown up against a turning sunburst. It
+      used the victory pose because no portrait art existed; it uses the
+      select-screen portrait now, and falls back to the pose without one
 - [ ] **Not done: crowd reactions.** The stages are single painted
       panoramas, so there is no crowd layer to animate. It needs either
       a separate foreground crowd strip per stage, or going back to the
