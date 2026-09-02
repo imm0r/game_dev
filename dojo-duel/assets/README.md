@@ -178,6 +178,98 @@ description:
 > sack at the ground. Effects must not use magenta or pink.
 > Character: **[your description here]**.
 
+### Prompts for the animation strips
+
+One pose per movement is a switch, not an animation. A strip gives a
+movement its in-between steps, and the game plays them across the frames
+the move already lasts.
+
+**One strip per image, not one image per pose.** Within a single image the
+generator holds the character together; across separate generations it
+drifts — proportions wander, a beard grows, Maxim's bottle changes hands.
+
+Two rules come out of how the importer works, and both matter:
+
+- **Pose 1 is always the neutral fighting stance.** The importer scales a
+  whole sheet by one factor measured from the stance. A strip without one
+  has nothing to measure against and lands in the game at the wrong size.
+- **The character must not travel across the strip.** Frames are aligned
+  on the middle of the feet, so a foot that wanders makes the fighter
+  slide sideways as the animation plays. For an attack, the supporting
+  foot stays planted; for a walk cycle, the hips stay put and the legs
+  alternate around them.
+
+The skeleton, with the movement and the anchor rule swapped in:
+
+> A pixel art animation strip of a single character in **[N] poses in one
+> row**, side view, all facing right, read left to right. Flat solid
+> magenta background (#FF00FF), no scenery, no ground shadow, no text or
+> labels. Every pose shows the **same character at the same size**,
+> standing on the same invisible ground line, with clear empty space
+> between poses and a margin below the feet. **Pose 1 is the neutral
+> fighting stance.** Poses 2-[N] are **one single movement broken into
+> even in-between steps**: [MOVEMENT]. [ANCHOR]. Effects must not use
+> magenta or pink. Character: **[description]**.
+
+#### Walk — 5 poses
+
+The one to try first: the game already has a four-key walk cycle waiting
+for it, so it needs no code change at all, only the file.
+
+> ...**5 poses in one row**... Poses 2-5 are one walk cycle broken into
+> four even steps, seen from the side: 2 the near leg forward and planted
+> with the weight on it, the far leg trailing behind; 3 both legs passing
+> under the body, the rear leg swinging through; 4 the far leg forward and
+> planted, the near leg trailing behind; 5 both legs passing under the
+> body again, the other leg swinging through. The arms swing opposite the
+> legs. **The character does not travel across the strip: the hips stay at
+> the same horizontal position in every pose and the legs alternate around
+> them.**
+
+#### Idle — 4 poses
+
+> ...**4 poses in one row**... Poses 2-4 continue a slow breathing loop
+> that returns to pose 1: 2 the chest rising and the guard lifting
+> slightly; 3 the top of the breath, shoulders at their highest; 4 the
+> chest settling back down. The feet do not move at all.
+
+#### Straight punch — 6 poses
+
+Five drawings of movement, and they are not worth the same: the game holds
+the contact frame through the whole hit window and spreads the rest over
+the wind-up and the recovery.
+
+> ...**6 poses in one row**... Poses 2-6 are one straight punch broken
+> into five even steps: 2 winding up, the punching fist drawn back to the
+> hip and the shoulder turning away; 3 the fist starting forward, the
+> shoulder coming round; 4 the arm fully extended at maximum reach, the
+> body committed behind it; 5 the arm bending back halfway; 6 returning
+> towards the guard. **The character does not travel: the supporting foot
+> stays in exactly the same place in every pose and only the upper body
+> and the punching arm move.**
+
+#### High kick — 6 poses
+
+> ...**6 poses in one row**... Poses 2-6 are one standing high kick broken
+> into five even steps: 2 the weight shifting onto the standing leg, the
+> kicking knee lifting; 3 the knee chambered high, the shin still folded;
+> 4 the leg fully extended forward at head height, the body leaning back
+> to counterbalance; 5 the shin folding back in; 6 the foot coming down
+> towards the floor. **The standing foot stays in exactly the same place
+> in every pose.**
+
+#### Jump — 4 poses
+
+The jump reads vertical speed rather than time, so it needs only three
+drawings and gets them however long the arc lasts.
+
+> ...**4 poses in one row**... Poses 2-4 are one jump: 2 rising, knees
+> tucked up and arms drawn in; 3 the top of the arc, the body at its most
+> compact; 4 falling, the legs reaching down for the ground.
+
+Save each strip as `<fighter>-<move>.png` — `klaus-walk.png`,
+`maxim-punch.png` — and it is picked up beside that fighter's main sheet.
+
 ### Poses that need two people
 
 A generator asked for a "throw" will draw two characters, every time, and
