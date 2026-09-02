@@ -21,6 +21,14 @@ DD.C = {
 
   PUSH_DIST: 26,      // minimum body distance (push collision)
 
+  DASH_SPEED: 3.6,    // double-tap a direction to burst forward or back
+  DASH_FRAMES: 11,
+  DASH_RECOVER: 5,    // frames you cannot act after the burst
+  TAP_WINDOW: 13,     // two taps this close count as a double tap
+
+  KNOCKDOWN_LIE: 24,  // frames on the floor after a sweep
+  KNOCKDOWN_GETUP: 11,// frames standing back up (still not actionable)
+
   FIREBALL_SPEED: 2.4,
   FIREBALL_COOLDOWN: 60,
 
@@ -35,6 +43,10 @@ DD.C = {
 // Attack frame data: startup = wind-up, active = hit window,
 // recovery = cool-down (all in frames). box = hitbox relative to the foot
 // center, x points in facing direction, y is negative upwards.
+//
+// `crouch: true`  - performed from a crouch, and keeps the low hurtbox.
+// `low: true`     - can only be blocked by a crouching opponent.
+// `knockdown`     - puts the opponent on the floor instead of in hitstun.
 DD.ATTACKS = {
   punch: {
     startup: 5, active: 4, recovery: 10,
@@ -47,6 +59,21 @@ DD.ATTACKS = {
     dmg: 10, chip: 2, stun: 22, blockstun: 12, kb: 2.6,
     box: { x: 10, y: -44, w: 30, h: 13 },
     sfx: 'kick',
+  },
+  // Fast, short, safe. The poke you throw when you are not sure.
+  cpunch: {
+    startup: 4, active: 4, recovery: 8,
+    dmg: 5, chip: 1, stun: 13, blockstun: 8, kb: 1.4,
+    box: { x: 8, y: -34, w: 26, h: 11 },
+    sfx: 'punch', crouch: true,
+  },
+  // The classic: slow, has to be blocked low, and puts them on the floor.
+  // Whiffing it is the worst thing that can happen to you.
+  sweep: {
+    startup: 9, active: 5, recovery: 22,
+    dmg: 9, chip: 2, stun: 0, blockstun: 13, kb: 2.2,
+    box: { x: 8, y: -15, w: 36, h: 13 },
+    sfx: 'kick', crouch: true, low: true, knockdown: true,
   },
   airkick: {
     startup: 6, active: 999, recovery: 0,  // active until landing

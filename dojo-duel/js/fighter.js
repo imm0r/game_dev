@@ -32,6 +32,10 @@ window.DD = window.DD || {};
       this.airAttackUsed = false;
       this.fireCd = 0;
       this.kbVx = 0;              // knockback
+      this.crouching = false;     // this attack came out of a crouch
+      this.dashT = 0;             // frames left in a dash
+      this.dashDir = 0;
+      this.downT = 0;             // frames left lying / getting up after a sweep
       this.pad = DD.input.emptyPad();
       this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
@@ -49,7 +53,22 @@ window.DD = window.DD || {};
       this.atkName = name;
       this.atkT = 0;
       this.hasHit = false;
+      this.crouching = !!A()[name].crouch;
       DD.audio.play(A()[name].sfx);
+    }
+
+    startDash(dir) {
+      this.state = 'dash';
+      this.dashT = C().DASH_FRAMES + C().DASH_RECOVER;
+      this.dashDir = dir;
+      DD.audio.play('jump');
+    }
+
+    // Anything crouching stays low, hitbox and hurtbox alike.
+    get low() {
+      if (this.state === 'crouch') return true;
+      return this.crouching && (this.state === 'attack' || this.state === 'getup'
+        || this.state === 'block');
     }
 
     update(game, pad, opp) {
@@ -79,6 +98,10 @@ window.DD = window.DD || {};
             this.state = 'jump';
             this.airAttackUsed = false;
             DD.audio.play('jump');
+          } else if (pad.down && pad.punch) {
+            this.startAttack('cpunch');       // down+attack fires at once,
+          } else if (pad.down && pad.kick) {  // no need to already be crouching
+            this.startAttack('sweep');
           } else if (pad.down) {
             this.state = 'crouch';
           } else if (pad.punch) {
@@ -87,6 +110,8 @@ window.DD = window.DD || {};
             this.startAttack('kick');
           } else if (pad.special && this.fireCd === 0 && !game.hasProjectile(this)) {
             this.startAttack('special');
+          } else if (pad.dashL || pad.dashR) {
+            this.startDash(pad.dashR ? 1 : -1);
           } else {
             const dir = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
             if (dir !== 0) {
@@ -99,9 +124,35 @@ window.DD = window.DD || {};
         }
 
         case 'crouch':
-          if (!pad.down) this.state = 'idle';
-          else if (pad.punch) this.startAttack('punch');
-          else if (pad.kick) this.startAttack('kick');
+          if (pad.punch) this.startAttack('cpunch');
+          else if (pad.kick) this.startAttack('sweep');
+          else if (!pad.down) this.state = 'idle';
+          break;
+
+        case 'dash': {
+          // The burst is over before the recovery is: you travel, then you
+          // stand there for a moment, which is what makes it a commitment.
+          if (this.dashT > C().DASH_RECOVER) this.x += this.dashDir * C().DASH_SPEED;
+          if (--this.dashT <= 0) this.state = 'idle';
+          break;
+        }
+
+        case 'down': {
+          this.x += this.kbVx;
+          this.kbVx *= 0.88;
+          if (!this.grounded) {
+            this.applyGravity();
+            if (this.grounded) { this.y = C().GROUND_Y; this.downT = C().KNOCKDOWN_LIE; }
+          } else if (--this.downT <= 0) {
+            this.state = 'getup';
+            this.downT = C().KNOCKDOWN_GETUP;
+            this.crouching = true;
+          }
+          break;
+        }
+
+        case 'getup':
+          if (--this.downT <= 0) { this.state = 'idle'; this.crouching = false; }
           break;
 
         case 'jump': {
@@ -191,8 +242,9 @@ window.DD = window.DD || {};
     // body box (where you can be hit), world coordinates
     hurtbox() {
       if (this.state === 'kolie' || this.state === 'kofall') return null;
+      if (this.state === 'down') return null;          // floored = untouchable
       let top = 71, h = 71;
-      if (this.state === 'crouch') { top = 47; h = 47; }
+      if (this.low) { top = 47; h = 47; }
       if (this.state === 'jump' || this.state === 'airkick') { top = 40; h = 40; }
       return { x0: this.x - 11, y0: this.y - top, x1: this.x + 11, y1: this.y - top + h };
     }
@@ -222,11 +274,16 @@ window.DD = window.DD || {};
     // dir: direction the defender gets pushed (+1 = to the right)
     receiveHit(game, data, dir) {
       if (this.state === 'kolie' || this.state === 'kofall') return 'none';
+      if (this.state === 'down' || this.state === 'getup') return 'none';
 
       const away = dir > 0 ? this.pad.right : this.pad.left;
-      const canBlock = this.grounded && (this.controllable);
+      const canBlock = this.grounded && this.controllable
+        // A low has to be blocked low. Standing there holding back is
+        // exactly what a sweep is for.
+        && (!data.low || this.state === 'crouch');
       if (canBlock && away) {
         this.hp = Math.max(1, this.hp - data.chip); // chip damage cannot K.O.
+        this.crouching = this.state === 'crouch';   // block low, stay low
         this.state = 'block';
         this.timer = data.blockstun;
         this.kbVx = dir * data.kb * 0.7;
@@ -242,6 +299,16 @@ window.DD = window.DD || {};
         this.vy = -2.6;
         this.y -= 0.01;
         return 'ko';
+      }
+      if (data.knockdown) {
+        this.state = 'down';
+        this.crouching = false;
+        this.kbVx = dir * data.kb;
+        this.vy = -2.0;
+        this.y -= 0.01;
+        this.downT = C().KNOCKDOWN_LIE;
+        DD.audio.play('hit');
+        return 'hit';
       }
       this.state = 'hitstun';
       this.timer = data.stun;
@@ -270,6 +337,9 @@ window.DD = window.DD || {};
         case 'walkF': return seqPick(anims.walk);
         case 'walkB': return seqPick(anims.walk, true);
         case 'crouch': return { f: anims.crouch, yo: 0 };
+        case 'dash': return { f: anims.dash, yo: 0 };
+        case 'getup': return { f: anims.getup, yo: 0 };
+        case 'down': return { f: anims.down, yo: 0 };
         case 'jump': {
           const fr = anims.jump.vel;
           const f = this.vy < -0.8 ? fr[0] : this.vy < 0.8 ? fr[1] : fr[2];
@@ -283,7 +353,7 @@ window.DD = window.DD || {};
           return { f, yo: 0 };
         }
         case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
-        case 'block': return { f: anims.block, yo: 0 };
+        case 'block': return { f: this.crouching ? anims.crouch : anims.block, yo: 0 };
         case 'hitstun': return { f: anims.hurt.two[this.timer > 8 ? 0 : 1], yo: 0 };
         case 'kofall': return { f: this.vy < 0 ? anims.kofall.vel2[0] : anims.kofall.vel2[1], yo: 0 };
         case 'kolie': return { f: anims.ko, yo: 0 };
@@ -299,6 +369,7 @@ window.DD = window.DD || {};
 
     drawShadow(ctx) {
       if (this.state === 'kolie') return;
+      if (this.state === 'down' && this.grounded) return;
       const air = Math.max(0, C().GROUND_Y - this.y);
       const w = Math.max(10, 30 - air * 0.35);
       ctx.fillStyle = 'rgba(0,0,0,0.35)';

@@ -82,8 +82,9 @@ window.DD = window.DD || {};
       F().drawTextShadow(ctx, 'PRESS ENTER', 160, 112, 1, '#f8f8f8', 'center');
     }
 
-    F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 166, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 174, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 160, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'DOWN + PUNCH/KICK = LOW   TAP TWICE = DASH', 160, 168, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 176, 1, '#8a8496', 'center');
   }
 
   function drawMatchEnd(ctx, game, t) {

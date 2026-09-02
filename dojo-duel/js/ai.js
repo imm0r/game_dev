@@ -35,9 +35,13 @@ window.DD = window.DD || {};
         }
       }
 
-      // opponent is winding up -> block every now and then
-      if (opp.state === 'attack' && dist < 75 && Math.random() < 0.35) {
+      // opponent is winding up -> block every now and then, and crouch to
+      // do it if what is coming is a low. Not always: a CPU that always
+      // blocks correctly is no fun to fight.
+      if (opp.state === 'attack' && dist < 80 && Math.random() < 0.4) {
         pad[away] = true;
+        const move = DD.ATTACKS[opp.atkName];
+        if (move && move.low) pad.down = true;
         return pad;
       }
 
@@ -46,31 +50,37 @@ window.DD = window.DD || {};
         this.plan = this.newPlan(dist, toward, away);
       }
 
-      // execute the stored plan; attacks are one-shot impulses
+      // execute the stored plan; attacks and dashes are one-shot impulses
       Object.assign(pad, this.plan);
       this.plan.punch = this.plan.kick = this.plan.special = this.plan.up = false;
+      this.plan.dashL = this.plan.dashR = false;
       return pad;
     }
 
     newPlan(dist, toward, away) {
       const p = DD.input.emptyPad();
+      const dash = toward === 'right' ? 'dashR' : 'dashL';
       const r = Math.random();
       if (dist > 120) {
-        if (r < 0.30) p[toward] = true;
-        else if (r < 0.55 && this.me.fireCd === 0) p.special = true;
-        else if (r < 0.70) { p.up = true; p[toward] = true; }
+        if (r < 0.24) p[toward] = true;
+        else if (r < 0.36) p[dash] = true;              // close the gap fast
+        else if (r < 0.58 && this.me.fireCd === 0) p.special = true;
+        else if (r < 0.72) { p.up = true; p[toward] = true; }
         // otherwise: hold position briefly
       } else if (dist > 60) {
-        if (r < 0.45) p[toward] = true;
-        else if (r < 0.60) { p.up = true; p[toward] = true; p.kick = true; }
-        else if (r < 0.72) p.kick = true;
-        else if (r < 0.80 && this.me.fireCd === 0) p.special = true;
-        else if (r < 0.90) p[away] = true;
+        if (r < 0.38) p[toward] = true;
+        else if (r < 0.50) { p.up = true; p[toward] = true; p.kick = true; }
+        else if (r < 0.60) p.kick = true;
+        else if (r < 0.70) { p.down = true; p.kick = true; }   // sweep the approach
+        else if (r < 0.78 && this.me.fireCd === 0) p.special = true;
+        else if (r < 0.88) p[away] = true;
       } else {
-        if (r < 0.34) p.punch = true;
-        else if (r < 0.58) p.kick = true;
-        else if (r < 0.72) p[away] = true;
-        else if (r < 0.84) { p.up = true; p[toward] = true; p.kick = true; }
+        if (r < 0.26) p.punch = true;
+        else if (r < 0.44) p.kick = true;
+        else if (r < 0.58) { p.down = true; p.punch = true; }  // fast low poke
+        else if (r < 0.68) { p.down = true; p.kick = true; }   // sweep
+        else if (r < 0.80) p[away] = true;
+        else if (r < 0.90) { p.up = true; p[toward] = true; p.kick = true; }
         else p[toward] = true;
       }
       return p;

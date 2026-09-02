@@ -52,11 +52,36 @@ window.DD = window.DD || {};
       left: false, right: false, up: false, down: false,
       punch: false, kick: false, special: false,       // edges (freshly pressed)
       holdPunch: false, holdKick: false,
+      dashL: false, dashR: false,                      // double tap, this frame
     };
   }
 
+  // Two taps of the same direction inside TAP_WINDOW frames. Kept in
+  // absolute directions - only the fighter knows which way it is facing,
+  // and so which of the two is a forward dash.
+  class TapWatch {
+    constructor() { this.age = { left: 999, right: 999 }; this.held = {}; }
+    feed(pad) {
+      const w = (DD.C && DD.C.TAP_WINDOW) || 13;
+      for (const dir of ['left', 'right']) {
+        this.age[dir]++;
+        const now = pad[dir];
+        if (now && !this.held[dir]) {
+          if (this.age[dir] <= w) {
+            pad[dir === 'left' ? 'dashL' : 'dashR'] = true;
+            this.age[dir] = 999;                       // one dash per pair
+          } else {
+            this.age[dir] = 0;
+          }
+        }
+        this.held[dir] = now;
+      }
+      return pad;
+    }
+  }
+
   class HumanController {
-    constructor(keys) { this.keys = keys; }
+    constructor(keys) { this.keys = keys; this.taps = new TapWatch(); }
     read() {
       const k = this.keys;
       const p = emptyPad();
@@ -69,9 +94,9 @@ window.DD = window.DD || {};
       p.special = Input.wasPressed(k.special);
       p.holdPunch = Input.isDown(k.punch);
       p.holdKick = Input.isDown(k.kick);
-      return p;
+      return this.taps.feed(p);
     }
   }
 
-  DD.input = { Input, HumanController, emptyPad };
+  DD.input = { Input, HumanController, TapWatch, emptyPad };
 })();

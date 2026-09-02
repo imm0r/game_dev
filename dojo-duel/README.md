@@ -30,9 +30,28 @@ the point. Use the server.
 | Kick       | G        | L        |
 | Special    | H        | J        |
 | **Block**  | *hold back while the opponent attacks* | same |
+| **Dash**   | *tap a direction twice* | same |
 
-Jump + kick = flying kick. Chip damage on block is in, but (unlike the
-big classics) it cannot score a K.O.
+| Move | Input | What it does |
+| ---- | ----- | ------------ |
+| Straight punch | punch | fast, safe poke |
+| High kick | kick | slower, hurts more |
+| Crouching punch | down + punch | the fastest thing you have |
+| **Sweep** | down + kick | slow, **must be blocked low**, knocks them down |
+| Flying kick | jump + kick | your way in |
+| Dash | tap forward or back twice | covers ground, but you cannot act during it |
+
+That sweep is the whole reason to crouch. Blocking a low while standing
+does not work — hold back **and** down, or you end up on the floor. On the
+way down you are untouchable, so a knockdown resets the round rather than
+starting a loop.
+
+| Standing through it | Blocking it low |
+| ------------------- | --------------- |
+| ![Sweep](docs/screenshots/doc-sweep.png) | ![Low block](docs/screenshots/doc-lowblock.png) |
+
+Chip damage on block is in, but (unlike the big classics) it cannot score
+a K.O.
 
 **Menu / general:** Enter = start/confirm · ↑↓ = pick mode ·
 ←→ = pick stage · P = pause · M = sound on/off
@@ -52,9 +71,9 @@ big classics) it cannot score a K.O.
   - **HANZO**, the karate fighter from the first prototype, remains as a
     bonus set (roster mapping is configurable in `js/constants.js`)
 
-  Each sheet carries 20 poses. Fifteen are on screen today; the uppercut,
-  the two crouching attacks, the second special and the running stride are
-  drawn and imported, waiting for the moves that use them.
+  Each sheet carries 20 poses; eighteen are on screen. The uppercut and
+  each fighter's second special are drawn and imported, waiting for the
+  motion inputs that will trigger them.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard
@@ -122,7 +141,7 @@ are in [`assets/README.md`](assets/README.md).
 | `js/font.js` | 3x5 pixel font |
 | `js/stage.js` | The three procedural stages + panorama pipeline |
 | `js/fighter.js` | Fighter state machine, hitboxes, hit logic, animation resolve |
-| `js/ai.js` | CPU opponent |
+| `js/ai.js` | CPU opponent (blocks lows low, sweeps, dashes in) |
 | `js/game.js` | Round flow, camera, collisions, projectiles, particles |
 | `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
 | `js/audio.js` | Synthesized sound effects |
@@ -232,6 +251,17 @@ import, which a page opened off disk cannot do:
 npm install playwright                            # once, anywhere
 node tools/smoke-test.js                          # straight off disk
 node tools/smoke-test.js http://localhost:8000/   # served, with the real art
+```
+
+`tools/moves-test.js` is the second suite. It drives the fighters' state
+machine with scripted pads instead of keystrokes, so it can assert the
+rules directly — that a sweep knocks down, that a standing block loses to
+a low and a crouching one does not, that a downed fighter cannot be hit,
+that a dash outruns a walk, and that every frame an animation asks for
+actually exists.
+
+```bash
+node tools/moves-test.js
 ```
 
 ## Roadmap

@@ -203,6 +203,7 @@ window.DD = window.DD || {};
       if (!a.grounded || !b.grounded) return;
       if (a.state === 'kolie' || b.state === 'kolie') return;
       if (a.state === 'kofall' || b.state === 'kofall') return;
+      if (a.state === 'down' || b.state === 'down') return;   // walk over them
       const d = b.x - a.x;
       const dist = Math.abs(d);
       if (dist >= C().PUSH_DIST) return;

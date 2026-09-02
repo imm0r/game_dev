@@ -4102,11 +4102,14 @@ window.DD = window.DD || {};
     win: { seq: [['win', 16, 0], ['win', 16, 1]] },
     punch: { atk: ['punch', 'punch', 'punch'] },
     kick: { atk: ['kick', 'kick', 'kick'] },
+    cpunch: { atk: ['crouch', 'crouch', 'crouch'] },
+    sweep: { atk: ['crouch', 'crouch', 'crouch'] },
     special: { atk: ['special', 'special', 'special'] },
     airkick: { atk: ['kick', 'kick', 'kick'] },
     jump: { vel: ['jump', 'jump', 'jump'] },
     kofall: { vel2: ['hurt', 'hurt'] },
-    crouch: 'crouch', block: 'block',
+    crouch: 'crouch', block: 'block', dash: 'walkA',
+    down: 'hurt', getup: 'crouch',
     hurt: { two: ['hurt', 'hurt'] }, ko: 'ko',
   };
 
@@ -4115,8 +4118,10 @@ window.DD = window.DD || {};
       scale: 1,
       grids: Object.assign({}, GEN.klaus, {
         fireballA: K2_FB_A, fireballB: K2_FB_B,
-        // The rig has no jump kick of its own; an imported sheet does.
-        air0: GEN.klaus.kick1,
+        // The rig draws none of these; an imported sheet does. Standing in
+        // for them keeps the generated fallback playable.
+        air0: GEN.klaus.kick1, run0: GEN.klaus.walk3,
+        cpun0: GEN.klaus.crouch0, swp0: GEN.klaus.crouch0,
       }),
       anims: {
         idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
@@ -4124,11 +4129,16 @@ window.DD = window.DD || {};
         win: { seq: [['win0', 14, 0], ['win0', 12, 1]] },
         punch: { atk: ['pun0', 'pun1', 'pun2'] },
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
+        cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
+        sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
-        crouch: 'crouch0', block: 'block0',
+        crouch: 'crouch0', block: 'block0', dash: 'run0',
+        // A sweep uses the knockdown pose, never the K.O. one - that one is
+        // drawn bloodied, which a swept leg has not earned.
+        down: 'kof0', getup: 'crouch0',
         hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },
@@ -4136,7 +4146,8 @@ window.DD = window.DD || {};
       scale: 1,
       grids: Object.assign({}, GEN.antoine, {
         fireballA: A2_GRENADE_A, fireballB: A2_GRENADE_B,
-        air0: GEN.antoine.kick1,
+        air0: GEN.antoine.kick1, run0: GEN.antoine.walk3,
+        cpun0: GEN.antoine.crouch0, swp0: GEN.antoine.crouch0,
       }),
       anims: {
         idle: { seq: [['idle0', 13, 0], ['idle0', 10, 1], ['idle1', 13, 1], ['idle1', 10, 0]] },
@@ -4144,11 +4155,16 @@ window.DD = window.DD || {};
         win: { seq: [['win0', 15, 0], ['win0', 13, 1]] },
         punch: { atk: ['pun0', 'pun1', 'pun2'] },
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
+        cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
+        sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
         special: { atk: ['sp0', 'sp1', 'sp1'] },
         airkick: { atk: ['air0', 'air0', 'air0'] },
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
-        crouch: 'crouch0', block: 'block0',
+        crouch: 'crouch0', block: 'block0', dash: 'run0',
+        // A sweep uses the knockdown pose, never the K.O. one - that one is
+        // drawn bloodied, which a swept leg has not earned.
+        down: 'kof0', getup: 'crouch0',
         hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },
     },

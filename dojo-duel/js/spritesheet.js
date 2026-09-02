@@ -29,20 +29,18 @@ window.DD = window.DD || {};
     'jmp1', 'crouch0', 'block0', 'hurt0', 'win0',
   ];
   // Both roster sheets follow the 20-pose list in assets/README.md. `null`
-  // marks a pose that is drawn but that no move uses yet: the uppercut,
-  // the two crouching attacks and the second special are waiting for the
-  // moves themselves, and the run belongs to a dash the game does not have.
-  // A running stride mixed into a walk cycle reads as a stumble.
+  // marks a pose that is drawn but that no move uses yet: the uppercut and
+  // the second special are waiting for the motion inputs that trigger them.
   const SHEET_ORDER = {
     // Klaus draws "walking steps" as two frames, so his sheet has 21.
     klaus: [
-      'idle0', 'idle1', 'walk1', 'walk2', null, 'pun1', null,
-      null, 'kick1', null, 'air0', 'sp1', null, null,
+      'idle0', 'idle1', 'walk1', 'walk2', 'run0', 'pun1', null,
+      'cpun0', 'kick1', 'swp0', 'air0', 'sp1', null, null,
       'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
     ],
     antoine: [
-      'idle0', 'idle1', 'walk1', null, 'pun1', null, null,
-      'kick1', null, 'air0', 'sp1', null, null,
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', null,
+      'cpun0', 'kick1', 'swp0', 'air0', 'sp1', null, null,
       'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
     ],
   };
@@ -51,7 +49,8 @@ window.DD = window.DD || {};
   const ALIAS = {
     idle1: 'idle0', walk0: 'walk1', walk2: 'idle1', walk3: 'walk2',
     pun0: 'idle0', pun2: 'pun1', kick0: 'idle0', air0: 'kick1',
-    sp0: 'idle0', jmp0: 'jmp1', jmp2: 'jmp1',
+    sp0: 'idle0', jmp0: 'jmp1', jmp2: 'jmp1', run0: 'walk1',
+    cpun0: 'crouch0', swp0: 'crouch0',
     kof0: 'hurt0', ko0: 'hurt0',
   };
 

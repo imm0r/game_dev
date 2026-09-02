@@ -110,17 +110,33 @@ implements. Every milestone ends in a playable build.
 - [ ] Animated hit-spark sprites instead of particle squares
 - [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
 
-### M4 – Fighting depth
-*The art for all of this is already imported and sitting unused: an
-uppercut, a crouching punch, a crouching low kick, a second special and a
-running stride per fighter.*
-- [ ] Crouching attacks, uppercut as a rising anti-air
-- [ ] Special-move inputs (e.g. quarter-circle + punch)
+### M4 – Fighting depth  *(package 1 delivered)*
+
+**Package 1 (delivered): the ground game**
+- [x] Crouching punch (down + punch): the fastest move in the game
+- [x] Sweep (down + kick): slow, knocks down, and **has to be blocked low**
+- [x] High/low blocking — standing through a sweep puts you on the floor,
+      and a crouch block now looks like one
+- [x] Knockdown as its own state: you fall, you are untouchable while down,
+      you get up. It uses the knockdown pose, not the bloodied K.O. one
+- [x] Dash (tap a direction twice): covers ground, and locks you out of
+      acting for a few frames afterwards, so it is a commitment
+- [x] The CPU uses all of it, and crouches to block a low — not every time
+- [x] `tools/moves-test.js`: a second suite that drives the state machine
+      with scripted pads and asserts the rules
+
+**Package 2: specials with motion inputs**
+- [ ] Motion input reader (quarter-circle, dragon-punch)
+- [ ] Uppercut as a rising anti-air — the art is already imported
 - [ ] A second special per character: Klaus's dragon kick, Antoine's
       human cannonball
-- [ ] Dash / run, using the running frames
-- [ ] Antoine's judo throw as a grab mechanic, grenade arc trajectory
-- [ ] Combos, super meter
+- [ ] Grenade arc trajectory
+
+**Package 3: meter and combos**
+- [ ] Super meter, combo counter, juggle rules
+
+**Package 4: throws**
+- [ ] Antoine's judo throw as a grab mechanic
 
 ### M5 – Third character
 - [ ] Based on the project owner's next reference sheet
