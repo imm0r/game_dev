@@ -79,6 +79,19 @@ big classics) it cannot score a K.O.
 ![Neon Crossing](docs/screenshots/doc-stage2.png)
 ![Wind Temple](docs/screenshots/doc-stage3.png)
 
+## Bring your own art
+
+Both the stages **and the fighters** can be replaced by your own images —
+drop a PNG into `assets/`, reload, done. For a fighter, that is one sheet
+with the poses side by side on a flat background; the importer slices it,
+keys out the background, lines the poses up on their feet and scales them
+to fighter height. A partial sheet is fine: unlisted poses keep the
+generated art. Pose order, the exact image requirements and a ready-made
+generator prompt are in [`assets/README.md`](assets/README.md).
+
+The fighters that ship with the repo are **placeholders** produced by
+`tools/rig.py`. They are meant to be replaced by real artwork.
+
 ## Custom stage panoramas
 
 The three stages are drawn procedurally in code — meant as placeholders
@@ -93,7 +106,8 @@ Details and upload guide: [`assets/README.md`](assets/README.md).
 | ---- | --- |
 | `js/constants.js` | All tuning knobs: physics, attack frame data, damage, roster |
 | `js/sprites.js` | **The pixel art.** Every frame is a text grid, every character a pixel |
-| `tools/rig.py` | Skeleton rig that generates the fighter frames from joint positions |
+| `js/spritesheet.js` | Imports hand-made fighter sprite sheets from `assets/` |
+| `tools/rig.py` | Skeleton rig that generates the placeholder fighter frames |
 | `js/font.js` | 3x5 pixel font |
 | `js/stage.js` | The three procedural stages + panorama pipeline |
 | `js/fighter.js` | Fighter state machine, hitboxes, hit logic, animation resolve |

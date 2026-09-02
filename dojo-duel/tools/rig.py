@@ -64,6 +64,20 @@ class Canvas:
             if -SHIFT <= p[0] < W - SHIFT and 0 <= p[1] < H:
                 self.px[p] = c
 
+    def occlude(self, part, reach=2):
+        """Darken what sits behind a part, so limbs cast onto the body."""
+        near = set()
+        for (x, y) in part:
+            for dx in range(-reach, reach + 1):
+                for dy in range(-reach, reach + 1):
+                    p = (x + dx, y + dy)
+                    if p not in part:
+                        near.add(p)
+        for p in near:
+            c = self.px.get(p)
+            if c in DARKEN:
+                self.px[p] = DARKEN[c]
+
     def shade(self, x, y, want, become):
         if self.px.get((x, y)) in want:
             self.px[(x, y)] = become
@@ -71,6 +85,13 @@ class Canvas:
     def rows(self):
         return [''.join(self.px.get((x - SHIFT, y), '.') for x in range(W))
                 for y in range(H)]
+
+
+# one step darker, used for contact shadows
+DARKEN = {'A': 'S', 'S': 'T', 'T': 'U',
+          'D': 'G', 'G': 'g',
+          'R': 'r', 'r': 'q',
+          'L': 'H', 'H': 'J'}
 
 
 def merge(*parts):
@@ -122,6 +143,24 @@ def blob(cx, cy, rx, ry, tones):
     return out
 
 
+def fist(cx, cy, r, tones):
+    """A fist reads as a blunt wedge, not a ball: squarish with knuckles."""
+    out = {}
+    for y in range(int(cy - r) - 1, int(cy + r) + 2):
+        for x in range(int(cx - r) - 1, int(cx + r) + 2):
+            nx, ny = (x - cx) / r, (y - cy) / r
+            if abs(nx) ** 2.7 + abs(ny) ** 2.7 > 1.0:      # squircle
+                continue
+            k = nx * LIGHT[0] + ny * LIGHT[1]
+            out[(x, y)] = tones[0] if k > 0.34 else (
+                tones[2] if k < -0.30 else tones[1])
+    kx = int(cx + r * 0.45)                                 # knuckle ridge
+    for dy in (-1, 1):
+        if (kx, int(cy + dy)) in out:
+            out[(kx, int(cy + dy))] = tones[2]
+    return out
+
+
 def torso(sh_y, hip_y, sh_half, waist_half, hip_half, cx, tones, lean=0.0):
     """Shoulder line down to the hips, with a real waist."""
     out = {}
@@ -154,52 +193,82 @@ def foot(ankle, toe, r, tones, ground=None):
 
 
 def head(cx, cy, rx, ry, skin, hair, opts):
-    """Head with hair, beard, brow, eyes and nose, seen 3/4 facing right."""
-    out = blob(cx, cy, rx, ry, skin)
+    """A head built from a cranium plus an angled jaw - not a ball.
 
-    for y in range(int(cy), int(cy + ry) + 1):       # jaw narrows to the chin
-        for x in range(int(cx - rx) - 1, int(cx + rx) + 2):
-            if (x, y) in out and abs(x - cx) > rx * (1.0 - 0.30 * (y - cy) / ry):
+    At twelve pixels tall every feature has to be deliberate: the hairline
+    runs diagonally (higher at the front), the beard is a shaped mass with
+    a clean jaw edge instead of noise, and the nose sits on the silhouette.
+    """
+    out = blob(cx, cy - ry * 0.16, rx, ry * 0.80, skin)          # cranium
+    jaw = capsule((cx - rx * 0.34, cy + ry * 0.20),
+                  (cx + rx * 0.42, cy + ry * 0.58),
+                  rx * 0.66, rx * 0.46, skin)                    # angled jaw
+    out.update({p: c for p, c in jaw.items() if p not in out})
+    for p, c in jaw.items():
+        out[p] = c
+
+    for y in range(int(cy + ry * 0.2), int(cy + ry) + 2):        # chin taper
+        for x in list(range(int(cx - rx) - 2, int(cx + rx) + 3)):
+            t = (y - cy - ry * 0.2) / max(1e-6, ry * 0.8)
+            if (x, y) in out and abs(x - cx) > rx * (0.92 - 0.42 * t):
                 del out[(x, y)]
 
-    for (x, y) in list(out):                         # hair cap
-        if y < cy - ry * 0.30:
-            out[(x, y)] = hair[1] if x < cx else hair[0]
-    for (x, y) in list(out):                         # hair at the back
-        if x < cx - rx * 0.42 and y < cy + ry * 0.5:
-            out[(x, y)] = hair[1]
+    ear = (int(cx - rx * 0.30), int(cy + ry * 0.06))             # ear
+    for dy in range(3):
+        out[(ear[0], ear[1] + dy)] = skin[1 if dy else 0]
+        out[(ear[0] - 1, ear[1] + dy)] = skin[2]
 
+    # hairline: diagonal, higher over the brow, low at the back of the neck
+    for (x, y) in list(out):
+        nx = (x - cx) / rx
+        if y - cy < -ry * (0.18 + 0.34 * nx):
+            lit = nx > -0.1 and y - cy < -ry * 0.55
+            out[(x, y)] = hair[0] if lit else hair[1]
+    for (x, y) in list(out):                                     # nape
+        if x < cx - rx * 0.52 and y < cy + ry * 0.34:
+            out[(x, y)] = hair[1] if (x + y) % 3 else hair[2]
+
+    by = int(cy - ry * 0.18)                                     # brow ridge
+    ey = by + 2
     if opts.get('beard'):
         full = opts['beard'] == 'full'
+        jaw_y = cy + ry * (0.06 if full else 0.20)
         for (x, y) in list(out):
-            ny, nx = (y - cy) / ry, (x - cx) / rx
-            if ny > (0.24 if full else 0.42) or (
-                    abs(nx) > (0.32 if full else 0.48)
-                    and ny > -0.05 and nx < 0.55):
-                out[(x, y)] = hair[1] if (x * 3 + y) % 4 else hair[2]
-        for x in range(int(cx - rx * 0.2), int(cx + rx * 0.7)):
-            p = (x, int(cy + ry * (0.10 if full else 0.26)))
-            if p in out:
-                out[p] = hair[2]
+            nx, ny = (x - cx) / rx, (y - cy) / ry
+            side = abs(nx) > (0.30 if full else 0.46) and ny > -0.16
+            if y > jaw_y or (side and nx < 0.62):
+                if y <= ear[1] + 2 and x <= ear[0]:              # keep the ear
+                    continue
+                d = (y - jaw_y) / max(1e-6, ry)                  # shade the mass
+                out[(x, y)] = hair[0] if (d < 0.18 and nx > 0.1) else (
+                    hair[2] if (d > 0.55 or nx < -0.35) else hair[1])
+        mouth = int(cy + ry * (0.30 if full else 0.40))          # mouth line
+        for x in range(int(cx + rx * 0.05), int(cx + rx * 0.72)):
+            if (x, mouth) in out:
+                out[(x, mouth)] = hair[2]
 
-    by = int(cy - ry * 0.20)                         # brow ridge
-    for x in range(int(cx - rx * 0.30), int(cx + rx * 0.80)):
+    for x in range(int(cx - rx * 0.24), int(cx + rx * 0.84)):    # brow
         if (x, by) in out:
             out[(x, by)] = skin[2]
+        if (x, by - 1) in out and x > cx:
+            out[(x, by - 1)] = skin[1]
 
-    ey = by + 2                                      # eyes
-    ex = int(cx + rx * 0.42)
+    ex = int(cx + rx * 0.46)                                     # eyes
     out[(ex, ey)], out[(ex + 1, ey)] = 'W', 'E'
-    fx = int(cx - rx * 0.14)
+    fx = int(cx - rx * 0.10)
     out[(fx, ey)], out[(fx + 1, ey)] = 'W', 'e'
 
-    ny = ey + 2                                      # nose and cheek
-    out[(int(cx + rx * 0.80), ny)] = skin[2]
-    out[(int(cx + rx * 0.72), ny + 1)] = skin[3]
+    nx0 = max(x for (x, y) in out if y == ey + 1)                # nose, on the
+    out[(nx0 + 1, ey + 1)] = skin[1]                             # silhouette
+    out[(nx0 + 1, ey + 2)] = skin[2]
+    out[(nx0, ey + 2)] = skin[2]
+    for x in range(int(cx + rx * 0.1), int(cx + rx * 0.6)):      # cheekbone
+        if (x, ey + 1) in out and out[(x, ey + 1)] in skin:
+            out[(x, ey + 1)] = skin[0]
 
     if opts.get('scar'):
         for i in range(5):
-            out[(int(cx + rx * 0.5) + (i % 2), by - 3 + i)] = 'M'
+            out[(int(cx + rx * 0.52) + (i % 2), by - 3 + i)] = 'M'
     if opts.get('closed_eyes'):
         for p in ((ex, ey), (ex + 1, ey), (fx, ey), (fx + 1, ey)):
             out[p] = skin[2]
@@ -245,80 +314,114 @@ def draw(j, ch):
     fa_g = None if j.get('far_air') else gnd
     ne_g = None if j.get('near_air') else gnd
 
-    # --- far arm and far leg (behind the body) ---
-    c.stamp(merge(
-        capsule(j['sh_far'], j['el_far'], 3.3 * t, 2.6 * t, far(ch['arm_mat'])),
-        capsule(j['el_far'], j['fist_far'], 2.5 * t, 2.1 * t,
-                far(ch['forearm_mat'])),
-        blob(*j['fist_far'], 2.9 * t, 2.7 * t, far(ch['hand_mat'])),
-    ))
-    c.stamp(merge(
-        capsule(j['hip_far'], j['knee_far'], 4.4 * t, 3.2 * t, far(ch['leg_mat'])),
-        capsule(j['knee_far'], j['ankle_far'], 3.2 * t, 2.4 * t, far(ch['leg_mat'])),
-        foot(j['ankle_far'], j['toe_far'], 2.5 * t, far(ch['foot_mat']), fa_g),
-    ))
+    def arm(sh, el, hand, mats, thick):
+        """Deltoid cap, upper arm, forearm and fist as one seamless part."""
+        return merge(
+            blob(sh[0], sh[1], 3.7 * thick, 3.4 * thick, mats[0]),
+            capsule(sh, el, 3.3 * thick, 2.6 * thick, mats[0]),
+            capsule(el, hand, 2.5 * thick, 2.1 * thick, mats[1]),
+            fist(hand[0], hand[1], 3.0 * thick, mats[2]),
+        )
+
+    def leg(hip, knee, ankle, toe, mat, foot_mat, ground):
+        return merge(
+            capsule(hip, knee, 4.5 * t, 3.2 * t, mat),
+            capsule(knee, ankle, 3.2 * t, 2.4 * t, mat),
+            foot(ankle, toe, 2.5 * t, foot_mat, ground),
+        )
+
+    # --- far arm and far leg, behind the body and in shadow ---
+    c.stamp(arm(j['sh_far'], j['el_far'], j['fist_far'],
+                (far(ch['arm_mat']), far(ch['forearm_mat']), far(ch['hand_mat'])),
+                t))
+    c.stamp(leg(j['hip_far'], j['knee_far'], j['ankle_far'], j['toe_far'],
+                far(ch['leg_mat']), far(ch['foot_mat']), fa_g))
 
     # --- torso ---
     c.stamp(torso(j['sh_y'], j['hip_y'], j['sh_half'], j['waist_half'],
                   j['hip_half'], j['cx'], ch['torso_mat'], j.get('lean', 0)))
-    cx, sh_y = int(j['cx']), j['sh_y']
-    if ch['torso_mat'] is SKIN:                       # pectorals and abs
-        for x in range(cx - 5, cx + 6):
-            c.shade(x, sh_y + 9, ('S', 'A'), 'T')
-        for i in range(3):
-            for x in range(cx - 3, cx + 4):
-                c.shade(x, sh_y + 13 + i * 4, ('S', 'A'), 'T')
-    else:                                             # uniform: pockets, seam
-        for i in range(2):
+    cx, sh_y, hip_y = int(j['cx']), j['sh_y'], j['hip_y']
+    half = j['sh_half']
+
+    if ch['torso_mat'] is SKIN:
+        # collarbone, pectorals, sternum, abs, lats - the chest reads as a
+        # chest only if these actually describe muscle masses
+        for x in range(cx - 6, cx + 7):
+            c.shade(x, sh_y + 2, ('S', 'T'), 'A')
+        for x in range(cx - 6, cx + 7):
+            c.shade(x, sh_y + 10, ('S', 'A'), 'T')
+            c.shade(x, sh_y + 11, ('S', 'A'), 'U')
+        for y in range(sh_y + 4, sh_y + 11):
+            c.shade(cx + 1, y, ('S', 'A', 'T'), 'T')
+        for y in range(sh_y + 5, sh_y + 10):            # pec highlight
+            c.shade(cx + 4, y, ('S',), 'A')
+        for i in range(3):                              # ab rows
+            y = sh_y + 15 + i * 4
+            for x in range(cx - 4, cx + 6):
+                c.shade(x, y, ('S', 'A'), 'T')
+            c.shade(cx + 1, y - 1, ('S', 'A'), 'T')
+            c.shade(cx + 1, y - 2, ('S', 'A'), 'T')
+        for y in range(sh_y + 5, sh_y + 18):            # lats down the back
+            c.shade(int(cx - half + 1), y, ('S', 'T'), 'U')
+    else:
+        for i in range(2):                              # chest pockets
             for x in range(cx - 4 + i * 7, cx - 1 + i * 7):
-                for y in range(sh_y + 8, sh_y + 12):
+                for y in range(sh_y + 9, sh_y + 13):
                     c.shade(x, y, ('D', 'G'), 'g')
-        for y in range(sh_y + 2, j['hip_y'] - 2):
+            for x in range(cx - 5 + i * 7, cx + i * 7):
+                c.shade(x, sh_y + 8, ('D', 'G'), 'g')
+        for y in range(sh_y + 3, hip_y - 2):            # front seam
             c.shade(cx + 3, y, ('D', 'G'), 'g')
+        for x in range(cx - 6, cx + 7):                 # collar
+            c.shade(x, sh_y + 1, ('D', 'G'), 'g')
+            c.shade(x, sh_y + 2, ('G',), 'D')
+        for y in range(sh_y + 4, sh_y + 16):            # shoulder seams
+            c.shade(int(cx - half + 1), y, ('D', 'G'), 'g')
+
     if ch.get('tattoo'):
-        for dx, dy in ((-4, 12), (-3, 13), (-5, 13), (-4, 14), (-3, 11)):
+        for dx, dy in ((-4, 13), (-3, 14), (-5, 14), (-4, 15), (-3, 12)):
             c.shade(cx + dx, sh_y + dy, ('S', 'A', 'T'), 'M')
 
-    # --- shorts / belt ---
+    # --- neck, tucked between the shoulders ---
+    c.stamp(capsule(j['neck'], (j['cx'] + 1, j['sh_y'] + 2), 2.6 * t, 3.4 * t,
+                    (SKIN[1], SKIN[2], SKIN[3])))
+
+    # --- shorts, belt, patch ---
     if ch.get('shorts'):
-        top = j['hip_y'] + ch['shorts_top']
-        c.stamp(torso(top, j['hip_y'] + ch['shorts_bot'], j['waist_half'] + 0.6,
+        top = hip_y + ch['shorts_top']
+        c.stamp(torso(top, hip_y + ch['shorts_bot'], j['waist_half'] + 0.6,
                       j['hip_half'] + 0.4, j['hip_half'] + 1.4, j['cx'], CLOTH,
                       j.get('lean', 0) * 0.4))
     if ch.get('belt'):
-        top = j['hip_y'] + (ch['shorts_top'] if ch.get('shorts') else -6)
+        top = hip_y + (ch['shorts_top'] if ch.get('shorts') else -6)
         for x in range(int(j['cx'] - j['waist_half']) - 1,
                        int(j['cx'] + j['waist_half']) + 2):
             c.px[(x, top)] = 'N'
             c.px[(x, top + 1)] = 'n'
         c.px[(cx + 1, top)] = 'V'
     if ch['patch'] == 'chest':
-        c.px[(cx + 4, sh_y + 20)] = 'F'
-        c.px[(cx + 5, sh_y + 20)] = 'N'
+        c.px[(cx + 4, sh_y + 21)] = 'F'
+        c.px[(cx + 5, sh_y + 21)] = 'N'
     else:
         for i, col in enumerate(('B', 'V', 'F')):
-            c.px[(cx - 7 + i, sh_y + 4)] = col
             c.px[(cx - 7 + i, sh_y + 5)] = col
+            c.px[(cx - 7 + i, sh_y + 6)] = col
 
-    # --- near leg ---
-    c.stamp(merge(
-        capsule(j['hip_near'], j['knee_near'], 4.7 * t, 3.4 * t, ch['leg_mat']),
-        capsule(j['knee_near'], j['ankle_near'], 3.4 * t, 2.5 * t, ch['leg_mat']),
-        foot(j['ankle_near'], j['toe_near'], 2.6 * t, ch['foot_mat'], ne_g),
-    ))
+    # --- near leg and near arm cast onto what is behind them ---
+    near_leg = leg(j['hip_near'], j['knee_near'], j['ankle_near'],
+                   j['toe_near'], ch['leg_mat'], ch['foot_mat'], ne_g)
+    c.occlude(near_leg)
+    c.stamp(near_leg)
 
-    # --- head ---
     c.stamp(head(*j['head'], *j['headr'], SKIN, HAIR, {
         'beard': ch['beard'], 'scar': ch['scar'],
         'closed_eyes': j.get('closed_eyes'),
     }))
 
-    # --- near arm (in front of everything) ---
-    c.stamp(merge(
-        capsule(j['sh_near'], j['el_near'], 3.5 * t, 2.7 * t, ch['arm_mat']),
-        capsule(j['el_near'], j['fist_near'], 2.7 * t, 2.2 * t, ch['forearm_mat']),
-        blob(*j['fist_near'], 3.1 * t, 2.9 * t, ch['hand_mat']),
-    ))
+    near_arm = arm(j['sh_near'], j['el_near'], j['fist_near'],
+                   (ch['arm_mat'], ch['forearm_mat'], ch['hand_mat']), t)
+    c.occlude(near_arm)
+    c.stamp(near_arm)
     return c.rows()
 
 

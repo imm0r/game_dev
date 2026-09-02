@@ -25,6 +25,7 @@ window.DD = window.DD || {};
       this.seqT = 0;
       this.seqLabel = '';
       DD.sprites.buildAll();
+      DD.spritesheet.load();   // hand-made sheets override the generated art
       DD.stage.init();
       this.cam = 0;
       this.worldW = DD.stage.worldW(this.stageIndex);
