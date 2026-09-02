@@ -46,6 +46,16 @@ window.DD = window.DD || {};
       this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
       this.motion = new DD.input.MotionBuffer();
+      this.trail = [];            // ghost frames left by a dash or a rush
+    }
+
+    // Anything that covers ground fast enough to smear leaves a trail.
+    get streaking() {
+      if (this.state === 'dash') return true;
+      if (this.state !== 'attack') return false;
+      const a = A()[this.atkName];
+      return !!a.rush && this.atkT >= a.startup
+        && this.atkT < a.startup + a.active;
     }
 
     get grounded() { return this.y >= C().GROUND_Y; }
@@ -107,7 +117,11 @@ window.DD = window.DD || {};
     trySpecial(game, pad) {
       const w = C().MOTION_WINDOW, M = DD.MOTIONS;
       if (pad.special && this.meter >= C().METER_MAX && this.motion.has(M.qcf, w)) {
-        this.motion.clear(); this.startAttack('super'); return true;
+        this.motion.clear();
+        this.startAttack('super');
+        DD.fx.flash = 8;                       // the screen announces it
+        DD.fx.tint = A().super.invuln + 6;     // and everything else dims
+        return true;
       }
       if (pad.punch && this.motion.has(M.dp, w)) {
         this.motion.clear(); this.startAttack('uppercut'); return true;
@@ -295,6 +309,14 @@ window.DD = window.DD || {};
       // arena bounds (world width comes from the current stage)
       const m = C().WALL_MARGIN;
       this.x = Math.max(m, Math.min(game.worldW - m, this.x));
+
+      if (this.streaking) {
+        const { f } = this.resolveFrame();
+        this.trail.unshift({ x: this.x, y: this.y, facing: this.facing, f });
+        this.trail.length = Math.min(this.trail.length, C().TRAIL);
+      } else if (this.trail.length) {
+        this.trail.pop();
+      }
     }
 
     applyGravity() {
@@ -312,6 +334,7 @@ window.DD = window.DD || {};
       this.vx = 0;
       this.state = 'idle';
       this.atkName = null;
+      DD.fx.puff(this.x, C().GROUND_Y, 6);
     }
 
     // body box (where you can be hit), world coordinates
@@ -463,6 +486,13 @@ window.DD = window.DD || {};
     }
 
     draw(ctx) {
+      // ghosts first, oldest and faintest at the back
+      for (let i = this.trail.length - 1; i >= 1; i--) {
+        const g = this.trail[i];
+        ctx.globalAlpha = 0.5 * (1 - (i - 1) / C().TRAIL);
+        DD.sprites.draw(ctx, this.char, this.skin, g.f, g.facing, g.x, g.y, 0);
+      }
+      ctx.globalAlpha = 1;
       const { f, yo } = this.resolveFrame();
       DD.sprites.draw(ctx, this.char, this.skin, f, this.facing, this.x, this.y, yo);
     }

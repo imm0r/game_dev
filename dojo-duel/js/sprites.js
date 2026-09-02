@@ -4270,11 +4270,13 @@ window.DD = window.DD || {};
     }
   }
 
-  // draw a frame at a world position (x = foot center, y = foot line)
-  function draw(ctx, charKey, skinKey, frameName, facing, x, y, dy) {
+  // draw a frame at a world position (x = foot center, y = foot line).
+  // `scale` overrides the character's own pixel density - the victory
+  // splash blows the win pose up to stand in for a portrait.
+  function draw(ctx, charKey, skinKey, frameName, facing, x, y, dy, scale) {
     const f = frames[charKey][skinKey][frameName];
     const m = meta[charKey][frameName];
-    const S = CHARS[charKey].scale;
+    const S = scale || CHARS[charKey].scale;
     const img = facing >= 0 ? f.right : f.left;
     const dx = Math.round(x - (m.w * S) / 2);
     const dyy = Math.round(y - m.bottom * S + (dy || 0));

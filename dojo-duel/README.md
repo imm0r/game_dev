@@ -130,14 +130,24 @@ a K.O.
 
 - Health bars with red damage trails, a 99-second timer, best-of-3
   rounds, K.O. and time-over logic, victory pose
-- Hit sparks, hitstop (a brief freeze on impact), screen shake on K.O. —
-  the small things that make it feel "arcade"
+- **Impact.** Hitstop freezes the moment of contact; hit sparks are drawn
+  bursts scaled by damage, with their own palette for a hit, a block and a
+  super; a K.O. drops to a third speed for a moment so you get to watch it;
+  dashes and rushing specials leave motion trails; landing raises dust; a
+  super flashes the screen and dims the stage under the fighters. It all
+  lives in `js/fx.js`, so the game loop only says what happened
+- Victory splash: the winner's own victory pose, blown up against a
+  turning sunburst
 - Synthesized chiptune sound effects (WebAudio, no audio files)
 - A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 
 ![Tokyo Street](docs/screenshots/doc-stage1.png)
 ![Wind Temple](docs/screenshots/doc-stage2.png)
 ![Neon Crossing](docs/screenshots/doc-stage3.png)
+
+| Impact | A dash | Victory |
+| ------ | ------ | ------- |
+| ![Impact](docs/screenshots/doc-impact.png) | ![Dash](docs/screenshots/doc-trail.png) | ![Victory](docs/screenshots/doc-victory.png) |
 
 ## Bring your own art
 
@@ -176,6 +186,7 @@ are in [`assets/README.md`](assets/README.md).
 | `js/stage.js` | The three procedural stages + panorama pipeline |
 | `js/fighter.js` | Fighter state machine, hitboxes, hit logic, animation resolve |
 | `js/ai.js` | CPU opponent (blocks lows low, sweeps, dashes in) |
+| `js/fx.js` | Impact: bursts, dust, trails, flashes |
 | `js/game.js` | Round flow, camera, collisions, projectiles, particles |
 | `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
 | `js/audio.js` | Synthesized sound effects |

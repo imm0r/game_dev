@@ -44,6 +44,8 @@ DD.C = {
   FIREBALL_COOLDOWN: 60,
 
   HITSTOP: 6,         // brief freeze on hits ("impact feel")
+  KO_SLOWMO: 45,      // frames of third-speed after a K.O.
+  TRAIL: 5,           // how many ghost frames a dash or rush leaves behind
 
   // Roster: which character enters with which color scheme.
   // Available: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)

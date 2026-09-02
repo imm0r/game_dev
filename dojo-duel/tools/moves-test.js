@@ -401,6 +401,40 @@ function check(name, cond, extra) {
   });
   check('you cannot grab someone out of hitstun', r.can === false, 'canThrow=' + r.can);
 
+  // --- effects fire when they should --------------------------------------
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game;
+    R.place(146, 176);
+    DD.fx.reset();
+    R.set(0, { kick: true }); R.step(1);
+    R.set(0, {}); R.step(DD.ATTACKS.kick.startup + 2);
+    const onHit = DD.fx.bursts.length;
+
+    R.place(140, 250);
+    DD.fx.reset();
+    R.set(0, { up: true }); R.step(1);
+    R.set(0, {}); R.step(60);                    // jump and land
+    const onLand = DD.fx.dust.length;
+
+    R.place(120, 200);
+    DD.fx.reset();
+    G.fighters[0].meter = DD.C.METER_MAX;
+    R.set(0, { down: true }); R.step(2);
+    R.set(0, { down: true, right: true }); R.step(2);
+    R.set(0, { right: true, special: true }); R.step(1);
+    const flash = DD.fx.flash > 0 && DD.fx.tint > 0;
+
+    R.place(90, 260);
+    R.set(0, { dashR: true, right: true }); R.step(1);
+    R.set(0, { right: true }); R.step(5);
+    const trail = G.fighters[0].trail.length;
+    return { onHit, onLand, flash, trail };
+  });
+  check('a hit throws a burst', r.onHit > 0, 'bursts=' + r.onHit);
+  check('landing raises dust', r.onLand > 0, 'dust=' + r.onLand);
+  check('the super flashes and dims the stage', r.flash);
+  check('a dash leaves a trail', r.trail > 1, 'ghosts=' + r.trail);
+
   // --- every pose the moves ask for really exists -------------------------
   r = await run(() => {
     const missing = [];

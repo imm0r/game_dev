@@ -17,6 +17,7 @@ window.DD = window.DD || {};
       this.particles = [];
       this.hitstop = 0;
       this.shake = 0;
+      this.slowmo = 0;
       this.paused = false;
       this.round = 1;
       this.timeFrames = C().ROUND_TIME * 60;
@@ -80,6 +81,8 @@ window.DD = window.DD || {};
       this.timeFrames = C().ROUND_TIME * 60;
       this.hitstop = 0;
       this.shake = 0;
+      this.slowmo = 0;
+      DD.fx.reset();
       this.pendingWinner = null;
       this.state = 'intro';
       this.seqT = 0;
@@ -107,19 +110,8 @@ window.DD = window.DD || {};
       DD.audio.play('fireball');
     }
 
-    spawnSparks(x, y, kind) {
-      const cols = kind === 'block'
-        ? ['#88c8f8', '#f8f8f8', '#4890d8']
-        : ['#f8f8f8', '#f8d020', '#f88020'];
-      for (let i = 0; i < 9; i++) {
-        this.particles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.7) * 3,
-          life: 10 + Math.random() * 8,
-          col: cols[i % cols.length],
-        });
-      }
+    spawnSparks(x, y, kind, power) {
+      DD.fx.burst(x, y, kind, power);
     }
 
     overlap(a, b) {
@@ -129,6 +121,15 @@ window.DD = window.DD || {};
     update() {
       this.t++;
       if (Input.wasPressed('KeyM')) DD.audio.toggleMute();
+      DD.fx.update();
+
+      // A K.O. runs at a third speed for a moment, so the hit that ended
+      // the round is something you get to watch rather than something you
+      // find out about afterwards.
+      if (this.slowmo > 0) {
+        this.slowmo--;
+        if (this.slowmo % 3) { Input.endFrame(); return; }
+      }
 
       switch (this.state) {
         case 'title': this.updateTitle(); break;
@@ -273,16 +274,23 @@ window.DD = window.DD || {};
       } else if (result === 'block') {
         def.gainMeter(data.chip * C().METER_BLOCK);
       }
-      this.afterHit(att, def, result, cx, cy);
+      this.afterHit(att, def, result, cx, cy, data);
     }
 
-    afterHit(att, def, result, cx, cy) {
+    afterHit(att, def, result, cx, cy, data) {
       if (result === 'none') return;
-      this.spawnSparks(cx, cy, result === 'block' || result === 'tech' ? 'block' : 'hit');
+      // a jab and a super should not throw the same spark
+      const power = 0.6 + ((data && data.dmg) || 6) / 9;
+      const kind = result === 'block' || result === 'tech' ? 'block'
+        : (att && att.atkName === 'super' ? 'super' : 'hit');
+      this.spawnSparks(cx, cy, kind, power);
       this.hitstop = C().HITSTOP;
+      this.shake = Math.max(this.shake, Math.round(power * 3));
       if (result === 'ko') {
         this.hitstop = C().HITSTOP + 8;
         this.shake = 20;
+        this.slowmo = C().KO_SLOWMO;    // the moment gets to land
+        DD.fx.flash = 6;
         this.pendingWinner = att;
         this.seqLabel = 'K.O.!';
         this.state = 'roundend';
@@ -323,7 +331,7 @@ window.DD = window.DD || {};
           p.dead = true;
           const dir = def.x >= p.owner.x ? 1 : -1;
           const result = def.receiveHit(this, F, dir);
-          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y);
+          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y, F);
         }
       }
       this.projectiles = this.projectiles.filter((p) => !p.dead);
@@ -393,6 +401,8 @@ window.DD = window.DD || {};
         return;
       }
 
+      DD.fx.drawTint(ctx, DD.C.VIEW_W, DD.C.VIEW_H);
+
       // world layer: everything here scrolls with the camera
       ctx.save();
       ctx.translate(-cam, 0);
@@ -407,18 +417,14 @@ window.DD = window.DD || {};
         DD.sprites.draw(ctx, p.owner.char, p.owner.skin, frame, p.vx >= 0 ? 1 : -1, p.x, p.y + 8, 0);
       }
 
-      for (const s of this.particles) {
-        ctx.globalAlpha = Math.min(1, s.life / 8);
-        ctx.fillStyle = s.col;
-        ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
-      }
-      ctx.globalAlpha = 1;
+      DD.fx.drawWorld(ctx);
 
       ctx.restore();
 
       // foreground silhouettes (scroll faster than the fighters)
       DD.stage.drawFg(ctx, this.stageIndex, this.t, cam);
 
+      DD.fx.drawScreen(ctx, DD.C.VIEW_W, DD.C.VIEW_H);
       DD.ui.drawHUD(ctx, this);
 
       if (this.state === 'intro') {

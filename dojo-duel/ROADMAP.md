@@ -105,10 +105,27 @@ implements. Every milestone ends in a playable build.
       character share the same frames, so a future mirror match would be
       two identical fighters
 
-### M3 – Effects & game feel
-- [ ] Super flash, slow-motion K.O., motion trails, landing dust
-- [ ] Animated hit-spark sprites instead of particle squares
-- [ ] Stage reactions (crowd cheers on K.O.), victory splash with portrait
+### M3 – Effects & game feel  *(done)*
+- [x] `js/fx.js`: one place that owns impact, so the game loop only has to
+      say what happened, not how it looks
+- [x] Hit sparks are drawn bursts — a white core, spokes stepped out in
+      chunks so they stay pixels, debris thrown off — instead of coloured
+      squares. Scaled by damage, and a different palette for hit, block
+      and super, so a jab and a super do not look alike
+- [x] Super: a white flash, then the stage dims under the fighters (over
+      the stage, below them — a super dims the world it happens in, not
+      the person doing it)
+- [x] Slow motion on K.O.: a third speed for 45 frames, so the hit that
+      ended the round is something you watch
+- [x] Motion trails behind a dash and a rushing special
+- [x] Landing dust, and screen shake scaled to the hit
+- [x] Victory splash: the winner's own victory pose blown up against a
+      turning sunburst — no portrait art exists, and that pose is the most
+      characterful frame either fighter has
+- [ ] **Not done: crowd reactions.** The stages are single painted
+      panoramas, so there is no crowd layer to animate. It needs either
+      a separate foreground crowd strip per stage, or going back to the
+      procedural stages, which look worse. Parked deliberately.
 
 ### M4 – Fighting depth  *(packages 1-4 delivered)*
 

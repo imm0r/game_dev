@@ -112,17 +112,51 @@ window.DD = window.DD || {};
     F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 176, 1, '#8a8496', 'center');
   }
 
+  // Victory splash. No portrait art exists, so the winner's own victory
+  // pose is blown up to stand in for one — it is the most characterful
+  // frame either fighter has.
   function drawMatchEnd(ctx, game, t) {
-    ctx.fillStyle = 'rgba(8, 4, 16, 0.45)';
+    ctx.fillStyle = 'rgba(8, 4, 16, 0.62)';
     ctx.fillRect(0, 0, 320, 180);
     const w = game.matchWinner;
-    if (w) {
-      F().drawTextShadow(ctx, w.name + ' WINS!', 160, 62, 3, '#f8d020', 'center');
-    } else {
+    if (!w) {
       F().drawTextShadow(ctx, 'DRAW', 160, 62, 3, '#f8d020', 'center');
+      if ((t % 60) < 40) {
+        F().drawTextShadow(ctx, 'ENTER: BACK TO TITLE', 160, 96, 1, '#f8f8f8', 'center');
+      }
+      return;
     }
+
+    const frames = DD.sprites.frames[w.char][w.skin];
+    const pose = frames.win0 ? 'win0' : DD.sprites.idleFrame(w.char);
+    const meta = DD.sprites.meta[w.char][pose];
+    const scale = Math.min(2.0, 116 / meta.h);
+    const bh = Math.round(meta.h * scale);
+    const cx = 82, cy = 92;
+
+    // sunburst behind the winner, turning slowly. Wedges rather than
+    // rays: a line drawn outwards leaves gaps as the radius grows.
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#f8d020';
+    for (let i = 0; i < 16; i += 2) {
+      const a0 = (i / 16) * Math.PI * 2 + t / 320;
+      const a1 = ((i + 1) / 16) * Math.PI * 2 + t / 320;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(cx + Math.cos(a0) * 280, cy + Math.sin(a0) * 280);
+      ctx.lineTo(cx + Math.cos(a1) * 280, cy + Math.sin(a1) * 280);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    DD.sprites.draw(ctx, w.char, w.skin, pose, 1, cx, cy + bh / 2, 0, scale);
+
+    F().drawTextShadow(ctx, w.name, 218, 66, 3, '#f8d020', 'center');
+    F().drawTextShadow(ctx, 'WINS!', 218, 88, 3, '#f8f8f8', 'center');
     if ((t % 60) < 40) {
-      F().drawTextShadow(ctx, 'ENTER: BACK TO TITLE', 160, 96, 1, '#f8f8f8', 'center');
+      F().drawTextShadow(ctx, 'ENTER: BACK TO TITLE', 218, 124, 1, '#b8b0c0', 'center');
     }
   }
 
