@@ -135,6 +135,11 @@ a K.O.
   grab, the lift and the slam included, so a throw is drawn rather than
   borrowed from another move. Klaus's sheet even carries his fireball as a
   picture of its own, and that is what the game puts in the air.
+- **Animation strips.** A pose per movement is a switch, not an animation,
+  so a movement can bring its own in-between frames as an extra sheet,
+  `assets/<fighter>-<move>.png`. Klaus walks on four drawn frames this way.
+  A strip's first frame is the fighting stance — an anchor to scale the
+  sheet by, never used as a pose — and its poses beat the main sheet's.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard
@@ -186,7 +191,9 @@ import step, no atlas to rebuild, no metadata file to keep in sync.
   scaled once to 180px height and becomes the scrolling world (up to 832px
   wide, about 2.6 screens).
 - **A fighter** is one sheet with the poses laid out next to each other on
-  a flat background, `klaus.png` / `antoine.png` / `maxim.png`. The
+  a flat background, `klaus.png` / `antoine.png` / `maxim.png`, plus one
+  optional strip per movement, `<fighter>-<move>.png`, that gives that
+  movement its in-between frames. The
   importer finds each pose as a connected shape — so the rows may even
   overlap, and a drawn grid around the poses is found and removed — keys
   the background out with a soft edge, lines every pose up on its feet and

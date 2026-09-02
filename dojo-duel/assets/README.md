@@ -268,7 +268,20 @@ drawings and gets them however long the arc lasts.
 > compact; 4 falling, the legs reaching down for the ground.
 
 Save each strip as `<fighter>-<move>.png` — `klaus-walk.png`,
-`maxim-punch.png` — and it is picked up beside that fighter's main sheet.
+`maxim-punch.png` — and add one line to `STRIPS` in `js/spritesheet.js`
+naming the poses it fills. It is loaded beside that fighter's main sheet,
+and a pose on a strip wins over the same pose on the sheet whichever image
+the browser happens to finish first.
+
+**What the importer does about a cast shadow.** It removes it, however
+firmly the prompt asked for none. A shadow is the background colour with
+the light taken out of it — same colour, darker — and nothing in a drawing
+is that by coincidence. It has to go, because a shadow bridges the two
+feet and walls the field in between the legs, and walled-in field survives
+into the sprite as a magenta wedge between the knees. The same rule draws
+a line under how much a pocket has to be sealed by: a gap between an arm
+and a chest is closed by the few pixels where they touch, and that is
+background showing through, not artwork.
 
 ### Poses that need two people
 

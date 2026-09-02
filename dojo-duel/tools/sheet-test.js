@@ -49,6 +49,41 @@ function check(name, cond, extra) {
       `${r.drawnLines} line pixels`);
   }
 
+  // --- the animation strips -------------------------------------------------
+  // A strip carries one movement, and its first frame is the fighting
+  // stance: an anchor to scale the sheet by, never installed as a pose. So
+  // a strip must hold exactly as many figures as its order lists, and the
+  // poses after the anchor must reach the game.
+  const strips = await p.evaluate(async () => {
+    const out = {};
+    const S = window.DD.spritesheet;
+    for (const [charKey, moves] of Object.entries(S.STRIPS)) {
+      for (const [move, order] of Object.entries(moves)) {
+        const frames = await S.inspect(`assets/${charKey}-${move}.png`);
+        const skin = Object.keys(window.DD.sprites.frames[charKey])[0];
+        out[`${charKey}-${move}`] = {
+          found: frames.length,
+          expected: order.length,
+          missing: order.slice(1)
+            .filter((n) => n && !window.DD.sprites.frames[charKey][skin][n]),
+          // every frame of a movement is the same fighter, so they must
+          // come out the same height - a strip whose figures drift in size
+          // pops as the animation plays
+          heights: [...new Set(frames.map((f) => f.height))],
+        };
+      }
+    }
+    return out;
+  });
+  for (const [name, r] of Object.entries(strips)) {
+    check(`${name}: every frame the strip lists is found`, r.found === r.expected,
+      `found ${r.found}, order lists ${r.expected}`);
+    check(`${name}: its poses reach the game`, r.missing.length === 0,
+      `missing ${r.missing.join(', ')}`);
+    check(`${name}: every frame comes out the same height`, r.heights.length === 1,
+      `heights ${r.heights.join(', ')}`);
+  }
+
   // --- a light background ---------------------------------------------------
   // One generator handed back a sheet on white instead of the usual flat
   // color, so a light field has to work as well as a dark one. Drawn from

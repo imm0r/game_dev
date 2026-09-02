@@ -245,10 +245,29 @@ implements. Every milestone ends in a playable build.
       stance still tapers to a head, which is the shape a decapitated
       import loses
 
-### M6 – Sound & music
+### M6 – Animation depth  *(started)*
+- [x] Animation strips: one extra sheet per movement,
+      `assets/<fighter>-<move>.png`, whose first frame is the fighting
+      stance as a scale anchor and is never installed. A pose on a strip
+      beats the same pose on the main sheet whichever image loads first
+- [x] Klaus walks on four drawn frames instead of one drawing and three
+      aliases of the idle pose
+- [x] Cast shadows keyed out: a shadow is the field colour darkened, and
+      it bridges the feet, which walls the field in between the legs and
+      leaves a magenta wedge in the sprite
+- [x] A pocket of field only counts as artwork if real bulk seals it - the
+      gap between an arm and a chest is closed by a hairline, and what is
+      behind it is background
+- [ ] **Not solved: a walk cannot plant its feet.** Every frame is anchored
+      on the middle of its own feet, so each one recentres itself and some
+      skate is inherent. It would take a per-frame anchor offset that
+      follows the planted foot instead
+- [ ] Strips for the punch, the kick and the idle; the other two fighters
+
+### M7 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants
 
-### M7 – Release polish
+### M8 – Release polish
 - [x] Character select screen: both sides choose at once, each with their
       own left/right and punch key, and against the CPU the machine takes
       somebody who is not you. Portraits load from
