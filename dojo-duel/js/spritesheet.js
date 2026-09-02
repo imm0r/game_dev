@@ -29,23 +29,34 @@ window.DD = window.DD || {};
     'idle0', 'walk1', 'pun1', 'kick1', 'sp1',
     'jmp1', 'crouch0', 'block0', 'hurt0', 'win0',
   ];
-  // Both roster sheets follow the 20-pose list in assets/README.md.
+  // The roster sheets, in the order each generator laid them out. See the
+  // pose list in assets/README.md; `null` is a frame no move uses.
   //
-  // Only one pose is left over. Klaus's "special B" is a dash trailing hot
-  // pink speed lines - the same color the background is keyed on, so it
-  // cannot be separated from it - and Antoine's is a second effect punch
-  // no move needs. Everything else the generators drew is in the game.
+  // `fireballA` is not a pose at all: two of the sheets carry the
+  // projectile itself as its own picture, which is exactly what the game
+  // needs and better than the hand-drawn one it replaces.
   const SHEET_ORDER = {
-    // Klaus draws "walking steps" as two frames, so his sheet has 21.
     klaus: [
-      'idle0', 'idle1', 'walk1', 'walk2', 'run0', 'pun1', 'upp0',
-      'cpun0', 'kick1', 'swp0', 'air0', 'sp1', 'rush0', null,
-      'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
+      'kick1', 'swp0', 'air0', 'sp1', 'fireballA', 'rush0', 'jmp1',
+      'crouch0', 'cblock0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
     ],
     antoine: [
-      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0',
-      'cpun0', 'kick1', 'swp0', 'air0', 'sp1', null, 'rush0',
-      'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
+      'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'fireballA', 'jmp1',
+      'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
+    ],
+    // Maxim's molotov is thrown from pose 13 and the bottle is drawn with
+    // it, so that pose carries its own projectile. His slot 18 is dropped:
+    // the generator drew two figures in it, and a pose the game applies to
+    // one fighter cannot contain his opponent.
+    maxim: [
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'pun2', 'upp0',
+      'cpun0', 'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'jmp1',
+      'crouch0', 'block0', 'hurt0', null, 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
     ],
   };
   // Poses reused from an imported one, so a small sheet still animates.
@@ -55,7 +66,9 @@ window.DD = window.DD || {};
     pun0: 'idle0', pun2: 'pun1', kick0: 'idle0', air0: 'kick1',
     sp0: 'idle0', jmp0: 'jmp1', jmp2: 'jmp1', run0: 'walk1',
     cpun0: 'crouch0', swp0: 'crouch0', upp0: 'pun1', rush0: 'sp1',
-    kof0: 'hurt0', ko0: 'hurt0',
+    cblock0: 'crouch0',
+    grab0: 'pun1', lift0: 'win0', slam0: 'sp1',
+    kof0: 'hurt0', ko0: 'hurt0', fireballB: 'fireballA',
   };
 
   function pixels(img) {
@@ -127,71 +140,90 @@ window.DD = window.DD || {};
   const erode = (m, w, h, r) => morph(m, w, h, r, true);
   const dilate = (m, w, h, r) => morph(m, w, h, r, false);
 
-  // Rules drawn by shape rather than colour. A generator sometimes puts a
-  // ground line under each row of poses instead of a box around each one,
-  // and a line every figure stands on is worse than a box: it welds the
-  // whole row into a single region. Colour cannot always find it either -
-  // a dark rule and a dark outline land in the same bucket - so find it by
-  // shape. A rule is a hairline running across a large part of the sheet,
-  // and no part of a character is: a body always has something directly
-  // above or below it.
+  // Drawn rules and boxes, found by shape rather than colour. Colour only
+  // works when the generator picks something that contrasts with the art;
+  // a dark box edge and a dark outline land in the same bucket, and then
+  // every box survives to become a pose of its own.
+  //
+  // What gives a drawn line away is that it is a long, straight hairline:
+  // clear space a few pixels above and below along its whole length. No
+  // part of a character is - a body always has something directly above or
+  // below it - and where a figure crosses the line, its pixels fail that
+  // test and stay, so the figure is not cut in two.
+  //
+  // Measuring runs rather than how much of the sheet a row covers is what
+  // makes this work for boxes as well as ground lines: one box edge is
+  // only a couple of hundred pixels long, but it is still unmistakably a
+  // drawn line.
   function findRules(mask, w, h) {
     const out = new Uint8Array(w * h);
-    const GAP = 4;        // clear space required above and below
-    const SHARE = 0.25;   // of the sheet's width (or height)
+    const GAP = 4;         // clear space required to either side
+    const MIN_RUN = 60;    // shorter than this and it could be artwork
 
-    const scan = (n, m, at) => {
+    const scan = (n, m, at, axis) => {
       // off the edge of the sheet counts as empty, so a rule drawn right
       // against the border is found like any other
       const empty = (i, j) => j < 0 || j >= m || !mask[at(i, j)];
       const hair = (i, j) => !empty(i, j) && empty(i, j - GAP) && empty(i, j + GAP);
       for (let j = 0; j < m; j++) {
-        let hits = 0;
-        for (let i = 0; i < n; i++) if (hair(i, j)) hits++;
-        if (hits < n * SHARE) continue;
-        if (DD.spritesheet && DD.spritesheet.verbose) {
-          console.info(`[dojo] rule at ${n === w ? 'y' : 'x'}=${j} (${hits}/${n})`);
-        }
-        // only the hairline itself: where a figure crosses the rule its
-        // pixels have body above and below, so they are never in here
-        for (let i = 0; i < n; i++) {
-          if (!hair(i, j)) continue;
-          for (let d = -2; d <= 2; d++) {
-            const y = j + d;
-            if (y < 0 || y >= m) continue;
-            const p = at(i, y);
-            if (mask[p]) out[p] = 1;
+        let run = 0;
+        for (let i = 0; i <= n; i++) {
+          if (i < n && hair(i, j)) { run++; continue; }
+          if (run >= MIN_RUN) {
+            if (DD.spritesheet && DD.spritesheet.verbose) {
+              console.info(`[dojo] rule ${axis}=${j}, ${run}px from ${i - run}`);
+            }
+            for (let k = i - run; k < i; k++) {
+              for (let d = -2; d <= 2; d++) {
+                const y = j + d;
+                if (y < 0 || y >= m) continue;
+                const p = at(k, y);
+                if (mask[p]) out[p] = 1;
+              }
+            }
           }
+          run = 0;
         }
       }
     };
-    scan(w, h, (i, j) => j * w + i);
-    scan(h, w, (i, j) => i * w + j);
+    scan(w, h, (i, j) => j * w + i, 'y');
+    scan(h, w, (i, j) => i * w + j, 'x');
     return out;
   }
 
-  // Frame lines. Generators like to draw a grid or a box around each pose,
-  // and those lines are poison here: they run through several poses at
-  // once, so labelling would fuse the whole sheet into one region.
+  // Frame lines, decided per pixel. A drawn line floats: it is thin, and
+  // it is nowhere near anything with bulk. Every thin thing in the artwork
+  // - an outline, the gold trim on a pair of trunks, a strand of hair - is
+  // attached to the body it belongs to.
   //
-  // Two things are true of a drawn line and of nothing else. It is thin -
-  // erase everything thinner than THIN and it vanishes, while a body color
-  // always has bulk behind it. And it floats on its own: a grid line runs
-  // across empty field, while every thin thing in the artwork - an outline,
-  // the gold trim on a pair of trunks, a strand of hair - is attached to
-  // the body it belongs to. The second test is what keeps this from
-  // dissolving the characters along with the grid.
-  function frameColors(data, w, h, bg) {
-    const fg = new Uint8Array(w * h);
-    for (let p = 0; p < w * h; p++) fg[p] = isBg(data, p * 4, [bg]) ? 0 : 1;
-    const thick = dilate(erode(fg, w, h, THIN), w, h, THIN);
+  // Deciding this per colour instead is the obvious shortcut and it fails
+  // badly: a sheet whose box frames are drawn in the same dark tone as the
+  // characters' own outlines condemns the outlines with the boxes, and
+  // every figure falls apart into its interior colour patches.
+  function floatingLines(drawn, w, h) {
+    const thick = dilate(erode(drawn, w, h, THIN), w, h, THIN);
     const attached = dilate(thick, w, h, 3);
+    const out = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) out[p] = drawn[p] && !attached[p] ? 1 : 0;
+    return out;
+  }
 
+  // The same question asked of a whole colour rather than a pixel, which
+  // catches the stretch of a box that happens to pass close to a figure.
+  // It may only condemn a colour that is *essentially never* attached to a
+  // body: a sheet whose boxes are drawn in the characters' own outline tone
+  // would otherwise lose the outlines too, and every figure falls apart
+  // into its interior colour patches. Where a colour does both jobs there
+  // is nothing to decide per colour, and the per-pixel test above stands
+  // on its own.
+  function frameColors(data, drawn, w, h) {
+    const thick = dilate(erode(drawn, w, h, THIN), w, h, THIN);
+    const attached = dilate(thick, w, h, 3);
     const bin = (i) => ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
     const N = 1 << 15;
     const all = new Int32Array(N), thin = new Int32Array(N), stuck = new Int32Array(N);
     for (let p = 0; p < w * h; p++) {
-      if (!fg[p]) continue;
+      if (!drawn[p]) continue;
       const k = bin(p * 4);
       all[k]++;
       if (!thick[p]) thin[k]++;
@@ -201,7 +233,7 @@ window.DD = window.DD || {};
     for (let k = 0; k < N; k++) {
       if (thin[k] < 300) continue;                 // too little of it to matter
       if (thin[k] < all[k] * 0.7) continue;        // has bulk: it is body art
-      if (stuck[k] > all[k] * 0.35) continue;      // hangs off a body: not a line
+      if (stuck[k] > all[k] * 0.05) continue;      // does double duty: hands off
       found.push([((k >> 10) & 31) * 8 + 4, ((k >> 5) & 31) * 8 + 4, (k & 31) * 8 + 4]);
     }
     return found;
@@ -218,7 +250,6 @@ window.DD = window.DD || {};
     const { data } = pixels(img);
     const w = img.width, h = img.height;
     const bg = dominant(data);
-    const keys = [bg, ...frameColors(data, w, h, bg)];
 
     // Three masks, and the difference between them matters.
     //   art  - real artwork: neither field nor frame line. This is what
@@ -229,17 +260,24 @@ window.DD = window.DD || {};
     //          again. Only ever used to tell the poses apart: closing also
     //          fills the notch between a glove and a hip, and what it
     //          fills there is background, not art.
-    const field = new Uint8Array(w * h), line = new Uint8Array(w * h);
-    const drawn = new Uint8Array(w * h);
+    const field = new Uint8Array(w * h), drawn = new Uint8Array(w * h);
     for (let p = 0; p < w * h; p++) {
-      const i = p * 4;
-      if (isBg(data, i, [bg])) field[p] = 1;         // the flat field
-      else if (isBg(data, i, keys)) line[p] = 1;     // a frame line by colour
-      else drawn[p] = 1;
+      if (isBg(data, p * 4, [bg])) field[p] = 1; else drawn[p] = 1;
     }
-    // ...and any rule the colour test missed, found by its shape
+
+    // Three tests, covering different lines. A box out in the open field
+    // floats free of everything. A ground line the figures stand on does
+    // not float at all, but is unmistakably a long straight hairline. And
+    // a colour used for nothing but lines condemns every last pixel of
+    // itself, including the stretch of a box that runs close to a figure
+    // and so looks attached.
+    const line = floatingLines(drawn, w, h);
     const rules = findRules(drawn, w, h);
-    for (let p = 0; p < w * h; p++) if (rules[p]) line[p] = 1;
+    const keys = frameColors(data, drawn, w, h);
+    for (let p = 0; p < w * h; p++) {
+      if (rules[p] || (keys.length && isBg(data, p * 4, keys))) line[p] = 1;
+      if (line[p]) drawn[p] = 0;
+    }
 
     // Background is not "every pixel of the key color" - it is the key
     // color the background can actually reach. Flood it in from the edges,
@@ -274,10 +312,10 @@ window.DD = window.DD || {};
       if (line[p]) continue;                          // frame lines never stay
       art[p] = field[p] && outside[p] ? 0 : 1;
     }
-    const lines = keys.length > 1 ? dilate(line, w, h, 2) : line;
-    const solid = keys.length > 1
-      ? erode(dilate(art, w, h, BRIDGE), w, h, BRIDGE)
-      : art;
+    let ruled = 0;
+    for (let p = 0; p < w * h; p++) ruled += line[p];
+    const lines = ruled ? dilate(line, w, h, 2) : line;
+    const solid = ruled ? erode(dilate(art, w, h, BRIDGE), w, h, BRIDGE) : art;
 
     const label = new Int32Array(w * h).fill(-1);
     const blobs = [];
@@ -588,7 +626,7 @@ window.DD = window.DD || {};
   }
 
   function load() {
-    for (const charKey of ['klaus', 'antoine', 'hanzo']) {
+    for (const charKey of Object.keys(DD.sprites.CHARS)) {
       const src = (DD.SHEETS && DD.SHEETS[charKey]) || `assets/${charKey}.png`;
       const img = new Image();
       img.onload = () => {
@@ -628,8 +666,16 @@ window.DD = window.DD || {};
       const img = new Image();
       img.onload = () => {
         const { data } = pixels(img);
+        const w = img.width, h = img.height;
         const bg = dominant(data);
-        resolve([bg, ...frameColors(data, img.width, img.height, bg)]);
+        const drawn = new Uint8Array(w * h);
+        for (let p = 0; p < w * h; p++) drawn[p] = isBg(data, p * 4, [bg]) ? 0 : 1;
+        const floating = floatingLines(drawn, w, h);
+        const rules = findRules(drawn, w, h);
+        const keys = frameColors(data, drawn, w, h);
+        let f = 0, r = 0;
+        for (let p = 0; p < w * h; p++) { f += floating[p]; r += rules[p]; }
+        resolve({ field: bg, floatingLinePixels: f, rulePixels: r, lineColors: keys });
       };
       img.onerror = reject;
       img.src = url;

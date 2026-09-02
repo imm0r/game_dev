@@ -31,6 +31,7 @@ the point. Use the server.
 | Special    | H        | J        |
 | **Block**  | *hold back while the opponent attacks* | same |
 | **Dash**   | *tap a direction twice* | same |
+| Pick fighter | F *(on the title screen)* | K |
 
 | Move | Input | What it does |
 | ---- | ----- | ------------ |
@@ -40,9 +41,9 @@ the point. Use the server.
 | **Sweep** | down + kick | slow, **must be blocked low**, knocks them down |
 | Flying kick | jump + kick | your way in |
 | Dash | tap forward or back twice | covers ground, but you cannot act during it |
-| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus) / grenade (Antoine) |
+| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus), grenade (Antoine), molotov (Maxim) |
 | **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
-| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball |
+| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball, Maxim comes in swinging |
 | **Super** | ↓ ↘ → + special, at full meter | four hits, and nothing touches you while it starts |
 | **Throw** | walk into them + punch | goes straight through a block |
 
@@ -69,11 +70,17 @@ pressed punch in the last six frames shrugs the grab off — so mashing throw
 at a mashing opponent loses, which is the point.
 
 Klaus throws his fireball flat. Antoine lobs his grenade in an arc and it
-goes off where it lands — the same button, a different problem for you.
+goes off where it lands. Maxim's molotov is heavier than a grenade: it
+leaves his hand flatter and comes down sooner, so it covers less ground but
+is harder to walk under. The same button, three different problems.
 
 | Uppercut catching a jump-in | Antoine's cannonball |
 | --- | --- |
 | ![Uppercut](docs/screenshots/doc-uppercut.png) | ![Rush](docs/screenshots/doc-rush.png) |
+
+| The throw, grab through slam | Maxim's molotov |
+| --- | --- |
+| ![Throw](docs/screenshots/doc-throw.png) | ![Molotov](docs/screenshots/doc-molotov.png) |
 
 That sweep is the whole reason to crouch. Blocking a low while standing
 does not work — hold back **and** down, or you end up on the floor. On the
@@ -88,12 +95,14 @@ Chip damage on block is in, but (unlike the big classics) it cannot score
 a K.O.
 
 **Menu / general:** Enter = start/confirm · ↑↓ = pick mode ·
-←→ = pick stage · P = pause · M = sound on/off
+←→ = pick stage · F / K = pick fighter · P = pause · M = sound on/off
 
 ## What's already in
 
 - **The roster**, drawn as sprite sheets and imported straight from
-  `assets/` (see [Bring your own art](#bring-your-own-art)):
+  `assets/` (see [Bring your own art](#bring-your-own-art)). On the title
+  screen each side picks its own fighter — **F** for player 1, **K** for
+  player 2:
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks
     with a flag patch, MMA gloves, full beard. His special throws a
     **fireball**.
@@ -102,12 +111,17 @@ a K.O.
     rolled-up sleeves, French flag patch on the shoulder, fingerless
     gloves, heavy boots, full beard. His special hurls a **grenade**.
     ![Antoine frames](docs/screenshots/antoine-frames.png)
+  - **MAXIM** (the old man, and the one you underestimate): field jacket,
+    grey beard, a bottle in his fist in every single pose. His special
+    throws a lit **molotov**.
+    ![Maxim frames](docs/screenshots/maxim-frames.png)
   - **HANZO**, the karate fighter from the first prototype, remains as a
-    bonus set (roster mapping is configurable in `js/constants.js`)
+    bonus set (the roster itself is a list in `js/constants.js`)
 
-  Each sheet carries 20 poses and nineteen are on screen. The one left over
-  is Klaus's dash, which trails hot pink speed lines — the same color the
-  background is keyed on, so it cannot be separated from it.
+  Each sheet carries 23 to 24 poses and all of them are on screen — the
+  grab, the lift and the slam included, so a throw is drawn rather than
+  borrowed from another move. Two of the sheets even carry the projectile
+  as a picture of its own, which is what the game puts in the air.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard
@@ -159,7 +173,7 @@ import step, no atlas to rebuild, no metadata file to keep in sync.
   scaled once to 180px height and becomes the scrolling world (up to 832px
   wide, about 2.6 screens).
 - **A fighter** is one sheet with the poses laid out next to each other on
-  a flat background, `klaus.png` / `antoine.png` / `hanzo.png`. The
+  a flat background, `klaus.png` / `antoine.png` / `maxim.png`. The
   importer finds each pose as a connected shape — so the rows may even
   overlap, and a drawn grid around the poses is found and removed — keys
   the background out with a soft edge, lines every pose up on its feet and
@@ -178,7 +192,7 @@ are in [`assets/README.md`](assets/README.md).
 
 | File | Job |
 | ---- | --- |
-| `js/constants.js` | All tuning knobs: physics, attack frame data, damage, roster |
+| `js/constants.js` | All tuning knobs: physics, attack frame data, damage, the roster |
 | `js/spritesheet.js` | **The fighters.** Imports the sprite sheets from `assets/` |
 | `js/sprites.js` | Fallback pixel art: every frame a text grid, every character a pixel |
 | `tools/rig.py` | Skeleton rig that generates those fallback frames |
@@ -197,7 +211,7 @@ are in [`assets/README.md`](assets/README.md).
 
 Two ways, and the game does not care which a frame came from.
 
-**Imported from a sheet** — what Klaus and Antoine use. `js/spritesheet.js`
+**Imported from a sheet** — what the whole roster uses. `js/spritesheet.js`
 labels the connected regions of `assets/<fighter>.png`, so a pose is found
 as a shape rather than by cutting the image into strips; that is what lets
 the sheets have several rows and lets those rows overlap. Each pose is then
@@ -278,10 +292,10 @@ node tools/build-single.mjs --embed   # + every PNG in assets/ inlined
 
 produces `dist/dojo-duel.html` — the whole game in one file, handy for
 sharing or uploading (e.g. itch.io). `--embed` is the version that runs
-anywhere, straight off disk, with the real art; it also weighs as much as
-that art does (~14 MB today, a third of it panoramas nobody will ever see
-at more than 832×180). Shrink the PNGs in `assets/` first if the file has
-to travel.
+anywhere, straight off disk, with the real art; it inlines every PNG in
+`assets/`, so it weighs as much as that art does (~17 MB today, more than
+half of it panoramas nobody will ever see at more than 832×180). Shrink
+the PNGs in `assets/` first if the file has to travel.
 
 ## Tests
 
@@ -310,9 +324,11 @@ node tools/moves-test.js
 ```
 
 `tools/sheet-test.js` is the third. It covers the art import: that every
-pose a `SHEET_ORDER` lists is actually found, that drawn frame lines are
-recognised, and that keying still works when the background color also
-appears inside the drawing. It needs a served copy.
+pose a `SHEET_ORDER` lists is actually found, that drawn frame lines and
+drawn ground rules are recognised, that a light background works as well as
+a dark one, and that keying still works when the background color also
+appears inside the drawing — a patch of it walled in by artwork stays, one
+open to the outside goes. It needs a served copy.
 
 ```bash
 node tools/sheet-test.js http://localhost:8000/

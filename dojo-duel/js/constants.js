@@ -47,10 +47,17 @@ DD.C = {
   KO_SLOWMO: 45,      // frames of third-speed after a K.O.
   TRAIL: 5,           // how many ghost frames a dash or rush leaves behind
 
-  // Roster: which character enters with which color scheme.
-  // Available: klaus (gold/crimson), antoine (olive/navy), hanzo (white/red)
-  P1_CHAR: 'klaus', P1_SKIN: 'gold', P1_NAME: 'KLAUS',
-  P2_CHAR: 'antoine', P2_SKIN: 'olive', P2_NAME: 'ANTOINE',
+  // Roster: the fighters, each with the color scheme they enter in.
+  // A proper select screen is still ahead (see ROADMAP M7); until then
+  // each player cycles their own fighter on the title screen with their
+  // punch key, starting from P1_PICK / P2_PICK.
+  ROSTER: [
+    { char: 'klaus', skin: 'gold', name: 'KLAUS' },
+    { char: 'antoine', skin: 'olive', name: 'ANTOINE' },
+    { char: 'maxim', skin: 'field', name: 'MAXIM' },
+  ],
+  P1_PICK: 0,
+  P2_PICK: 1,
 };
 
 // Attack frame data: startup = wind-up, active = hit window,
@@ -142,6 +149,10 @@ DD.ATTACKS = {
 DD.PROJECTILES = {
   klaus: { vx: 2.4, vy: 0, gravity: 0 },
   antoine: { vx: 2.1, vy: -2.6, gravity: 0.13, ground: true },
+  // A bottle is heavier than a grenade: flatter out of the hand, and it
+  // comes down sooner, so Maxim's molotov covers less ground than
+  // Antoine's lob and is harder to walk under.
+  maxim: { vx: 2.3, vy: -2.1, gravity: 0.16, ground: true },
   hanzo: { vx: 2.4, vy: 0, gravity: 0 },
 };
 

@@ -33,10 +33,11 @@ function check(name, cond, extra) {
     const out = {};
     for (const name of Object.keys(window.DD.spritesheet.SHEET_ORDER)) {
       const frames = await window.DD.spritesheet.inspect(`assets/${name}.png`);
+      const k = await window.DD.spritesheet.keysOf(`assets/${name}.png`);
       out[name] = {
         found: frames.length,
         expected: window.DD.spritesheet.SHEET_ORDER[name].length,
-        keys: (await window.DD.spritesheet.keysOf(`assets/${name}.png`)).length,
+        drawnLines: k.floatingLinePixels + k.rulePixels,
       };
     }
     return out;
@@ -44,74 +45,91 @@ function check(name, cond, extra) {
   for (const [name, r] of Object.entries(roster)) {
     check(`${name}: every pose in SHEET_ORDER is found`, r.found === r.expected,
       `found ${r.found}, order lists ${r.expected}`);
-    check(`${name}: the drawn frame lines are recognised`, r.keys > 1,
-      `${r.keys} key colors`);
+    check(`${name}: the drawn frame lines are recognised`, r.drawnLines > 0,
+      `${r.drawnLines} line pixels`);
   }
 
-  // --- a light background, and the key color inside the drawing -------------
-  // Repaint a sheet's field white and stamp white into the artwork. Keying
-  // on a color the drawing also uses must not punch holes in it.
+  // --- a light background ---------------------------------------------------
+  // One generator handed back a sheet on white instead of the usual flat
+  // color, so a light field has to work as well as a dark one. Drawn from
+  // scratch rather than by repainting a shipped sheet, because the count
+  // then follows from the drawing: a sprite whose own color is the field
+  // color cannot be told apart from it by any keying, and Klaus's pale
+  // fireball orb is exactly that once the field turns white.
   const white = await p.evaluate(async () => {
-    const name = Object.keys(window.DD.spritesheet.SHEET_ORDER)[0];
-    const img = await new Promise((res) => {
-      const i = new Image(); i.onload = () => res(i); i.src = `assets/${name}.png`;
-    });
+    const W = 420, H = 260, POSES = 6;
     const cv = document.createElement('canvas');
-    cv.width = img.width; cv.height = img.height;
+    cv.width = W; cv.height = H;
     const c = cv.getContext('2d', { willReadFrequently: true });
-    c.drawImage(img, 0, 0);
-    const id = c.getImageData(0, 0, img.width, img.height);
-    const d = id.data;
+    c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+    // two rows of figures, uneven sizes and baselines, well clear of
+    // each other - the layout a generator produces
+    const put = (x, y, w, h, fill) => { c.fillStyle = fill; c.fillRect(x, y, w, h); };
+    put(20, 30, 44, 90, '#3a5a2a');
+    put(150, 20, 50, 105, '#7a3a2a');
+    put(280, 40, 40, 80, '#2a3a6a');
+    put(30, 160, 38, 70, '#5a4a2a');
+    put(160, 150, 46, 85, '#6a2a4a');
+    put(290, 165, 42, 66, '#2a5a5a');
 
-    const bins = new Map();
-    for (let i = 0; i < d.length; i += 4) {
-      const k = `${d[i] >> 3},${d[i + 1] >> 3},${d[i + 2] >> 3}`;
-      bins.set(k, (bins.get(k) || 0) + 1);
-    }
-    let best = null, bn = -1;
-    for (const [k, n] of bins) if (n > bn) { bn = n; best = k; }
-    const f = best.split(',').map((v) => v * 8 + 4);
-    for (let i = 0; i < d.length; i += 4) {
-      if (Math.abs(d[i] - f[0]) <= 46 && Math.abs(d[i + 1] - f[1]) <= 46
-          && Math.abs(d[i + 2] - f[2]) <= 46) {
-        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
-      }
-    }
-    c.putImageData(id, 0, 0);
-    c.fillStyle = '#ffffff';
-    c.fillRect(70, 60, 10, 10);
-    c.fillRect(70, 90, 8, 14);      // white blocks inside the first pose
-
-    const solid = (fr) => {
-      const t = document.createElement('canvas');
-      t.width = fr.width; t.height = fr.height;
-      const tc = t.getContext('2d', { willReadFrequently: true });
-      tc.drawImage(fr, 0, 0);
-      const px = tc.getImageData(0, 0, fr.width, fr.height).data;
-      let n = 0;
-      for (let i = 3; i < px.length; i += 4) if (px[i] > 128) n++;
-      return n;
-    };
-
-    const before = await window.DD.spritesheet.inspect(`assets/${name}.png`);
-    const after = await window.DD.spritesheet.inspect(cv.toDataURL('image/png'));
+    const frames = await window.DD.spritesheet.inspect(cv.toDataURL('image/png'));
     const key = await window.DD.spritesheet.keysOf(cv.toDataURL('image/png'));
-    return {
-      name,
-      keyIsWhite: key[0].every((v) => v > 230),
-      count: [before.length, after.length],
-      sizes: [before.map((x) => x.width + 'x' + x.height).join(),
-              after.map((x) => x.width + 'x' + x.height).join()],
-      pixels: [solid(before[0]), solid(after[0])],
-    };
+    return { found: frames.length, want: POSES, keyIsWhite: key.field.every((v) => v > 230) };
   });
   check('a white field is found as the background', white.keyIsWhite);
-  check('a light background finds the same poses',
-    white.count[0] === white.count[1] && white.sizes[0] === white.sizes[1],
-    `${white.count[0]} vs ${white.count[1]}`);
-  check('white inside the drawing is not keyed away',
-    white.pixels[1] >= white.pixels[0],
-    `${white.pixels[0]} px -> ${white.pixels[1]} px`);
+  check('a light background finds every pose', white.found === white.want,
+    `found ${white.found}, drew ${white.want}`);
+
+  // --- the key color inside the drawing ------------------------------------
+  // Drawn from scratch so the geometry is known exactly: one solid figure
+  // on a white field, with a white square walled in inside it and a white
+  // notch cut in from the outside. The walled-in square is artwork and has
+  // to survive; the notch is background reaching in and has to go.
+  const enclosed = await p.evaluate(async () => {
+    const W = 240, H = 220;
+    const BODY = { x: 60, y: 40, w: 90, h: 130 };
+    const HOLE = { x: 90, y: 70, w: 24, h: 24 };     // walled in
+    const NOTCH = { x: 120, y: 120, w: 40, h: 18 };  // open to the right edge
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const c = cv.getContext('2d', { willReadFrequently: true });
+    c.fillStyle = '#ffffff'; c.fillRect(0, 0, W, H);
+    c.fillStyle = '#3a5a2a'; c.fillRect(BODY.x, BODY.y, BODY.w, BODY.h);
+    c.fillStyle = '#ffffff';
+    c.fillRect(HOLE.x, HOLE.y, HOLE.w, HOLE.h);
+    c.fillRect(NOTCH.x, NOTCH.y, NOTCH.w, NOTCH.h);
+
+    const frames = await window.DD.spritesheet.inspect(cv.toDataURL('image/png'));
+    if (frames.length !== 1) return { poses: frames.length };
+    const f = frames[0];
+    const t = document.createElement('canvas');
+    t.width = f.width; t.height = f.height;
+    const tc = t.getContext('2d', { willReadFrequently: true });
+    tc.drawImage(f, 0, 0);
+    const px = tc.getImageData(0, 0, f.width, f.height).data;
+    let opaque = 0;
+    for (let i = 3; i < px.length; i += 4) if (px[i] > 128) opaque++;
+
+    // the frame is scaled down, so compare as a share of the body's area
+    const scale = (f.width * f.height) / (BODY.w * BODY.h);
+    const body = BODY.w * BODY.h;
+    const notchIn = NOTCH.w - (NOTCH.x + NOTCH.w - (BODY.x + BODY.w));
+    return {
+      poses: 1,
+      share: opaque / (body * scale),
+      holeShare: (HOLE.w * HOLE.h) / body,
+      notchShare: (notchIn * NOTCH.h) / body,
+    };
+  });
+  check('a walled-in patch of the key colour is one pose', enclosed.poses === 1,
+    `${enclosed.poses} poses`);
+  check('a walled-in patch of the key colour survives',
+    enclosed.share > 1 - enclosed.notchShare - 0.04,
+    `kept ${(enclosed.share * 100).toFixed(1)}% of the body`);
+  check('a notch open to the outside is still removed',
+    enclosed.share < 1 - enclosed.notchShare + 0.04,
+    `kept ${(enclosed.share * 100).toFixed(1)}%, expected about ` +
+    `${((1 - enclosed.notchShare) * 100).toFixed(1)}%`);
 
   // --- a ground rule under each row ----------------------------------------
   // Some sheets come back with a line under every row of poses instead of a

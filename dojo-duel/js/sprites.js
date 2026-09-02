@@ -89,6 +89,39 @@ window.DD = window.DD || {};
         eyeR: '#7a4a18', eyeL: '#7a4a18',
       },
     },
+    // Maxim has no generated art of his own - he arrived as a sprite sheet
+    // and only ever renders from it. These palettes exist so the fallback
+    // skeleton has something to build with if the sheet ever fails to load.
+    maxim: {
+      field: {
+        colors: {
+          K: '#141018',
+          A: '#e0c0a4', S: '#c4a180', T: '#9c7a58', U: '#74563c',
+          L: '#6a6656', H: '#9a9488', J: '#585448',
+          D: '#7b7a5e', G: '#5f5e46', g: '#42422f',
+          N: '#c8c4b0', n: '#8e8b7a',
+          R: '#4a4a44', r: '#33332e', q: '#1e1e1a',
+          W: '#f4f4f4', M: '#d8d2c0',
+          B: '#2848a0', F: '#d82818', V: '#eeeeee',
+          O: '#c04818', C: '#f8a838', X: '#f8ecc8',
+        },
+        eyeR: '#5a4a38', eyeL: '#5a4a38',
+      },
+      slate: {
+        colors: {
+          K: '#12121a',
+          A: '#d8bca8', S: '#b8987c', T: '#94745a', U: '#6c5038',
+          L: '#5a5c64', H: '#8a8c96', J: '#4a4c54',
+          D: '#5a6070', G: '#454a58', g: '#2f333e',
+          N: '#b8bcc8', n: '#82868f',
+          R: '#42424a', r: '#2e2e34', q: '#1a1a1e',
+          W: '#f4f4f4', M: '#ccc8bc',
+          B: '#2848a0', F: '#d82818', V: '#eeeeee',
+          O: '#3868c0', C: '#68b8f8', X: '#e0f0f8',
+        },
+        eyeR: '#5a4a38', eyeL: '#5a4a38',
+      },
+    },
     hanzo: {
       white: {
         colors: {
@@ -3702,6 +3735,44 @@ window.DD = window.DD || {};
     '............',
   ];
 
+  // Maxim's molotov, flying with the rag alight. Drawn at roughly the size
+  // his own sheet draws the bottle, so the thing in the air matches the
+  // one in his hand. The flame is the same O/C/X ramp the other
+  // projectiles use, so his second color scheme recolors it with him.
+  const MX_MOLOTOV_A = [
+    '....................',
+    '....................',
+    '........KKKKKKKK....',
+    '...O..KKGGGGGGGGKK..',
+    '..OC.KGGGGGGGGGGGGK.',
+    '..OCKKGGgGGGGGGGGGGK',
+    '.OCXKGGGgGGGGGGGGGGK',
+    '..OCKKGGgGGGGGGGGGGK',
+    '..OC.KGGGGGGGGGGGGK.',
+    '...O..KKGGGGGGGGKK..',
+    '........KKKKKKKK....',
+    '....................',
+    '....................',
+    '....................',
+  ];
+
+  const MX_MOLOTOV_B = [
+    '....................',
+    '....................',
+    '........KKKKKKKK....',
+    '..OC..KKGGGGGGGGKK..',
+    '.OCX.KGGGGGGGGGGGGK.',
+    '.OCXKKGGGGGgGGGGGGGK',
+    'OCXWKGGGGGGgGGGGGGGK',
+    '.OCXKKGGGGGgGGGGGGGK',
+    '.OCX.KGGGGGGGGGGGGK.',
+    '..OC..KKGGGGGGGGKK..',
+    '........KKKKKKKK....',
+    '....................',
+    '....................',
+    '....................',
+  ];
+
   const FIREBALL_A = [
     '...OOOO.....',
     '..OCCCCOO...',
@@ -4112,7 +4183,7 @@ window.DD = window.DD || {};
     airkick: { atk: ['kick', 'kick', 'kick'] },
     jump: { vel: ['jump', 'jump', 'jump'] },
     kofall: { vel2: ['hurt', 'hurt'] },
-    crouch: 'crouch', block: 'block', dash: 'walkA',
+    crouch: 'crouch', block: 'block', dash: 'walkA', cblock: 'crouch',
     down: 'hurt', getup: 'crouch',
     hurt: { two: ['hurt', 'hurt'] }, ko: 'ko',
   };
@@ -4127,6 +4198,8 @@ window.DD = window.DD || {};
         air0: GEN.klaus.kick1, run0: GEN.klaus.walk3,
         cpun0: GEN.klaus.crouch0, swp0: GEN.klaus.crouch0,
         upp0: GEN.klaus.pun1, rush0: GEN.klaus.sp1,
+        grab0: GEN.klaus.pun1, lift0: GEN.klaus.win0, slam0: GEN.klaus.sp1,
+        cblock0: GEN.klaus.crouch0,
       }),
       anims: {
         idle: { seq: [['idle0', 12, 0], ['idle0', 9, 1], ['idle1', 12, 1], ['idle1', 9, 0]] },
@@ -4136,9 +4209,9 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
-        // No sheet has a throw drawn; the special's throwing motion is
-        // the closest thing to one. Noted in the roadmap as an art gap.
-        throw: { atk: ['sp1', 'sp1', 'upp0'] },
+        // Grab, lift, slam: three drawn poses, so the throw plays out as
+        // one motion instead of borrowing the special's wind-up.
+        throw: { atk: ['grab0', 'lift0', 'slam0'] },
         uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
         rush: { atk: ['rush0', 'rush0', 'rush0'] },
         super: { atk: ['sp1', 'rush0', 'rush0'] },
@@ -4147,6 +4220,9 @@ window.DD = window.DD || {};
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0', dash: 'run0',
+        // Guarding low has its own drawn pose where a sheet has one;
+        // ALIAS falls it back to the plain crouch where it does not.
+        cblock: 'cblock0',
         // A sweep uses the knockdown pose, never the K.O. one - that one is
         // drawn bloodied, which a swept leg has not earned.
         down: 'kof0', getup: 'crouch0',
@@ -4160,6 +4236,8 @@ window.DD = window.DD || {};
         air0: GEN.antoine.kick1, run0: GEN.antoine.walk3,
         cpun0: GEN.antoine.crouch0, swp0: GEN.antoine.crouch0,
         upp0: GEN.antoine.pun1, rush0: GEN.antoine.sp1,
+        grab0: GEN.antoine.pun1, lift0: GEN.antoine.win0,
+        slam0: GEN.antoine.sp1, cblock0: GEN.antoine.crouch0,
       }),
       anims: {
         idle: { seq: [['idle0', 13, 0], ['idle0', 10, 1], ['idle1', 13, 1], ['idle1', 10, 0]] },
@@ -4169,9 +4247,9 @@ window.DD = window.DD || {};
         kick: { atk: ['kick0', 'kick1', 'kick0'] },
         cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
         sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
-        // No sheet has a throw drawn; the special's throwing motion is
-        // the closest thing to one. Noted in the roadmap as an art gap.
-        throw: { atk: ['sp1', 'sp1', 'upp0'] },
+        // Grab, lift, slam: three drawn poses, so the throw plays out as
+        // one motion instead of borrowing the special's wind-up.
+        throw: { atk: ['grab0', 'lift0', 'slam0'] },
         uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
         rush: { atk: ['rush0', 'rush0', 'rush0'] },
         super: { atk: ['sp1', 'rush0', 'rush0'] },
@@ -4180,8 +4258,48 @@ window.DD = window.DD || {};
         jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
         kofall: { vel2: ['hurt0', 'kof0'] },
         crouch: 'crouch0', block: 'block0', dash: 'run0',
+        // Guarding low has its own drawn pose where a sheet has one;
+        // ALIAS falls it back to the plain crouch where it does not.
+        cblock: 'cblock0',
         // A sweep uses the knockdown pose, never the K.O. one - that one is
         // drawn bloodied, which a swept leg has not earned.
+        down: 'kof0', getup: 'crouch0',
+        hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
+      },
+    },
+    // MAXIM. Sheet-only: every frame comes from assets/maxim.png, and the
+    // rig's Antoine stands in underneath purely so nothing is undefined if
+    // the sheet is missing.
+    maxim: {
+      scale: 1,
+      grids: Object.assign({}, GEN.antoine, {
+        fireballA: MX_MOLOTOV_A, fireballB: MX_MOLOTOV_B,
+        air0: GEN.antoine.kick1, run0: GEN.antoine.walk3,
+        cpun0: GEN.antoine.crouch0, swp0: GEN.antoine.crouch0,
+        upp0: GEN.antoine.pun1, rush0: GEN.antoine.sp1,
+        grab0: GEN.antoine.pun1, lift0: GEN.antoine.win0,
+        slam0: GEN.antoine.sp1, cblock0: GEN.antoine.crouch0,
+      }),
+      anims: {
+        idle: { seq: [['idle0', 14, 0], ['idle0', 11, 1], ['idle1', 14, 1], ['idle1', 11, 0]] },
+        walk: { seq: [['walk0', 8, 0], ['walk1', 8, 1], ['walk2', 8, 0], ['walk3', 8, 0]] },
+        win: { seq: [['win0', 16, 0], ['win0', 14, 1]] },
+        punch: { atk: ['pun0', 'pun1', 'pun2'] },
+        kick: { atk: ['kick0', 'kick1', 'kick0'] },
+        cpunch: { atk: ['crouch0', 'cpun0', 'cpun0'] },
+        sweep: { atk: ['crouch0', 'swp0', 'swp0'] },
+        uppercut: { atk: ['upp0', 'upp0', 'upp0'] },
+        rush: { atk: ['rush0', 'rush0', 'rush0'] },
+        super: { atk: ['sp1', 'rush0', 'rush0'] },
+        throw: { atk: ['grab0', 'lift0', 'slam0'] },
+        special: { atk: ['sp0', 'sp1', 'sp1'] },
+        airkick: { atk: ['air0', 'air0', 'air0'] },
+        jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+        kofall: { vel2: ['hurt0', 'kof0'] },
+        crouch: 'crouch0', block: 'block0', dash: 'run0',
+        // Guarding low has its own drawn pose where a sheet has one;
+        // ALIAS falls it back to the plain crouch where it does not.
+        cblock: 'cblock0',
         down: 'kof0', getup: 'crouch0',
         hurt: { two: ['hurt0', 'hurt0'] }, ko: 'ko0',
       },

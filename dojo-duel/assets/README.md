@@ -6,7 +6,7 @@ No build step: save the file, reload the page.
 | File | Replaces |
 | ---- | -------- |
 | `stage-1.png` … `stage-3.png` | the three stage backgrounds |
-| `klaus.png`, `antoine.png`, `hanzo.png` | that fighter's animation frames |
+| `klaus.png`, `antoine.png`, `maxim.png` | that fighter's animation frames |
 
 **Uploading via the GitHub website:** open the repository → pick the
 branch → browse into `dojo-duel/assets/` → "Add file" → "Upload files" →
@@ -33,8 +33,10 @@ background, lines every pose up on the same foot line and scales the whole
 sheet by one factor, so a crouch really does stay shorter than a standing
 pose.
 
-`klaus.png` and `antoine.png` in this folder are real sheets, if you want
-to see what one looks like before making your own.
+`klaus.png`, `antoine.png` and `maxim.png` in this folder are real sheets,
+if you want to see what one looks like before making your own. No two of
+them came back from the generator laid out quite the same way, which is
+what `SHEET_ORDER` is for.
 
 ### What the image has to look like
 
@@ -68,10 +70,16 @@ survives on a white sheet, and so does the white core of a flame.
 
 What still breaks is the key color **touching the outline** — an effect
 drawn in the same color as the background, running off the edge of the
-figure into it. Nothing can tell those apart. Klaus's dash trails hot pink
-speed lines on a magenta field and is the one pose in the game that had to
-be dropped. So: keep the effects a different color from the background, and
-it does not matter much which color that is.
+figure into it. Nothing can tell those apart, and a pose whose effect is
+drawn in the field colour is a pose that has to be dropped. So: keep the
+effects a different color from the background, and it does not matter much
+which color that is.
+
+The same limit has a quieter form. A sprite that is *itself* close to the
+background colour cannot be separated from it either — a pale fireball orb
+on a white field is background as far as any keying is concerned. It is
+only worth knowing about if a generator hands you a light sheet: give the
+effects some contrast against it.
 
 ### Pose order
 
@@ -79,40 +87,45 @@ Frames are taken **in the order they appear**:
 
 | # | Pose | Used for | # | Pose | Used for |
 | - | ---- | -------- | - | ---- | -------- |
-| 1 | fighting stance | idle | 11 | special (throwing motion) | special |
-| 2 | staggering stance | idle | 12 | special A | — |
-| 3 | walking step | walk | 13 | special B | — |
-| 4 | running step | — | 14 | jump, knees tucked | jump |
-| 5 | straight punch | punch | 15 | crouch block | crouch |
-| 6 | uppercut | — | 16 | block, arms raised | block |
-| 7 | crouching punch | — | 17 | recoil, head thrown back | hit |
-| 8 | standing high kick | kick | 18 | knocked down by a low kick | K.O. fall |
-| 9 | crouching low kick | — | 19 | victory pose | win |
-| 10 | jumping kick | air kick | 20 | knocked out, on the ground | K.O. |
+| 1 | fighting stance | idle | 13 | special B, an effect on its own | the projectile |
+| 2 | staggering stance | idle | 14 | jump, knees tucked | jump |
+| 3 | walking step | walk | 15 | crouch | crouch |
+| 4 | running step | dash | 16 | block, arms raised | block |
+| 5 | straight punch | punch | 17 | recoil, head thrown back | hit |
+| 6 | uppercut | uppercut | 18 | knocked down by a low kick | K.O. fall |
+| 7 | crouching punch | crouching punch | 19 | victory pose | win |
+| 8 | standing high kick | kick | 20 | knocked out, on the ground | K.O. |
+| 9 | crouching low kick | sweep | 21 | reaching forward, hands open | grab |
+| 10 | jumping kick | air kick | 22 | hoisting overhead | lift |
+| 11 | special, a throwing motion | special | 23 | hurling down past the hip | slam |
+| 12 | special A, wreathed in an effect | rushing special | | | |
 
-The poses marked "—" are drawn and imported but no move uses them yet:
-the uppercut, the crouching attacks and the second special are waiting for
-the moves themselves, and the running stride belongs to a dash the game
-does not have. Dropping a running frame into a walk cycle reads as a
-stumble, so it stays out until there is a run to put it in.
+Every one of those is on screen. Pose 13 is the odd one: ask for the
+**effect by itself**, with no character in the picture, and the importer
+finds it as a pose like any other — that gives the projectile drawn art
+instead of a grid typed out in code. If the generator insists on drawing
+the effect in the character's hand instead, no harm done: the projectile
+falls back to the code grid.
 
 A **shorter sheet is fine.** Whatever it does not cover keeps the
-generated placeholder art, and several poses are reused automatically. A
-sheet with just the first handful of poses already replaces most of what
-you see in a fight.
+generated placeholder art, and several poses are reused automatically — a
+kneeling guard falls back to the plain crouch, a second punch to the
+first. A sheet with just the first handful of poses already replaces most
+of what you see in a fight.
 
 If your generator hands you the poses in a different order — or hands you
 more of them, which is a good problem to have — write the real order down
 in `SHEET_ORDER` in `js/spritesheet.js` instead of regenerating the image.
-Klaus draws "walking steps" as two frames, for instance, so his sheet has
-21 figures for these 20 poses and his `SHEET_ORDER` says so.
+None of the three shipped sheets came back in exactly this order, and all
+three are used as they are. `null` in that list drops a frame the game has
+no use for.
 
 ### Prompt to generate one
 
 Paste this into your image generator, swapping in the character
 description:
 
-> A pixel art sprite sheet of a single character in **20 poses**, side
+> A pixel art sprite sheet of a single character in **23 poses**, side
 > view, all facing right, laid out in rows and read left to right. Flat
 > solid magenta background (#FF00FF), no scenery, no ground shadow, no
 > text or labels. Every pose shows the **same character at the same
@@ -122,12 +135,17 @@ description:
 > 4 running step, 5 straight punch with the arm fully extended,
 > 6 uppercut punch, 7 crouching punch, 8 standing high kick with the leg
 > extended forward, 9 crouching low kick, 10 jumping kick, 11 special
-> attack, a throwing motion with an effect, 12 special attack A with an
-> effect, 13 special attack B with an effect, 14 jumping with knees
-> tucked up, 15 blocking while crouching, 16 blocking with both arms
-> raised, 17 recoiling from a hit with the head thrown back, 18 knocked
-> down by a low kick, 19 victory pose with both fists raised, 20 knocked
-> out, lying on the ground. Effects must not use magenta or pink.
+> attack, a throwing motion with an effect, 12 special attack, the whole
+> body wreathed in the effect, 13 the effect on its own with no character
+> in the picture, 14 jumping with knees tucked up, 15 crouching,
+> 16 blocking with both arms raised, 17 recoiling from a hit with the
+> head thrown back, 18 knocked down by a low kick, 19 victory pose with
+> both fists raised, 20 knocked out, lying on the ground, 21 reaching
+> forward with both arms out at chest height, hands open, as if about to
+> take hold of a heavy sack, 22 standing upright with both arms raised
+> over one shoulder, as if hoisting a heavy sack, 23 twisting hard at the
+> waist with both arms swung down past the hip, as if hurling a heavy
+> sack at the ground. Effects must not use magenta or pink.
 > Character: **[your description here]**.
 
 ### Poses that need two people
@@ -135,20 +153,18 @@ description:
 A generator asked for a "throw" will draw two characters, every time, and
 arguing with it does not help: a throw is two people, so it draws two
 people. The way round it is to never name the interaction. Ask for the
-**gesture**, against an invisible object:
-
-> 21 reaching forward with both arms out at chest height, hands open, as
-> if about to take hold of a heavy sack. 22 standing upright with both
-> arms raised over one shoulder, as if hoisting a heavy sack. 23 twisting
-> hard at the waist with both arms swung down past the hip, as if hurling
-> a heavy sack at the ground.
+**gesture**, against an invisible object — poses 21 to 23 in the prompt
+above are written that way, and that is the only reason they come back
+with one figure in them.
 
 Same trick for anything else that implies a partner. Describe the body,
 not the fight.
 
 A two-character image is not useless, but it is only usable for a mirror
-match — the game draws Klaus against Antoine, and a picture of Antoine
-throwing Antoine puts the wrong man on the floor.
+match — the game draws each fighter on its own, and a picture of Antoine
+throwing Antoine puts the wrong man on the floor. If one slips through,
+put `null` in that slot in `SHEET_ORDER` and the frame is dropped;
+Maxim's sheet has exactly one.
 
 Generators drift, so check what came back before wiring it up — count the
 figures, and make sure the later poses still look like the same person. If

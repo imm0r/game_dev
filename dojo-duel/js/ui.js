@@ -59,8 +59,8 @@ window.DD = window.DD || {};
     healthBar(ctx, 188, 10, 120, 8, p2.hp, p2.showHp, false);
     meterBar(ctx, 12, 20, 120, p1.meter, true, game.t);
     meterBar(ctx, 188, 20, 120, p2.meter, false, game.t);
-    F().drawTextShadow(ctx, DD.C.P1_NAME, 12, 27, 1, '#f8f8f8', 'left');
-    F().drawTextShadow(ctx, DD.C.P2_NAME, 308, 27, 1, '#f8f8f8', 'right');
+    F().drawTextShadow(ctx, p1.name, 12, 27, 1, '#f8f8f8', 'left');
+    F().drawTextShadow(ctx, p2.name, 308, 27, 1, '#f8f8f8', 'right');
     pips(ctx, 12, 34, p1.wins, true);
     pips(ctx, 308, 34, p2.wins, false);
     comboCount(ctx, p1, 12, 'left');
@@ -85,31 +85,35 @@ window.DD = window.DD || {};
     ctx.fillRect(0, 0, 320, 180);
 
     // logo with an offset shadow, arcade style
-    F().drawText(ctx, 'DOJO DUEL', 163, 25, 5, '#a01818', 'center');
-    F().drawText(ctx, 'DOJO DUEL', 160, 22, 5, '#f8d020', 'center');
-    F().drawText(ctx, 'RETRO PIXEL FIGHTING', 160, 54, 1, '#59f8e8', 'center');
+    F().drawText(ctx, 'DOJO DUEL', 163, 21, 5, '#a01818', 'center');
+    F().drawText(ctx, 'DOJO DUEL', 160, 18, 5, '#f8d020', 'center');
+    F().drawText(ctx, 'RETRO PIXEL FIGHTING', 160, 50, 1, '#59f8e8', 'center');
 
-    // fighter preview
-    DD.sprites.draw(ctx, DD.C.P1_CHAR, DD.C.P1_SKIN, DD.sprites.idleFrame(DD.C.P1_CHAR), 1, 92, 150, (t / 32 | 0) % 2);
-    DD.sprites.draw(ctx, DD.C.P2_CHAR, DD.C.P2_SKIN, DD.sprites.idleFrame(DD.C.P2_CHAR), -1, 228, 150, ((t + 16) / 32 | 0) % 2);
-    F().drawTextShadow(ctx, DD.C.P1_NAME, 92, 154, 1, '#f8f8f8', 'center');
-    F().drawTextShadow(ctx, DD.C.P2_NAME, 228, 154, 1, '#f8f8f8', 'center');
+    // Fighter preview - whoever each side has cycled to. The imported
+    // sheets stand a good deal taller than the drawn art they replaced, so
+    // the two of them are pushed out to the edges and the whole menu runs
+    // down the clear column between them.
+    const a = game.fighterPick(0), b = game.fighterPick(1);
+    DD.sprites.draw(ctx, a.char, a.skin, DD.sprites.idleFrame(a.char), 1, 46, 136, (t / 32 | 0) % 2);
+    DD.sprites.draw(ctx, b.char, b.skin, DD.sprites.idleFrame(b.char), -1, 274, 136, ((t + 16) / 32 | 0) % 2);
+    F().drawTextShadow(ctx, a.name, 46, 138, 1, '#f8f8f8', 'center');
+    F().drawTextShadow(ctx, b.name, 274, 138, 1, '#f8f8f8', 'center');
 
     // menu
     const m = game.menuMode;
-    F().drawTextShadow(ctx, (m === 0 ? '> ' : '  ') + '1 PLAYER VS CPU', 160, 74, 1, m === 0 ? '#f8d020' : '#b8b0c0', 'center');
-    F().drawTextShadow(ctx, (m === 1 ? '> ' : '  ') + '2 PLAYERS LOCAL', 160, 84, 1, m === 1 ? '#f8d020' : '#b8b0c0', 'center');
-    F().drawTextShadow(ctx, '- STAGE: ' + DD.stage.name(game.stageIndex) + ' -', 160, 98, 1, '#ff6ad0', 'center');
+    F().drawTextShadow(ctx, (m === 0 ? '> ' : '  ') + '1 PLAYER VS CPU', 160, 66, 1, m === 0 ? '#f8d020' : '#b8b0c0', 'center');
+    F().drawTextShadow(ctx, (m === 1 ? '> ' : '  ') + '2 PLAYERS LOCAL', 160, 76, 1, m === 1 ? '#f8d020' : '#b8b0c0', 'center');
+    F().drawTextShadow(ctx, '- STAGE: ' + DD.stage.name(game.stageIndex) + ' -', 160, 90, 1, '#ff6ad0', 'center');
 
     if ((t % 60) < 40) {
-      F().drawTextShadow(ctx, 'PRESS ENTER', 160, 112, 1, '#f8f8f8', 'center');
+      F().drawTextShadow(ctx, 'PRESS ENTER', 160, 104, 1, '#f8f8f8', 'center');
     }
 
-    F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 160, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'DOWN+ATTACK = LOW   TAP TWICE = DASH', 160, 168, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'QUARTER CIRCLE = SPECIAL   FWD-DOWN-FWD = UPPERCUT', 160, 144, 1, '#7a7488', 'center');
+    F().drawTextShadow(ctx, 'QUARTER CIRCLE = SPECIAL   FWD-DOWN-FWD = UPPERCUT', 160, 145, 1, '#7a7488', 'center');
     F().drawTextShadow(ctx, 'FULL METER + QUARTER CIRCLE + SPECIAL = SUPER', 160, 152, 1, '#7a7488', 'center');
-    F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 176, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'DOWN+ATTACK = LOW   TAP TWICE = DASH   PUNCH CLOSE = THROW', 160, 159, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 166, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'FIGHTER: F AND K   STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 173, 1, '#8a8496', 'center');
   }
 
   // Victory splash. No portrait art exists, so the winner's own victory

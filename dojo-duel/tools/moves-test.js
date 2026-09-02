@@ -457,6 +457,21 @@ function check(name, cond, extra) {
   });
   check('every animation frame resolves', r.missing.length === 0, r.missing.join(', '));
 
+  // --- every roster entry can take the field -------------------------------
+  // The title screen hands these straight to the Fighter constructor, so a
+  // name that has no character or no such color scheme is a crash on pick.
+  r = await run(() => {
+    const bad = [];
+    for (const e of DD.C.ROSTER) {
+      if (!DD.sprites.CHARS[e.char]) { bad.push(`${e.name}: no character ${e.char}`); continue; }
+      if (!DD.sprites.frames[e.char][e.skin]) bad.push(`${e.name}: no skin ${e.skin}`);
+    }
+    return { bad, n: DD.C.ROSTER.length };
+  });
+  check('every roster entry names a real fighter and skin',
+    r.bad.length === 0, r.bad.join(', '));
+  check('the roster holds all three fighters', r.n === 3, `${r.n} entries`);
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await b.close();

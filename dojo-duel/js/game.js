@@ -12,6 +12,7 @@ window.DD = window.DD || {};
       this.state = 'title';
       this.stageIndex = 0;
       this.menuMode = 0;          // 0 = vs CPU, 1 = two players
+      this.picks = [C().P1_PICK, C().P2_PICK];   // entries in C().ROSTER
       this.fighters = [];
       this.projectiles = [];
       this.particles = [];
@@ -45,17 +46,24 @@ window.DD = window.DD || {};
       this.cam += (target - this.cam) * 0.12;
     }
 
+    // who each side picked, as the roster entry itself
+    fighterPick(side) {
+      const r = C().ROSTER;
+      return r[((this.picks[side] % r.length) + r.length) % r.length];
+    }
+
     // title screen only – real fighters are created on match start
     spawnTitleFighters() {
-      this.fighters = [
-        new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null),
-        new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null),
-      ];
+      this.fighters = [0, 1].map((side) => {
+        const p = this.fighterPick(side);
+        return new DD.Fighter(side, p.char, p.skin, p.name, null);
+      });
     }
 
     startMatch(mode) {
-      const p1 = new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null);
-      const p2 = new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null);
+      const a = this.fighterPick(0), b = this.fighterPick(1);
+      const p1 = new DD.Fighter(0, a.char, a.skin, a.name, null);
+      const p2 = new DD.Fighter(1, b.char, b.skin, b.name, null);
       p1.controller = new HumanController(Input.P1_KEYS);
       p2.controller = mode === 1
         ? new HumanController(Input.P2_KEYS)
@@ -164,6 +172,14 @@ window.DD = window.DD || {};
       if (Input.wasPressed('ArrowRight') || Input.wasPressed('KeyD')) {
         this.stageIndex = (this.stageIndex + 1) % DD.stage.count;
         DD.audio.play('select');
+      }
+      // each side cycles its own fighter with its own punch key
+      for (const [side, keys] of [[0, Input.P1_KEYS], [1, Input.P2_KEYS]]) {
+        if (Input.wasPressed(keys.punch)) {
+          this.picks[side]++;
+          this.spawnTitleFighters();
+          DD.audio.play('select');
+        }
       }
       if (Input.wasPressed('Digit1')) { this.startMatch(0); return; }
       if (Input.wasPressed('Digit2')) { this.startMatch(1); return; }

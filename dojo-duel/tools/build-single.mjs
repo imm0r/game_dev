@@ -4,11 +4,12 @@
 // file also carries the stage panoramas and the fighter sprite sheets.
 // That makes the file as large as the artwork - shrink the PNGs first if
 // the result has to travel.
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+const ASSETS = join(root, 'assets');
 const html = readFileSync(join(root, 'index.html'), 'utf8');
 const embed = process.argv.includes('--embed');
 
@@ -26,7 +27,7 @@ const bundle = scripts
 
 // Inline one asset as a data URI, or return null if it is not there.
 function dataUri(name) {
-  const p = join(root, 'assets', name);
+  const p = join(ASSETS, name);
   if (!existsSync(p)) return null;
   const b64 = readFileSync(p).toString('base64');
   console.log(`embedded: assets/${name} (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
@@ -40,9 +41,14 @@ if (embed) {
     const uri = dataUri(`stage-${n}.png`);
     if (uri) stages.push(`${n}: '${uri}'`);
   }
+  // Every PNG in assets/ that is not a stage is somebody's sprite sheet.
+  // Read the folder rather than a list here, so adding a character to the
+  // roster never means remembering to edit the build script too.
   const sheets = [];
-  for (const who of ['klaus', 'antoine', 'hanzo']) {
-    const uri = dataUri(`${who}.png`);
+  for (const file of readdirSync(ASSETS).sort()) {
+    if (!/^(?!stage-).+\.png$/i.test(file)) continue;
+    const who = file.replace(/\.png$/i, '');
+    const uri = dataUri(file);
     if (uri) sheets.push(`${who}: '${uri}'`);
   }
   const parts = [];

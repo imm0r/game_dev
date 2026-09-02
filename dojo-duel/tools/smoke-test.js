@@ -54,6 +54,24 @@ function check(name, cond, extra) {
   await page.keyboard.press('ArrowRight'); // back to stage 1
   await page.waitForTimeout(200);
 
+  // each side cycles its own fighter with its own punch key
+  const roster = await page.evaluate(() => window.__DOJO.DD.C.ROSTER.map((r) => r.char));
+  const pickFrom = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
+  await page.keyboard.press('KeyF');
+  await page.waitForTimeout(150);
+  const pickTo = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
+  check('P1 cycles their fighter on the title',
+    pickFrom === roster[0] && pickTo === roster[1], `${pickFrom} -> ${pickTo}`);
+  await page.screenshot({ path: SHOTS + '/title-pick.png' });
+  // round the roster back to the default so the rest of the run is the
+  // usual matchup
+  for (let i = 1; i < roster.length; i++) {
+    await page.keyboard.press('KeyF');
+    await page.waitForTimeout(120);
+  }
+  const pickBack = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
+  check('cycling wraps back to the first fighter', pickBack === roster[0], pickBack);
+
   // start two-player mode (deterministic, no AI)
   await page.keyboard.press('Digit2');
   await page.waitForTimeout(400);

@@ -97,10 +97,16 @@ window.DD = window.DD || {};
       const col = pal[Math.min(pal.length - 1, Math.floor(p * pal.length))];
       ctx.globalAlpha = Math.max(0, 1 - p * p);
 
-      // core: white at the moment of contact, then the palette takes over
-      const cr = Math.max(1, Math.round(b.size * (1 - p) * 0.5));
+      // Core: white at the moment of contact, then the palette takes over.
+      // Drawn as a diamond and capped - a filled square scaled off the
+      // full burst size reads as a slab the size of a fighter's head on
+      // the heavy hits, which is where the energy is meant to be spokes.
+      const cr = Math.max(1, Math.min(5, Math.round(b.size * (1 - p) * 0.35)));
       ctx.fillStyle = p < 0.35 ? '#ffffff' : col;
-      ctx.fillRect(Math.round(b.x - cr), Math.round(b.y - cr), cr * 2, cr * 2);
+      for (let dy = -cr; dy <= cr; dy++) {
+        const half = cr - Math.abs(dy);
+        ctx.fillRect(Math.round(b.x - half), Math.round(b.y + dy), half * 2 + 1, 1);
+      }
 
       // spokes, drawn as chunks so they stay pixels rather than lines
       const r = b.size * (0.4 + p * 1.0);

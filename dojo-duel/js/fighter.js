@@ -476,7 +476,7 @@ window.DD = window.DD || {};
           return { f, yo: 0 };
         }
         case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
-        case 'block': return { f: this.crouching ? anims.crouch : anims.block, yo: 0 };
+        case 'block': return { f: this.crouching ? anims.cblock : anims.block, yo: 0 };
         case 'hitstun': return { f: anims.hurt.two[this.timer > 8 ? 0 : 1], yo: 0 };
         case 'kofall': return { f: this.vy < 0 ? anims.kofall.vel2[0] : anims.kofall.vel2[1], yo: 0 };
         case 'kolie': return { f: anims.ko, yo: 0 };
