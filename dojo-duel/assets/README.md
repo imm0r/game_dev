@@ -338,9 +338,14 @@ question never comes up.
 > Character: **[your description here, colours named]**.
 
 Save it as `<fighter>-moves.png`. Pose 1 is both the idle stance and the
-figure the whole sheet is scaled by. The jump strip has no stance in it,
-so it is scaled against the moves sheet - save it as
-`<fighter>-jump.png`, and it takes `@anchor` in place of a stance.
+figure the whole sheet is scaled by; save the airborne one as
+`<fighter>-jump.png`.
+
+Its pose 1 is a stance for the same reason and is **only measured, never
+installed** - `@anchor` in the order says so. It has to be there: a sheet
+is scaled so its stance comes out 66 game pixels tall, and a jump pose
+with the knees tucked is shorter than a stance, so measuring against one
+would bring the whole jump in oversized.
 
 **The jump is not on this sheet, and cannot be.** Every other figure
 stands on the same ground line - that is what keeps the reading order
@@ -349,13 +354,34 @@ at once, the generator drops the one it cannot reconcile, which is exactly
 what happened the first time. It gets its own image, with the ground line
 rule replaced:
 
-> A pixel art animation strip of a single character in **3 poses in one
-> row**, side view, facing right, on a flat solid magenta background
-> (#FF00FF). No scenery, no ground shadow, no text, no labels. The same
-> character at the same size in all three, **all three drawn at the same
-> height in the picture, none of them touching the ground**: 1 rising,
-> knees tucked up and arms drawn in; 2 the top of the arc, the body at its
-> most compact; 3 falling, the legs reaching down for the ground.
+It carries the two air attacks as well, because they are in the air for
+the same reason and belong in the same generation:
+
+> A pixel art sprite sheet of a single character in **10 poses**, side
+> view, all facing right, on a flat solid magenta background (#FF00FF).
+> No scenery, no ground shadow, no text, no labels. **Every figure is the
+> same character at the same size and in the same colours.** Lay them out
+> in reading order, left to right and top to bottom.
+>
+> Pose 1 stands on the ground. **Poses 2-10 are all in the air, drawn at
+> the same height in the picture, none of them touching the ground.**
+>
+> **Stance, 1:** the neutral fighting stance, guard up, standing.
+>
+> **Jump, 2-4:** 2 rising, knees tucked up and arms drawn in; 3 the top of
+> the arc, the body at its most compact; 4 falling, the legs reaching down
+> for the ground.
+>
+> **Jumping punch, 5-7:** the character is falling forward and punching
+> **downwards and forwards** at someone below. 5 the fist drawn back and
+> the shoulder cocked, knees still tucked; 6 the arm fully extended down
+> and forward at maximum reach; 7 the arm folding back in.
+>
+> **Jumping kick, 8-10:** the character is falling forward and kicking
+> **downwards and forwards** at someone below. 8 the knee chambered up
+> against the chest; 9 the leg fully extended down and forward at maximum
+> reach; 10 the shin folding back in.
+>
 > Character: **[your description here, colours named]**.
 
 Check the **count per movement** rather than the layout. If a movement
