@@ -279,58 +279,75 @@ covers becomes internally consistent, and what is left on the main sheet
 (the special, the throw, the victory pose, the K.O.) is what you see for a
 moment rather than all match long.
 
+**Do not ask for rows.** The importer has no idea what a row is: it finds
+each pose as a connected shape and reads them left to right, top to
+bottom, so a generator that packs two movements into one line and none
+into the next has changed nothing that matters. Asking for a row layout
+only adds an instruction it can fail. Ask for **one numbered sequence**
+and let it fall where it falls.
+
+What does matter for the reading order is that every figure **stands on
+the same invisible ground line**. A figure floating well above its
+neighbours can sort into the row above and land in the wrong place in the
+sequence, and that is worth insisting on.
+
 **Name the colours.** This is the cheap lever and it is worth more than
 any wording about consistency. Klaus's first walk strip came back in gold
 trunks because "black-and-gold trunks" does not say which is which. Write
 "black trunks with a gold waistband and a gold side stripe" and the
 question never comes up.
 
-> A pixel art sprite sheet of a single character, side view, all figures
-> facing right, on a flat solid magenta background (#FF00FF). No scenery,
-> no ground shadow, no text, no labels. **Every figure is the same
-> character at the same size and in the same colours**, standing on the
-> same invisible ground line. Lay it out in **6 rows**, read left to
-> right, top to bottom, with clear empty space between figures and
-> between rows.
+> A pixel art sprite sheet of a single character in **24 poses**, side
+> view, all figures facing right, on a flat solid magenta background
+> (#FF00FF). No scenery, no ground shadow, no text, no labels. **Every
+> figure is the same character at the same size and in the same
+> colours**, and every figure **stands on the same invisible ground
+> line**. Lay them out in reading order, left to right and top to bottom,
+> over as many lines as they need, with clear empty space between them.
 >
-> Each row is **one movement broken into even in-between steps**, and
-> within a row the character **does not travel across the strip**: the
+> The 24 poses are six movements, each **broken into even in-between
+> steps**. Within a movement the character **does not travel**: the
 > supporting foot stays in exactly the same place.
 >
-> **Row 1, idle, 4 figures:** 1 the neutral fighting stance, guard up;
-> 2 the chest rising and the guard lifting slightly; 3 the top of the
-> breath, shoulders at their highest; 4 the chest settling back down. The
-> feet do not move at all.
+> **Idle, 1-4:** 1 the neutral fighting stance, guard up; 2 the chest
+> rising and the guard lifting slightly; 3 the top of the breath,
+> shoulders at their highest; 4 the chest settling back down. The feet do
+> not move at all.
 >
-> **Row 2, walk, 4 figures:** 1 the near leg forward and planted with the
-> weight on it, the far leg trailing; 2 both legs passing under the body;
-> 3 the far leg forward and planted, the near leg trailing; 4 both legs
-> passing under the body again. The hips stay at the same horizontal
-> position in all four.
+> **Walk, 5-8:** 5 the near leg forward and planted with the weight on it,
+> the far leg trailing; 6 both legs passing under the body; 7 the far leg
+> forward and planted, the near leg trailing; 8 both legs passing under
+> the body again. The hips stay at the same horizontal position in all
+> four.
 >
-> **Row 3, straight punch, 5 figures:** 1 winding up, the punching fist
-> drawn back to the hip and the shoulder turning away; 2 the fist starting
-> forward; 3 the arm fully extended at maximum reach, the body committed
-> behind it; 4 the arm bending back halfway; 5 returning to the guard.
+> **Straight punch, 9-13:** 9 winding up, the punching fist drawn back to
+> the hip and the shoulder turning away; 10 the fist starting forward;
+> 11 the arm fully extended at maximum reach, the body committed behind
+> it; 12 the arm bending back halfway; 13 returning to the guard.
 >
-> **Row 4, high kick, 5 figures:** 1 the weight shifting onto the standing
-> leg, the kicking knee lifting; 2 the knee chambered high, the shin still
-> folded; 3 the leg fully extended forward at head height, the body
-> leaning back to counterbalance; 4 the shin folding back in; 5 the foot
-> coming down towards the floor.
+> **High kick, 14-18:** 14 the weight shifting onto the standing leg, the
+> kicking knee lifting; 15 the knee chambered high, the shin still folded;
+> 16 the leg fully extended forward at head height, the body leaning back
+> to counterbalance; 17 the shin folding back in; 18 the foot coming down
+> towards the floor.
 >
-> **Row 5, jump, 3 figures:** 1 rising, knees tucked up and arms drawn in;
-> 2 the top of the arc, the body at its most compact; 3 falling, the legs
+> **Jump, 19-21:** 19 rising, knees tucked up and arms drawn in; 20 the
+> top of the arc, the body at its most compact; 21 falling, the legs
 > reaching down for the ground.
 >
-> **Row 6, hit reaction, 3 figures:** 1 the head snapping back from a
-> blow to the face; 2 the deepest point of the recoil, the body folded
-> away from it; 3 straightening up again.
+> **Hit reaction, 22-24:** 22 the head snapping back from a blow to the
+> face; 23 the deepest point of the recoil, the body folded away from it;
+> 24 straightening up again.
 >
 > Character: **[your description here, colours named]**.
 
-Save it as `<fighter>-moves.png`. The stance at the very front of row 1 is
-both the idle pose and the figure the whole sheet is scaled by.
+Save it as `<fighter>-moves.png`. Pose 1 is both the idle stance and the
+figure the whole sheet is scaled by.
+
+Check the **count per movement** rather than the layout. If a movement
+comes back with a figure more or less than asked, everything after it
+shifts by that much - which `SHEET_ORDER` absorbs in one line, but only
+once somebody has noticed.
 
 ---
 
