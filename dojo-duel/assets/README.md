@@ -27,25 +27,32 @@ of the image work best. For the single-file build,
 
 ## Fighter sprite sheets
 
-A fighter sheet is **one image with the poses side by side**. The importer
-(`js/spritesheet.js`) slices it, keys out the flat background, lines every
-pose up on the same foot line and scales the whole sheet by one factor, so
-a crouch really does stay shorter than a standing pose.
+A fighter sheet is **one image with the poses laid out next to each
+other**. The importer (`js/spritesheet.js`) finds them, keys out the flat
+background, lines every pose up on the same foot line and scales the whole
+sheet by one factor, so a crouch really does stay shorter than a standing
+pose.
+
+`klaus.png` and `antoine.png` in this folder are real sheets, if you want
+to see what one looks like before making your own.
 
 ### What the image has to look like
 
-- **one row of poses**, left to right, separated by at least a few columns
-  of pure background
+- **poses in one or more rows**, read left to right, top to bottom. Rows
+  may even overlap a little — the importer finds each pose as a connected
+  shape rather than by slicing the image into strips
 - **a flat single-color background**, ideally magenta `#FF00FF` — no
-  scenery, no gradient, and **no cast shadow on the ground** (a shadow is
-  treated as part of the character)
+  scenery, no gradient, and **no cast shadow on the ground** (a shadow
+  touching the feet is treated as part of the character)
 - **the same character at the same scale** in every pose, seen from the
   side, **facing right**
 - no text, labels, frames or borders in the image
 - pixel art, roughly 200–400px tall per pose is plenty
 
-Poses may sit at different heights in the image — the importer aligns them
-by their feet on its own.
+Poses may sit at different heights — the importer aligns them by their
+feet. Soft, anti-aliased edges are fine: the background is removed with a
+fractional alpha and the key color is mixed back out, so no magenta rim
+survives.
 
 ### Pose order
 
@@ -61,9 +68,16 @@ Frames are taken **in the order they appear**, mapped to:
 
 A **shorter sheet is fine.** Whatever it does not cover keeps the
 generated placeholder art, and a few poses are reused automatically (the
-walk borrows from the walking step, the K.O. from the hit reaction). So a
-sheet with just the first three or four poses already replaces most of
-what you see in a fight.
+walk borrows from the walking step, the K.O. is the hit reaction tipped
+onto its back). So a sheet with just the first three or four poses already
+replaces most of what you see in a fight.
+
+If your generator hands you the poses in a different order — or hands you
+more of them, which is a good problem to have — write the real order down
+in `SHEET_ORDER` in `js/spritesheet.js` instead of regenerating the image.
+That is what Klaus and Antoine do: both came back with 14 and 12 poses in
+two rows, in an order of the generator's own choosing, and the extra
+stances went into the walk cycle.
 
 ### Prompt to generate one
 
@@ -89,8 +103,24 @@ you add them.
 
 ### Checking the result
 
-Open the browser console after loading the game: the importer logs
-`[dojo] klaus: N frames from sprite sheet`. If nothing is logged, the file
-name or path is off; if the character looks cut off, the background is
-probably not flat enough (raise the contrast between character and
-background, or use pure magenta).
+Open the game **over a local server**, not by double-clicking the file: a
+browser will not let a page read the pixels of an image loaded straight
+off disk, and the import quietly falls back to the placeholder art.
+
+```bash
+cd dojo-duel
+python3 -m http.server 8000
+```
+
+The importer then logs `[dojo] klaus: N frames from sprite sheet` in the
+browser console. If nothing is logged, the file name or path is off; if
+the character looks cut off, the background is probably not flat enough
+(raise the contrast between character and background, or use pure
+magenta). To see which pose the importer thinks is which, run
+
+```js
+DD.spritesheet.inspect('assets/klaus.png').then((f) => f.forEach((c) => document.body.append(c)))
+```
+
+in the console — it returns the frames as canvases, in the order they are
+mapped onto the pose list.

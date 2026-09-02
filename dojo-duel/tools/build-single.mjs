@@ -1,7 +1,9 @@
 // Builds the whole game into a single HTML file (dist/dojo-duel.html).
 // Handy for sharing or itch.io. Usage: node tools/build-single.mjs
-// With --embed, existing assets/stage-N.png files are inlined as data URIs
-// so the single file also carries the custom stage panoramas.
+// With --embed, everything in assets/ is inlined as a data URI, so the one
+// file also carries the stage panoramas and the fighter sprite sheets.
+// That makes the file as large as the artwork - shrink the PNGs first if
+// the result has to travel.
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,19 +24,32 @@ const bundle = scripts
   .map((s) => `// ==== ${s} ====\n${readFileSync(join(root, s), 'utf8')}`)
   .join('\n');
 
+// Inline one asset as a data URI, or return null if it is not there.
+function dataUri(name) {
+  const p = join(root, 'assets', name);
+  if (!existsSync(p)) return null;
+  const b64 = readFileSync(p).toString('base64');
+  console.log(`embedded: assets/${name} (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
+  return `data:image/png;base64,${b64}`;
+}
+
 let assetScript = '';
 if (embed) {
-  const entries = [];
+  const stages = [];
   for (const n of [1, 2, 3]) {
-    const p = join(root, 'assets', `stage-${n}.png`);
-    if (existsSync(p)) {
-      const b64 = readFileSync(p).toString('base64');
-      entries.push(`${n}: 'data:image/png;base64,${b64}'`);
-      console.log(`embedded: assets/stage-${n}.png (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
-    }
+    const uri = dataUri(`stage-${n}.png`);
+    if (uri) stages.push(`${n}: '${uri}'`);
   }
-  if (entries.length) {
-    assetScript = `<script>\nwindow.DD = window.DD || {};\nDD.ASSETS = { ${entries.join(', ')} };\n</script>\n`;
+  const sheets = [];
+  for (const who of ['klaus', 'antoine', 'hanzo']) {
+    const uri = dataUri(`${who}.png`);
+    if (uri) sheets.push(`${who}: '${uri}'`);
+  }
+  const parts = [];
+  if (stages.length) parts.push(`DD.ASSETS = { ${stages.join(', ')} };`);
+  if (sheets.length) parts.push(`DD.SHEETS = { ${sheets.join(', ')} };`);
+  if (parts.length) {
+    assetScript = `<script>\nwindow.DD = window.DD || {};\n${parts.join('\n')}\n</script>\n`;
   }
 }
 
