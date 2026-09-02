@@ -54,30 +54,39 @@ function check(name, cond, extra) {
   await page.keyboard.press('ArrowRight'); // back to stage 1
   await page.waitForTimeout(200);
 
-  // each side cycles its own fighter with its own punch key
+  // two-player mode (deterministic, no AI) opens the character select
   const roster = await page.evaluate(() => window.__DOJO.DD.C.ROSTER.map((r) => r.char));
-  const pickFrom = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
+  await page.keyboard.press('Digit2');
+  await page.waitForTimeout(300);
+  const selState = await page.evaluate(() => window.__DOJO.game.state);
+  check('starting a match opens the character select', selState === 'select',
+    'state=' + selState);
+  await page.screenshot({ path: SHOTS + '/select.png' });
+
+  // each side moves along the row with its own left/right
+  await page.keyboard.press('KeyD');
+  await page.waitForTimeout(150);
+  const p1Pick = await page.evaluate(() => window.__DOJO.game.pick[0]);
+  check('P1 moves along the roster', p1Pick === 1 % roster.length, 'pick=' + p1Pick);
+  await page.keyboard.press('KeyA');
+  await page.waitForTimeout(150);
+  const p1Back = await page.evaluate(() => window.__DOJO.game.pick[0]);
+  check('and back again', p1Back === 0, 'pick=' + p1Back);
+
+  // locking in: only when both sides have chosen does the match start
   await page.keyboard.press('KeyF');
   await page.waitForTimeout(150);
-  const pickTo = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
-  check('P1 cycles their fighter on the title',
-    pickFrom === roster[0] && pickTo === roster[1], `${pickFrom} -> ${pickTo}`);
-  await page.screenshot({ path: SHOTS + '/title-pick.png' });
-  // round the roster back to the default so the rest of the run is the
-  // usual matchup
-  for (let i = 1; i < roster.length; i++) {
-    await page.keyboard.press('KeyF');
-    await page.waitForTimeout(120);
-  }
-  const pickBack = await page.evaluate(() => window.__DOJO.game.fighters[0].char);
-  check('cycling wraps back to the first fighter', pickBack === roster[0], pickBack);
-
-  // start two-player mode (deterministic, no AI)
-  await page.keyboard.press('Digit2');
+  const half = await page.evaluate(() => ({
+    state: window.__DOJO.game.state, locked: window.__DOJO.game.locked.slice(),
+  }));
+  check('one side locked in does not start the match',
+    half.state === 'select' && half.locked[0] && !half.locked[1],
+    JSON.stringify(half));
+  await page.keyboard.press('KeyK');
   await page.waitForTimeout(400);
   await page.screenshot({ path: SHOTS + '/round-intro.png' });
   await page.waitForFunction(() => window.__DOJO.game.state === 'fight', null, { timeout: 6000 });
-  check('round intro -> fight phase', true);
+  check('both locked in -> round intro -> fight phase', true);
   await page.screenshot({ path: SHOTS + '/fight-start.png' });
 
   // P1 walks towards P2

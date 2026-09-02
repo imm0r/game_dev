@@ -113,7 +113,94 @@ window.DD = window.DD || {};
     F().drawTextShadow(ctx, 'FULL METER + QUARTER CIRCLE + SPECIAL = SUPER', 160, 152, 1, '#7a7488', 'center');
     F().drawTextShadow(ctx, 'DOWN+ATTACK = LOW   TAP TWICE = DASH   PUNCH CLOSE = THROW', 160, 159, 1, '#8a8496', 'center');
     F().drawTextShadow(ctx, 'P1: WASD + F/G/H   P2: ARROWS + K/L/J', 160, 166, 1, '#8a8496', 'center');
-    F().drawTextShadow(ctx, 'FIGHTER: F AND K   STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 173, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'STAGE: LEFT/RIGHT   SOUND: M   PAUSE: P', 160, 173, 1, '#8a8496', 'center');
+  }
+
+  // Character select. Both sides choose at once, arcade style: each player
+  // moves along the row with their own left/right and locks in with their
+  // own punch key.
+  //
+  // The portraits come from `assets/portraits.png` if it is there. If it
+  // is not, each panel falls back to that fighter's own victory pose, the
+  // same stand-in the victory splash uses — so the screen works before any
+  // portrait art exists, and the art is a drop-in upgrade.
+  function drawSelect(ctx, game, t) {
+    const R = DD.C.ROSTER;
+    const P = DD.portraits;
+    const GAP = 12;
+    const total = R.length * P.PANEL_W + (R.length - 1) * GAP;
+    const x0 = Math.round((320 - total) / 2);
+    const y0 = 28;
+
+    ctx.fillStyle = 'rgba(8, 4, 16, 0.78)';
+    ctx.fillRect(0, 0, 320, 180);
+
+    F().drawText(ctx, 'CHARACTER SELECT', 161, 7, 2, '#0a2a30', 'center');
+    F().drawText(ctx, 'CHARACTER SELECT', 160, 6, 2, '#59f8e8', 'center');
+
+    R.forEach((e, i) => {
+      const px = x0 + i * (P.PANEL_W + GAP);
+      const hovered = game.pick.indexOf(i) >= 0;
+
+      // panel: a dark plate, then whatever art we have, then the frame
+      ctx.fillStyle = '#141020';
+      ctx.fillRect(px, y0, P.PANEL_W, P.PANEL_H);
+
+      const art = P.get(i);
+      if (art) {
+        ctx.drawImage(art,
+          px + Math.round((P.PANEL_W - art.width) / 2),
+          y0 + Math.round((P.PANEL_H - art.height) / 2));
+      } else {
+        // the victory pose, blown up to fill the panel
+        const frames = DD.sprites.frames[e.char][e.skin];
+        const pose = frames.win0 ? 'win0' : DD.sprites.idleFrame(e.char);
+        const m = DD.sprites.meta[e.char][pose];
+        const s = Math.min((P.PANEL_W - 6) / m.w, (P.PANEL_H - 8) / m.h);
+        DD.sprites.draw(ctx, e.char, e.skin, pose, 1,
+          px + P.PANEL_W / 2, y0 + P.PANEL_H - 4, 0, s);
+      }
+
+      // Whoever is not hovered sits behind a veil, so the eye goes to the
+      // panels somebody is actually on.
+      if (!hovered) {
+        ctx.fillStyle = 'rgba(8, 4, 16, 0.45)';
+        ctx.fillRect(px, y0, P.PANEL_W, P.PANEL_H);
+      }
+      ctx.strokeStyle = hovered ? '#f8d020' : '#4a4460';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(px + 0.5, y0 + 0.5, P.PANEL_W - 1, P.PANEL_H - 1);
+
+      F().drawTextShadow(ctx, e.name, px + P.PANEL_W / 2, y0 + P.PANEL_H + 4, 2,
+        hovered ? '#f8d020' : '#b8b0c0', 'center');
+      if (e.style) {
+        F().drawTextShadow(ctx, e.style, px + P.PANEL_W / 2, y0 + P.PANEL_H + 17, 1,
+          '#8a8496', 'center');
+      }
+    });
+
+    // Each side's marker above its panel: locked ones stop blinking, which
+    // is the whole feedback a player needs.
+    const marker = (side, color, label) => {
+      const px = x0 + game.pick[side] * (P.PANEL_W + GAP);
+      if (!game.locked[side] && (t % 30) < 12) return;
+      const mx = px + P.PANEL_W / 2 + (side === 0 ? -16 : 16);
+      F().drawTextShadow(ctx, label, mx, y0 - 9, 1, color, 'center');
+      ctx.fillStyle = color;
+      ctx.fillRect(mx - 2, y0 - 3, 5, 2);
+      if (game.locked[side]) ctx.fillRect(px, y0 - 1, P.PANEL_W, 1);
+    };
+    marker(0, '#f8d020', game.locked[0] ? 'P1 OK' : 'P1');
+    if (game.menuMode === 1) marker(1, '#59f8e8', game.locked[1] ? 'P2 OK' : 'P2');
+    else if (game.locked[1]) marker(1, '#ff6ad0', 'CPU');
+
+    F().drawTextShadow(ctx, '- STAGE: ' + DD.stage.name(game.stageIndex) + ' -',
+      160, 153, 1, '#ff6ad0', 'center');
+    F().drawTextShadow(ctx,
+      game.menuMode === 1 ? 'P1: A/D + F     P2: LEFT/RIGHT + K'
+                          : 'A/D TO MOVE     F TO CHOOSE',
+      160, 163, 1, '#8a8496', 'center');
+    F().drawTextShadow(ctx, 'STAGE: UP/DOWN     ESC: BACK', 160, 172, 1, '#7a7488', 'center');
   }
 
   // Victory splash. No portrait art exists, so the winner's own victory
@@ -164,5 +251,5 @@ window.DD = window.DD || {};
     }
   }
 
-  DD.ui = { drawHUD, announce, drawTitle, drawMatchEnd };
+  DD.ui = { drawHUD, announce, drawTitle, drawSelect, drawMatchEnd };
 })();

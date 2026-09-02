@@ -249,5 +249,9 @@ implements. Every milestone ends in a playable build.
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants
 
 ### M7 – Release polish
-- [ ] Character select screen, arcade mode (opponent ladder)
+- [x] Character select screen: both sides choose at once, each with their
+      own left/right and punch key, and against the CPU the machine takes
+      somebody who is not you. Portraits load from `assets/portraits.png`;
+      without it each panel falls back to the fighter's victory pose
+- [ ] Arcade mode (opponent ladder)
 - [ ] Gamepad support, itch.io build

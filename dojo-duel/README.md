@@ -31,7 +31,7 @@ the point. Use the server.
 | Special    | H        | J        |
 | **Block**  | *hold back while the opponent attacks* | same |
 | **Dash**   | *tap a direction twice* | same |
-| Pick fighter | F *(on the title screen)* | K |
+| Pick fighter | A / D then F *(on the select screen)* | ← / → then K |
 
 | Move | Input | What it does |
 | ---- | ----- | ------------ |
@@ -95,14 +95,24 @@ Chip damage on block is in, but (unlike the big classics) it cannot score
 a K.O.
 
 **Menu / general:** Enter = start/confirm · ↑↓ = pick mode ·
-←→ = pick stage · F / K = pick fighter · P = pause · M = sound on/off
+←→ = pick stage · Esc = back · P = pause · M = sound on/off
 
 ## What's already in
 
+- **A character select screen.** Both sides choose at once, arcade style:
+  each moves along the row with their own left/right and locks in with
+  their own punch key, and the match starts when both have. Against the
+  CPU only player one chooses and the machine takes somebody else, so a
+  mirror match is something you ask for rather than something you get.
+
+  ![Character select](docs/screenshots/doc-select.png)
+
+  The portraits come from `assets/portraits.png` — the roster's faces side
+  by side, in roster order. Without that file each panel falls back to the
+  fighter's own victory pose, so the screen works before any portrait art
+  exists and the art is a drop-in upgrade.
 - **The roster**, drawn as sprite sheets and imported straight from
-  `assets/` (see [Bring your own art](#bring-your-own-art)). On the title
-  screen each side picks its own fighter — **F** for player 1, **K** for
-  player 2:
+  `assets/` (see [Bring your own art](#bring-your-own-art)):
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks
     with a flag patch, MMA gloves, full beard. His special throws a
     **fireball**.
@@ -196,6 +206,7 @@ are in [`assets/README.md`](assets/README.md).
 | ---- | --- |
 | `js/constants.js` | All tuning knobs: physics, attack frame data, damage, the roster |
 | `js/spritesheet.js` | **The fighters.** Imports the sprite sheets from `assets/` |
+| `js/portraits.js` | Select-screen faces, split out of `assets/portraits.png` |
 | `js/sprites.js` | Fallback pixel art: every frame a text grid, every character a pixel |
 | `tools/rig.py` | Skeleton rig that generates those fallback frames |
 | `js/font.js` | 3x5 pixel font |

@@ -7,6 +7,7 @@ No build step: save the file, reload the page.
 | ---- | -------- |
 | `stage-1.png` … `stage-3.png` | the three stage backgrounds |
 | `klaus.png`, `antoine.png`, `maxim.png` | that fighter's animation frames |
+| `portraits.png` | the faces on the character select screen |
 
 **Uploading via the GitHub website:** open the repository → pick the
 branch → browse into `dojo-duel/assets/` → "Add file" → "Upload files" →
@@ -22,6 +23,32 @@ widths); wider panoramas are cropped to the center. The fighting foot line
 sits at y = 158 of 180 — panoramas whose ground occupies the lower third
 of the image work best. For the single-file build,
 `node tools/build-single.mjs --embed` inlines the panoramas as well.
+
+---
+
+## Character select portraits
+
+`portraits.png` is one image with the roster's faces **side by side, in the
+same order as the fighters in `js/constants.js`** — today Klaus, Antoine,
+Maxim. The select screen splits it into that many equal columns, so the
+faces have to be evenly spaced and the image should contain nothing else:
+no frames, no names, no header. The screen draws those itself, which is
+also why a generator inventing names for your fighters does no harm.
+
+A portrait keeps whatever background it was painted with — unlike a fighter
+sheet, nothing is keyed out. Each column is scaled down once, smoothly, to
+fit a 72x98 panel, so anything from roughly 300x400 per face upwards is
+plenty. Portrait orientation reads best; a square one works and simply
+leaves more air above and below.
+
+No file, no problem: each panel falls back to that fighter's own victory
+pose until the art shows up.
+
+> A pixel art character select sheet: **three portraits side by side**,
+> evenly spaced, each one head-and-shoulders facing the viewer. No frames,
+> no borders, no text, no names, no logo — the portraits only. Each face
+> fills its own share of the image at the same size. Left to right:
+> **[fighter 1]**, **[fighter 2]**, **[fighter 3]**.
 
 ---
 

@@ -12,7 +12,8 @@ window.DD = window.DD || {};
       this.state = 'title';
       this.stageIndex = 0;
       this.menuMode = 0;          // 0 = vs CPU, 1 = two players
-      this.picks = [C().P1_PICK, C().P2_PICK];   // entries in C().ROSTER
+      this.pick = [C().P1_PICK, C().P2_PICK];    // entries in C().ROSTER
+      this.locked = [false, false];              // ...confirmed on select
       this.fighters = [];
       this.projectiles = [];
       this.particles = [];
@@ -28,6 +29,7 @@ window.DD = window.DD || {};
       this.seqLabel = '';
       DD.sprites.buildAll();
       DD.spritesheet.load();   // hand-made sheets override the generated art
+      DD.portraits.load();     // select-screen art, if any
       DD.stage.init();
       this.cam = 0;
       this.worldW = DD.stage.worldW(this.stageIndex);
@@ -49,7 +51,7 @@ window.DD = window.DD || {};
     // who each side picked, as the roster entry itself
     fighterPick(side) {
       const r = C().ROSTER;
-      return r[((this.picks[side] % r.length) + r.length) % r.length];
+      return r[((this.pick[side] % r.length) + r.length) % r.length];
     }
 
     // title screen only – real fighters are created on match start
@@ -141,6 +143,7 @@ window.DD = window.DD || {};
 
       switch (this.state) {
         case 'title': this.updateTitle(); break;
+        case 'select': this.updateSelect(); break;
         case 'intro': this.updateIntro(); break;
         case 'fight': this.updateFight(); break;
         case 'roundend': this.updateRoundEnd(); break;
@@ -173,17 +176,74 @@ window.DD = window.DD || {};
         this.stageIndex = (this.stageIndex + 1) % DD.stage.count;
         DD.audio.play('select');
       }
-      // each side cycles its own fighter with its own punch key
-      for (const [side, keys] of [[0, Input.P1_KEYS], [1, Input.P2_KEYS]]) {
-        if (Input.wasPressed(keys.punch)) {
-          this.picks[side]++;
-          this.spawnTitleFighters();
-          DD.audio.play('select');
-        }
+      if (Input.wasPressed('Digit1')) { this.openSelect(0); return; }
+      if (Input.wasPressed('Digit2')) { this.openSelect(1); return; }
+      if (Input.wasPressed('Enter')) this.openSelect(this.menuMode);
+    }
+
+    openSelect(mode) {
+      this.menuMode = mode;
+      this.locked = [false, false];
+      this.state = 'select';
+      DD.audio.play('select');
+    }
+
+    // Both sides choose at once. Each moves along the row with their own
+    // left/right and locks in with their own punch key; against the CPU
+    // only player one chooses, and the machine takes somebody else.
+    updateSelect() {
+      this.refreshWorld();
+      this.cam = ((1 - Math.cos(this.t / 300)) / 2) * (this.worldW - DD.C.VIEW_W);
+      const n = C().ROSTER.length;
+
+      const move = (side, keys) => {
+        if (this.locked[side]) return;
+        const step = (Input.wasPressed(keys.left) ? -1 : 0)
+                   + (Input.wasPressed(keys.right) ? 1 : 0);
+        if (!step) return;
+        this.pick[side] = (this.pick[side] + step + n) % n;
+        this.spawnTitleFighters();
+        DD.audio.play('select');
+      };
+      move(0, Input.P1_KEYS);
+      if (this.menuMode === 1) move(1, Input.P2_KEYS);
+
+      // the stage moves to up/down here, so left/right belongs to the row
+      if (Input.wasPressed(Input.P1_KEYS.up) || Input.wasPressed(Input.P2_KEYS.up)) {
+        this.stageIndex = (this.stageIndex + DD.stage.count - 1) % DD.stage.count;
+        DD.audio.play('select');
       }
-      if (Input.wasPressed('Digit1')) { this.startMatch(0); return; }
-      if (Input.wasPressed('Digit2')) { this.startMatch(1); return; }
-      if (Input.wasPressed('Enter')) this.startMatch(this.menuMode);
+      if (Input.wasPressed(Input.P1_KEYS.down) || Input.wasPressed(Input.P2_KEYS.down)) {
+        this.stageIndex = (this.stageIndex + 1) % DD.stage.count;
+        DD.audio.play('select');
+      }
+
+      if (Input.wasPressed('Escape')) {
+        this.state = 'title';
+        this.spawnTitleFighters();
+        DD.audio.play('select');
+        return;
+      }
+
+      const lock = (side, key) => {
+        if (this.locked[side] || !Input.wasPressed(key)) return;
+        this.locked[side] = true;
+        DD.audio.play('round');
+      };
+      lock(0, Input.P1_KEYS.punch);
+      lock(0, 'Enter');                        // and the menu key, either way
+      if (this.menuMode === 1) lock(1, Input.P2_KEYS.punch);
+      else if (this.locked[0] && !this.locked[1]) {
+        // The machine picks somebody who is not you, so a mirror match is
+        // something you have to ask for rather than something you get.
+        const others = [];
+        for (let i = 0; i < n; i++) if (i !== this.pick[0]) others.push(i);
+        this.pick[1] = others.length
+          ? others[(Math.random() * others.length) | 0] : this.pick[0];
+        this.locked[1] = true;
+        this.spawnTitleFighters();
+      }
+      if (this.locked[0] && this.locked[1]) this.startMatch(this.menuMode);
     }
 
     updateIntro() {
@@ -413,6 +473,11 @@ window.DD = window.DD || {};
 
       if (this.state === 'title') {
         DD.ui.drawTitle(ctx, this, this.t);
+        ctx.restore();
+        return;
+      }
+      if (this.state === 'select') {
+        DD.ui.drawSelect(ctx, this, this.t);
         ctx.restore();
         return;
       }

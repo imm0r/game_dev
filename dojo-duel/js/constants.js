@@ -47,14 +47,13 @@ DD.C = {
   KO_SLOWMO: 45,      // frames of third-speed after a K.O.
   TRAIL: 5,           // how many ghost frames a dash or rush leaves behind
 
-  // Roster: the fighters, each with the color scheme they enter in.
-  // A proper select screen is still ahead (see ROADMAP M7); until then
-  // each player cycles their own fighter on the title screen with their
-  // punch key, starting from P1_PICK / P2_PICK.
+  // Roster: the fighters, in the order the select screen lays them out and
+  // `assets/portraits.png` paints them. `style` is the line under the name
+  // on that screen - flavour, nothing reads it.
   ROSTER: [
-    { char: 'klaus', skin: 'gold', name: 'KLAUS' },
-    { char: 'antoine', skin: 'olive', name: 'ANTOINE' },
-    { char: 'maxim', skin: 'field', name: 'MAXIM' },
+    { char: 'klaus', skin: 'gold', name: 'KLAUS', style: 'MMA - GERMANY' },
+    { char: 'antoine', skin: 'olive', name: 'ANTOINE', style: 'JUDO - FRANCE' },
+    { char: 'maxim', skin: 'field', name: 'MAXIM', style: 'MOLOTOV' },
   ],
   P1_PICK: 0,
   P2_PICK: 1,
