@@ -19,7 +19,7 @@ DD.C = {
   ROUND_TIME: 99,
   ROUNDS_TO_WIN: 2,   // Best-of-3
 
-  PUSH_DIST: 24,      // minimum body distance (push collision)
+  PUSH_DIST: 26,      // minimum body distance (push collision)
 
   FIREBALL_SPEED: 2.4,
   FIREBALL_COOLDOWN: 60,
@@ -39,19 +39,19 @@ DD.ATTACKS = {
   punch: {
     startup: 5, active: 4, recovery: 10,
     dmg: 6, chip: 1, stun: 16, blockstun: 9, kb: 2.0,
-    box: { x: 8, y: -52, w: 24, h: 10 },
+    box: { x: 8, y: -57, w: 26, h: 11 },
     sfx: 'punch',
   },
   kick: {
     startup: 8, active: 5, recovery: 15,
     dmg: 10, chip: 2, stun: 22, blockstun: 12, kb: 2.6,
-    box: { x: 10, y: -40, w: 28, h: 12 },
+    box: { x: 10, y: -44, w: 30, h: 13 },
     sfx: 'kick',
   },
   airkick: {
     startup: 6, active: 999, recovery: 0,  // active until landing
     dmg: 8, chip: 2, stun: 18, blockstun: 10, kb: 2.2,
-    box: { x: 6, y: -36, w: 26, h: 14 },
+    box: { x: 6, y: -39, w: 28, h: 15 },
     sfx: 'kick',
   },
   special: {
