@@ -14,8 +14,8 @@ window.DD = window.DD || {};
   const STAND_H = 66;         // height of the fighting stance, in game pixels
   const TOL = 46;             // background color tolerance (0-255 per channel)
   const EDGE_BAND = 6;        // how far a soft edge may reach into the pose
-  const THIN = 5;             // anything thinner than this is a drawn line,
-                              // not a limb
+  const THIN_MIN = 3;         // anything thinner than this is a drawn line,
+  const THIN_MAX = 8;         // not a limb - measured per sheet, see thinness()
   const BRIDGE = 3;           // close gaps this wide when a removed line cut
                               // a pose in two - wide enough for a drawn rule
                               // even where it crosses a figure's shins,
@@ -32,9 +32,10 @@ window.DD = window.DD || {};
   // The roster sheets, in the order each generator laid them out. See the
   // pose list in assets/README.md; `null` is a frame no move uses.
   //
-  // `fireballA` is not a pose at all: two of the sheets carry the
-  // projectile itself as its own picture, which is exactly what the game
-  // needs and better than the hand-drawn one it replaces.
+  // `fireballA` is not a pose at all: Klaus's sheet carries the projectile
+  // itself as its own picture, which is exactly what the game needs and
+  // better than the hand-drawn one it replaces. The other two draw their
+  // effect into the throwing pose, so they keep the drawn projectile.
   const SHEET_ORDER = {
     klaus: [
       'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
@@ -42,9 +43,12 @@ window.DD = window.DD || {};
       'crouch0', 'cblock0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
       'grab0', 'lift0', 'slam0',
     ],
+    // Antoine's throw and the arc it leaves are one drawing in one box, so
+    // unlike Klaus he has no projectile picture of his own and keeps the
+    // drawn grenade.
     antoine: [
       'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
-      'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'fireballA', 'jmp1',
+      'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'jmp1',
       'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
       'grab0', 'lift0', 'slam0',
     ],
@@ -140,6 +144,32 @@ window.DD = window.DD || {};
   const erode = (m, w, h, r) => morph(m, w, h, r, true);
   const dilate = (m, w, h, r) => morph(m, w, h, r, false);
 
+  // How thick this sheet's artwork is drawn, as a radius.
+  //
+  // The tests below tell a drawn line from a limb by eroding: whatever
+  // dissolves was thin. That threshold cannot be a fixed number of pixels,
+  // because generators do not all draw at the same size. An erode wide
+  // enough to dissolve a 2px box on a sheet drawn large also dissolves a
+  // whole head on a sheet drawn small - and a head that has dissolved
+  // floats free of the shoulders exactly like a box edge floats free of
+  // everything, so it is condemned and the fighter comes out decapitated.
+  //
+  // Measured as the radius at which half the artwork has eroded away.
+  // That tracks limb thickness and does not care how many poses are on
+  // the sheet or how much of it is background.
+  function thinness(drawn, w, h) {
+    let full = 0;
+    for (let p = 0; p < w * h; p++) full += drawn[p];
+    if (!full) return THIN_MIN;
+    for (let r = THIN_MIN; r < THIN_MAX; r++) {
+      const e = erode(drawn, w, h, r);
+      let left = 0;
+      for (let p = 0; p < w * h; p++) left += e[p];
+      if (left * 2 < full) return r;
+    }
+    return THIN_MAX;
+  }
+
   // Drawn rules and boxes, found by shape rather than colour. Colour only
   // works when the generator picks something that contrasts with the art;
   // a dark box edge and a dark outline land in the same bucket, and then
@@ -200,8 +230,8 @@ window.DD = window.DD || {};
   // badly: a sheet whose box frames are drawn in the same dark tone as the
   // characters' own outlines condemns the outlines with the boxes, and
   // every figure falls apart into its interior colour patches.
-  function floatingLines(drawn, w, h) {
-    const thick = dilate(erode(drawn, w, h, THIN), w, h, THIN);
+  function floatingLines(drawn, w, h, thin) {
+    const thick = dilate(erode(drawn, w, h, thin), w, h, thin);
     const attached = dilate(thick, w, h, 3);
     const out = new Uint8Array(w * h);
     for (let p = 0; p < w * h; p++) out[p] = drawn[p] && !attached[p] ? 1 : 0;
@@ -216,8 +246,8 @@ window.DD = window.DD || {};
   // into its interior colour patches. Where a colour does both jobs there
   // is nothing to decide per colour, and the per-pixel test above stands
   // on its own.
-  function frameColors(data, drawn, w, h) {
-    const thick = dilate(erode(drawn, w, h, THIN), w, h, THIN);
+  function frameColors(data, drawn, w, h, r) {
+    const thick = dilate(erode(drawn, w, h, r), w, h, r);
     const attached = dilate(thick, w, h, 3);
     const bin = (i) => ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
     const N = 1 << 15;
@@ -271,9 +301,10 @@ window.DD = window.DD || {};
     // a colour used for nothing but lines condemns every last pixel of
     // itself, including the stretch of a box that runs close to a figure
     // and so looks attached.
-    const line = floatingLines(drawn, w, h);
+    const thin = thinness(drawn, w, h);
+    const line = floatingLines(drawn, w, h, thin);
     const rules = findRules(drawn, w, h);
-    const keys = frameColors(data, drawn, w, h);
+    const keys = frameColors(data, drawn, w, h, thin);
     for (let p = 0; p < w * h; p++) {
       if (rules[p] || (keys.length && isBg(data, p * 4, keys))) line[p] = 1;
       if (line[p]) drawn[p] = 0;
@@ -445,7 +476,7 @@ window.DD = window.DD || {};
     // side; a few pixels wide, it closes in a couple of passes and beats
     // both a magenta stripe and a transparent cut.
     if (left) {
-      for (let pass = 0; left && pass < THIN * 2; pass++) {
+      for (let pass = 0; left && pass < THIN_MAX * 2; pass++) {
         const fixed = [];
         for (let p = 0; p < iw * ih; p++) {
           if (!hole[p]) continue;
@@ -670,12 +701,14 @@ window.DD = window.DD || {};
         const bg = dominant(data);
         const drawn = new Uint8Array(w * h);
         for (let p = 0; p < w * h; p++) drawn[p] = isBg(data, p * 4, [bg]) ? 0 : 1;
-        const floating = floatingLines(drawn, w, h);
+        const thin = thinness(drawn, w, h);
+        const floating = floatingLines(drawn, w, h, thin);
         const rules = findRules(drawn, w, h);
-        const keys = frameColors(data, drawn, w, h);
+        const keys = frameColors(data, drawn, w, h, thin);
         let f = 0, r = 0;
         for (let p = 0; p < w * h; p++) { f += floating[p]; r += rules[p]; }
-        resolve({ field: bg, floatingLinePixels: f, rulePixels: r, lineColors: keys });
+        resolve({ field: bg, thinness: thin, floatingLinePixels: f,
+                  rulePixels: r, lineColors: keys });
       };
       img.onerror = reject;
       img.src = url;

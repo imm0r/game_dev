@@ -210,10 +210,10 @@ implements. Every milestone ends in a playable build.
 **All three sheets regenerated at 23-24 poses**
 - [x] The throw is drawn — grab, lift, slam — instead of borrowing the
       special's wind-up (closes the M4 package 4 art gap)
-- [x] Klaus and Antoine carry their projectile as a picture of its own, so
-      the thing in the air is drawn art rather than a code grid. Maxim's
-      bottle is drawn into his throwing pose, so his molotov is a grid —
-      redrawn at the size his own sheet draws it
+- [x] Klaus carries his fireball as a picture of its own, so the thing in
+      the air is drawn art rather than a code grid. Antoine and Maxim draw
+      their effect into the throwing pose, so their grenade and molotov
+      stay grids — the molotov redrawn at the size his sheet draws it
 - [x] Klaus has a kneeling guard, used when he blocks low. A sheet without
       one falls back to the plain crouch, so the pose is optional
 - [x] The pink-lined dash pose is gone from the new sheets; nothing on any
@@ -230,8 +230,20 @@ implements. Every milestone ends in a playable build.
 - [x] The background found by flooding in from the outside, so the key
       colour walled in *inside* a drawing survives while the same colour
       reaching in from the edge is removed
+- [x] "Thinner than a limb" is measured per sheet instead of being a fixed
+      number of pixels. It was fixed, and Antoine's sheet is drawn about
+      half as thick as the other two — so the erase that dissolves a 2px
+      box dissolved his head, which then floated free of his shoulders
+      exactly like a box edge and was thrown away with them. He imported
+      decapitated in every pose. The threshold is now the radius at which
+      half the artwork has eroded away
+- [x] Antoine has no projectile picture after all: his throw and the arc it
+      leaves are one drawing in one box, and the old code was cutting that
+      one drawing into two poses. He keeps the drawn grenade
 - [x] `tools/sheet-test.js` covers all of it, including a light background
-      — one sheet came back on white
+      — one sheet came back on white — and asserts that every fighting
+      stance still tapers to a head, which is the shape a decapitated
+      import loses
 
 ### M6 – Sound & music
 - [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants

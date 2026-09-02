@@ -109,7 +109,9 @@ a K.O.
     ![Klaus frames](docs/screenshots/klaus-frames.png)
   - **ANTOINE MOREAU** (judo/GIGN, France): heavier, olive uniform with
     rolled-up sleeves, French flag patch on the shoulder, fingerless
-    gloves, heavy boots, full beard. His special hurls a **grenade**.
+    gloves, heavy boots, full beard. Drawn smaller and finer than the other
+    two, which is what caught the importer out (see below). His special
+    hurls a **grenade**.
     ![Antoine frames](docs/screenshots/antoine-frames.png)
   - **MAXIM** (the old man, and the one you underestimate): field jacket,
     grey beard, a bottle in his fist in every single pose. His special
@@ -118,10 +120,10 @@ a K.O.
   - **HANZO**, the karate fighter from the first prototype, remains as a
     bonus set (the roster itself is a list in `js/constants.js`)
 
-  Each sheet carries 23 to 24 poses and all of them are on screen — the
+  Each sheet carries 22 to 24 poses and all of them are on screen — the
   grab, the lift and the slam included, so a throw is drawn rather than
-  borrowed from another move. Two of the sheets even carry the projectile
-  as a picture of its own, which is what the game puts in the air.
+  borrowed from another move. Klaus's sheet even carries his fireball as a
+  picture of its own, and that is what the game puts in the air.
 - **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
   projectiles — and is deliberately beatable) plus **local two-player
   mode** on one keyboard
@@ -238,6 +240,17 @@ a limb, and it floats free of any body. Both tests together separate it
 from the gold trim on a pair of trunks, which is every bit as thin but
 never floats. Where a line was drawn *across* a figure, the slit it leaves
 is painted over from the artwork on either side.
+
+*"Thinner than a limb" is not a fixed number.* Generators do not all draw
+at the same size, and "erase everything thinner than a limb" needs to know
+how thick this sheet's limbs are. An erase wide enough to dissolve a 2px
+box on a sheet drawn large also dissolves a head on a sheet drawn small —
+and a dissolved head floats free of the shoulders exactly like a box edge
+floats free of everything, so it is condemned and the fighter imports
+decapitated. Antoine's sheet is drawn about half as thick as the other
+two, and that is precisely what happened to him. The threshold is measured
+per sheet now: the radius at which half the artwork has eroded away, which
+tracks limb thickness and ignores everything else.
 
 *The background is not one color.* The field itself is read as the most
 common color in the sheet rather than off the corners, because a grid

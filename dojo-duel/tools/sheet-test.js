@@ -131,6 +131,47 @@ function check(name, cond, extra) {
     `kept ${(enclosed.share * 100).toFixed(1)}%, expected about ` +
     `${((1 - enclosed.notchShare) * 100).toFixed(1)}%`);
 
+  // --- every fighter still has a head --------------------------------------
+  // The tests that tell a drawn line from a limb work by eroding, and the
+  // threshold cannot be an absolute number of pixels: generators do not
+  // all draw at the same size. An erode wide enough to dissolve a 2px box
+  // on a sheet drawn large also dissolves a head on one drawn small - and
+  // a dissolved head floats free of the shoulders exactly like a box edge
+  // floats free of everything, so it is condemned and the fighter imports
+  // decapitated.
+  //
+  // The tell is shape, and it holds for any standing figure whatever the
+  // art: a fighter tapers to a head, so the top of the pose is far
+  // narrower than the shoulders. Start the pose *at* the shoulders and
+  // that ratio jumps - Antoine went from 0.25 to 0.57 the day this broke.
+  const heads = await p.evaluate(async () => {
+    const out = {};
+    for (const name of Object.keys(window.DD.spritesheet.SHEET_ORDER)) {
+      const frames = await window.DD.spritesheet.inspect(`assets/${name}.png`);
+      const f = frames[0];                       // the fighting stance
+      const t = document.createElement('canvas');
+      t.width = f.width; t.height = f.height;
+      const c = t.getContext('2d', { willReadFrequently: true });
+      c.drawImage(f, 0, 0);
+      const d = c.getImageData(0, 0, f.width, f.height).data;
+      const rowW = [];
+      for (let y = 0; y < f.height; y++) {
+        let lo = -1, hi = -1;
+        for (let x = 0; x < f.width; x++) {
+          if (d[(y * f.width + x) * 4 + 3] > 128) { if (lo < 0) lo = x; hi = x; }
+        }
+        rowW.push(lo < 0 ? 0 : hi - lo + 1);
+      }
+      const band = Math.max(1, Math.round(f.height * 0.1));
+      out[name] = +(Math.max(...rowW.slice(0, band)) / Math.max(...rowW)).toFixed(2);
+    }
+    return out;
+  });
+  for (const [name, ratio] of Object.entries(heads)) {
+    check(`${name}: the fighting stance tapers to a head`, ratio <= 0.5,
+      `top of the pose is ${ratio} of its widest row`);
+  }
+
   // --- a ground rule under each row ----------------------------------------
   // Some sheets come back with a line under every row of poses instead of a
   // box around each one. Every figure stands on it, so it welds the row
