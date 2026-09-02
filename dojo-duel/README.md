@@ -107,10 +107,10 @@ a K.O.
 
   ![Character select](docs/screenshots/doc-select.png)
 
-  The portraits come from `assets/portraits.png` — the roster's faces side
-  by side, in roster order. Without that file each panel falls back to the
-  fighter's own victory pose, so the screen works before any portrait art
-  exists and the art is a drop-in upgrade.
+  The portraits are one image per fighter, `assets/portrait-<name>.png`,
+  painted on the same flat field as the sprite sheets and keyed out the
+  same way. Without one a panel falls back to that fighter's own victory
+  pose, so the screen works before any portrait art exists.
 - **The roster**, drawn as sprite sheets and imported straight from
   `assets/` (see [Bring your own art](#bring-your-own-art)):
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks

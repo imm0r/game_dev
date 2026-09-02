@@ -251,7 +251,8 @@ implements. Every milestone ends in a playable build.
 ### M7 – Release polish
 - [x] Character select screen: both sides choose at once, each with their
       own left/right and punch key, and against the CPU the machine takes
-      somebody who is not you. Portraits load from `assets/portraits.png`;
-      without it each panel falls back to the fighter's victory pose
+      somebody who is not you. Portraits load from
+      `assets/portrait-<name>.png`, keyed off the same flat field as the
+      sprite sheets; without one a panel falls back to the victory pose
 - [ ] Arcade mode (opponent ladder)
 - [ ] Gamepad support, itch.io build

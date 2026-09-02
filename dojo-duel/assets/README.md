@@ -28,27 +28,28 @@ of the image work best. For the single-file build,
 
 ## Character select portraits
 
-`portraits.png` is one image with the roster's faces **side by side, in the
-same order as the fighters in `js/constants.js`** — today Klaus, Antoine,
-Maxim. The select screen splits it into that many equal columns, so the
-faces have to be evenly spaced and the image should contain nothing else:
-no frames, no names, no header. The screen draws those itself, which is
-also why a generator inventing names for your fighters does no harm.
+One image per fighter, `portrait-klaus.png` / `portrait-antoine.png` /
+`portrait-maxim.png` — the file name is the character's key in
+`js/constants.js`, so a new fighter's portrait needs no code change.
 
-A portrait keeps whatever background it was painted with — unlike a fighter
-sheet, nothing is keyed out. Each column is scaled down once, smoothly, to
-fit a 72x98 panel, so anything from roughly 300x400 per face upwards is
-plenty. Portrait orientation reads best; a square one works and simply
-leaves more air above and below.
+Paint them on the same flat background as the sprite sheets (magenta
+`#FF00FF` or whatever the generator picks; the same key finds it either
+way). The field is keyed out and the picture cropped to what is left, then
+scaled to **fill** a 72x98 panel — what is over is cropped off the sides
+and the bottom, so frame on the face and let the belt go. Anything from
+roughly 300x400 upwards is plenty.
 
-No file, no problem: each panel falls back to that fighter's own victory
+There is no need to draw a frame, a name or a label. The screen draws all
+of that itself, from the roster — which is also why a generator inventing
+names for your fighters does no harm.
+
+No file, no problem: that panel falls back to the fighter's own victory
 pose until the art shows up.
 
-> A pixel art character select sheet: **three portraits side by side**,
-> evenly spaced, each one head-and-shoulders facing the viewer. No frames,
-> no borders, no text, no names, no logo — the portraits only. Each face
-> fills its own share of the image at the same size. Left to right:
-> **[fighter 1]**, **[fighter 2]**, **[fighter 3]**.
+> A pixel art character portrait, head and upper body, facing the viewer,
+> on a flat solid magenta background (#FF00FF). No frame, no border, no
+> text, no name, no logo — the character only. Character: **[your
+> description here]**.
 
 ---
 

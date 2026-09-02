@@ -53,7 +53,7 @@ DD.C = {
   ROSTER: [
     { char: 'klaus', skin: 'gold', name: 'KLAUS', style: 'MMA - GERMANY' },
     { char: 'antoine', skin: 'olive', name: 'ANTOINE', style: 'JUDO - FRANCE' },
-    { char: 'maxim', skin: 'field', name: 'MAXIM', style: 'MOLOTOV' },
+    { char: 'maxim', skin: 'field', name: 'MAXIM', style: 'VODKA - MOLOTOV' },
   ],
   P1_PICK: 0,
   P2_PICK: 1,

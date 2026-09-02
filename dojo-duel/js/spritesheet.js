@@ -715,5 +715,12 @@ window.DD = window.DD || {};
     });
   }
 
-  DD.spritesheet = { load, inspect, keysOf, ORDER, SHEET_ORDER, STAND_H };
+  // `dominant` and `isBg` are what "background" means in this project.
+  // The select-screen portraits come off the same magenta field and have
+  // to agree with the sheets about that, so they borrow the decision
+  // rather than making a second one that can drift.
+  DD.spritesheet = {
+    load, inspect, keysOf, ORDER, SHEET_ORDER, STAND_H,
+    pixels, dominant, isBg,
+  };
 })();

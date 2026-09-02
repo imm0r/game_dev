@@ -41,15 +41,17 @@ if (embed) {
     const uri = dataUri(`stage-${n}.png`);
     if (uri) stages.push(`${n}: '${uri}'`);
   }
-  // Every PNG in assets/ that is not a stage is somebody's sprite sheet.
-  // Read the folder rather than a list here, so adding a character to the
-  // roster never means remembering to edit the build script too.
+  // Every PNG in assets/ that is not a stage: the fighters' sprite sheets
+  // and the select-screen portraits, keyed by file name. Read the folder
+  // rather than a list here, so adding a character to the roster never
+  // means remembering to edit the build script too. The keys are quoted
+  // because a portrait's is `portrait-klaus`.
   const sheets = [];
   for (const file of readdirSync(ASSETS).sort()) {
     if (!/^(?!stage-).+\.png$/i.test(file)) continue;
     const who = file.replace(/\.png$/i, '');
     const uri = dataUri(file);
-    if (uri) sheets.push(`${who}: '${uri}'`);
+    if (uri) sheets.push(`'${who}': '${uri}'`);
   }
   const parts = [];
   if (stages.length) parts.push(`DD.ASSETS = { ${stages.join(', ')} };`);

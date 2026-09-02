@@ -142,11 +142,13 @@ window.DD = window.DD || {};
       const px = x0 + i * (P.PANEL_W + GAP);
       const hovered = game.pick.indexOf(i) >= 0;
 
-      // panel: a dark plate, then whatever art we have, then the frame
+      // A plate behind whatever we draw. The portraits are painted as
+      // cards with a frame of their own, but a hairline drawn at 400px
+      // does not survive the trip down to 72, so the screen draws the
+      // frame itself and the plate is what the rounded corners sit on.
+      const art = P.get(e.char);
       ctx.fillStyle = '#141020';
       ctx.fillRect(px, y0, P.PANEL_W, P.PANEL_H);
-
-      const art = P.get(i);
       if (art) {
         ctx.drawImage(art,
           px + Math.round((P.PANEL_W - art.width) / 2),
@@ -164,12 +166,16 @@ window.DD = window.DD || {};
       // Whoever is not hovered sits behind a veil, so the eye goes to the
       // panels somebody is actually on.
       if (!hovered) {
-        ctx.fillStyle = 'rgba(8, 4, 16, 0.45)';
+        ctx.fillStyle = 'rgba(8, 4, 16, 0.5)';
         ctx.fillRect(px, y0, P.PANEL_W, P.PANEL_H);
       }
-      ctx.strokeStyle = hovered ? '#f8d020' : '#4a4460';
       ctx.lineWidth = 1;
+      ctx.strokeStyle = hovered ? '#f8d020' : '#4a4460';
       ctx.strokeRect(px + 0.5, y0 + 0.5, P.PANEL_W - 1, P.PANEL_H - 1);
+      if (hovered) {                     // a second ring, so it reads as picked
+        ctx.strokeStyle = '#8a6a10';
+        ctx.strokeRect(px - 1.5, y0 - 1.5, P.PANEL_W + 3, P.PANEL_H + 3);
+      }
 
       F().drawTextShadow(ctx, e.name, px + P.PANEL_W / 2, y0 + P.PANEL_H + 4, 2,
         hovered ? '#f8d020' : '#b8b0c0', 'center');
