@@ -144,8 +144,23 @@ function check(name, cond, extra) {
   await page.screenshot({ path: SHOTS + '/jump.png' });
   await page.waitForTimeout(700);
 
-  // K.O. sequence: P2 nearly beaten, then attack until the round ends
+  // K.O. sequence: P2 nearly beaten, then walk them down and attack until
+  // the round ends. Close the distance first rather than swinging from
+  // wherever the earlier steps left the two of them - a projectile now
+  // puts its target a quarter of the screen away, so "walk for a moment,
+  // then kick" no longer starts in range and a fixed number of swings is
+  // a test that passes for the wrong reason.
   await page.evaluate(() => { window.__DOJO.game.fighters[1].hp = 8; });
+  const inRange = async () => page.evaluate(() => {
+    const [a, d] = window.__DOJO.game.fighters;
+    return window.__DOJO.game.state !== 'fight' || Math.abs(d.x - a.x) < 44;
+  });
+  for (let i = 0; i < 40 && !(await inRange()); i++) {
+    await page.keyboard.down('KeyD');
+    await page.waitForTimeout(120);
+    await page.keyboard.up('KeyD');
+    await page.waitForTimeout(30);
+  }
   for (let i = 0; i < 14; i++) {
     const st = await page.evaluate(() => window.__DOJO.game.state);
     if (st !== 'fight') break;

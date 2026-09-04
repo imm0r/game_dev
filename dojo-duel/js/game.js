@@ -113,6 +113,7 @@ window.DD = window.DD || {};
         vy: spec.vy,
         gravity: spec.gravity,
         ground: spec.ground,   // goes off where it lands instead of flying on
+        toss: spec.toss,       // how far back a hit puts them, in screen px
         t: 0,
         dead: false,
       });
@@ -406,8 +407,11 @@ window.DD = window.DD || {};
         if (dbox && this.overlap(box, dbox)) {
           p.dead = true;
           const dir = def.x >= p.owner.x ? 1 : -1;
-          const result = def.receiveHit(this, F, dir);
-          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y, F);
+          // All three projectiles share one set of hit numbers; what the
+          // thrower's own entry adds is how far it puts you.
+          const hit = p.toss ? Object.assign({}, F, { toss: p.toss }) : F;
+          const result = def.receiveHit(this, hit, dir);
+          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y, hit);
         }
       }
       this.projectiles = this.projectiles.filter((p) => !p.dead);

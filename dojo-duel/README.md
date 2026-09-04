@@ -42,9 +42,9 @@ the point. Use the server.
 | Flying kick | jump + kick | your way in — the longer reach |
 | Flying punch | jump + punch | the other way in: faster, shorter |
 | Dash | tap forward or back twice | covers ground, but you cannot act during it |
-| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus), grenade (Antoine), molotov (Maxim) |
-| **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
-| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball, Maxim comes in swinging |
+| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus), grenade (Antoine), molotov (Maxim) — the first two throw you **a quarter of the screen** |
+| **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs. Antoine's leaves the ground and throws you **half a screen** |
+| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine spins into a tornado kick, Maxim goes up in flames — and it throws you **the whole screen** |
 | **Super** | ↓ ↘ → + special, at full meter | four hits, and nothing touches you while it starts |
 | **Throw** | walk into them + punch | goes straight through a block |
 
@@ -93,6 +93,30 @@ duck. The same button, three different problems.
 | A jump clearing a fireball | An uppercut answering the jump |
 | --- | --- |
 | ![Jumping over a fireball](docs/screenshots/doc-jumpover.png) | ![Anti-air uppercut](docs/screenshots/doc-antiair.png) |
+
+**A special throws you across the room.** Knockback comes in two kinds
+now. A normal shoves — a horizontal nudge that decays away in a few
+frames, worth about seven times itself in ground covered. A special
+*throws*: off the ground on a 45-degree arc, a stated number of screen
+pixels back, landing there. The screen is 320 wide, so a rushing special
+sends you the whole way, Antoine's uppercut half of it, and a fireball or
+a molotov a quarter. Antoine's grenade keeps the shove — it goes off at
+your feet rather than hitting you like a truck.
+
+Everything about the arc falls out of that one distance. Launch a body at
+45 degrees and it covers `2v²/g`, so the distance fixes the speed, the
+speed fixes the height and the height fixes the hang time: 80px lifts you
+20 and puts you down in 26 frames, 320px lifts you 80 and takes 52. The
+big throw looks big because it is.
+
+A throw always knocks down, because nobody is thrown across an arena and
+stays on their feet — so a fireball is a knockdown now where it used to be
+hitstun. That is the trade for the distance: it buys you room rather than
+pressure.
+
+| Antoine leaves the ground with it | A rushing special, the full screen |
+| --- | --- |
+| ![Launching uppercut](docs/screenshots/doc-launch.png) | ![Full-screen throw](docs/screenshots/doc-fullscreen.png) |
 
 **The specials are drawn, not held.** Each of them used to be one pose
 shown three times — an uppercut was literally a punch frame with a

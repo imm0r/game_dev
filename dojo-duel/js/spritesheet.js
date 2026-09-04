@@ -195,7 +195,12 @@ window.DD = window.DD || {};
           'aupp4', 'aupp3', 'aupp0', 'aupp1', 'aupp2',
         ],
         anims: {
-          uppercut: { atk: ['aupp0', 'aupp1', 'aupp2', 'aupp3', 'aupp4'], hit: 1 },
+          // Only the three airborne drawings: coil, rise, spin. The other
+          // two the sheet carries are standing stances, and this move now
+          // leaves the ground - a fighter at attention while falling is
+          // worse than holding the spin all the way down, which is what
+          // clamping to the last drawing does.
+          uppercut: { atk: ['aupp0', 'aupp1', 'aupp2'], hit: 1 },
         },
       },
       // The spinning kick. Five drawings and no sixth: the pose he lands
