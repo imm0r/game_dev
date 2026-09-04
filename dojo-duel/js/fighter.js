@@ -42,6 +42,8 @@ window.DD = window.DD || {};
       this.dashT = 0;             // frames left in a dash
       this.dashDir = 0;
       this.downT = 0;             // frames left lying / getting up after a sweep
+      this.tossT = 0;             // frames of a throw still carrying them
+      this.tossing = false;       // ...and whether one is under way at all
       this.stunMax = 0;           // the stun this hit started with
       this.pad = DD.input.emptyPad();
       this.animT = 0;             // frames in the current state (for sequences)
@@ -50,11 +52,21 @@ window.DD = window.DD || {};
       this.trail = [];            // ghost frames left by a dash or a rush
     }
 
+    // A move as *this* fighter performs it: the shared frame data with
+    // their own entry merged over it, if they have one. Everything reads
+    // moves through here rather than off DD.ATTACKS, so a per-fighter
+    // difference is one line in DD.CHAR_ATTACKS and nothing else.
+    move(name) {
+      const base = A()[name];
+      const mine = (DD.CHAR_ATTACKS[this.char] || {})[name];
+      return mine ? Object.assign({}, base, mine) : base;
+    }
+
     // Anything that covers ground fast enough to smear leaves a trail.
     get streaking() {
       if (this.state === 'dash') return true;
       if (this.state !== 'attack') return false;
-      const a = A()[this.atkName];
+      const a = this.move(this.atkName);
       return !!a.rush && this.atkT >= a.startup
         && this.atkT < a.startup + a.active;
     }
@@ -73,9 +85,9 @@ window.DD = window.DD || {};
       this.hasHit = false;
       this.hitCount = 0;
       this.hitCd = 0;
-      this.crouching = !!A()[name].crouch;
+      this.crouching = !!this.move(name).crouch;
       if (name === 'super') this.meter = 0;
-      DD.audio.play(A()[name].sfx);
+      DD.audio.play(this.move(name).sfx);
     }
 
     gainMeter(amount) {
@@ -95,7 +107,7 @@ window.DD = window.DD || {};
     // Invulnerable during a super's start-up: that is what the meter buys.
     get invulnerable() {
       if (this.state !== 'attack') return false;
-      const a = A()[this.atkName];
+      const a = this.move(this.atkName);
       return !!a.invuln && this.atkT < a.invuln;
     }
 
@@ -215,10 +227,20 @@ window.DD = window.DD || {};
 
         case 'down': {
           this.x += this.kbVx;
-          this.kbVx *= 0.88;
+          // A thrown body does not slow down until it lands. A shove
+          // decays from the first frame, as it always has.
+          if (this.tossT > 0) this.tossT--;
+          else this.kbVx *= 0.88;
           if (!this.grounded) {
             this.applyGravity();
-            if (this.grounded) { this.y = C().GROUND_Y; this.downT = C().KNOCKDOWN_LIE; }
+            if (this.grounded) {
+              this.y = C().GROUND_Y;
+              this.downT = C().KNOCKDOWN_LIE;
+              // A throw is measured door to door: landing ends it, rather
+              // than adding another skid's worth on top of the distance
+              // the move promised.
+              if (this.tossing) { this.tossing = false; this.kbVx = 0; }
+            }
           } else if (--this.downT <= 0) {
             this.state = 'getup';
             this.downT = C().KNOCKDOWN_GETUP;
@@ -242,7 +264,7 @@ window.DD = window.DD || {};
             this.atkName = air;
             this.atkT = 0;
             this.hasHit = false;
-            DD.audio.play(A()[air].sfx);
+            DD.audio.play(this.move(air).sfx);
           }
           if (this.grounded) this.land();
           break;
@@ -257,9 +279,28 @@ window.DD = window.DD || {};
         case 'attack': {
           this.atkT++;
           if (this.hitCd > 0) this.hitCd--;
-          const a = A()[this.atkName];
+          const a = this.move(this.atkName);
           if (this.atkName === 'special' && this.atkT === a.startup) {
             game.spawnFireball(this);
+          }
+          // A move that leaves the ground: push off as the hit window
+          // opens, then fall. The hitbox is anchored to the feet, so it
+          // rises along with them - which is what makes a leaping
+          // uppercut reach someone already in the air. The move ends on
+          // landing however much recovery is left, because standing in
+          // recovery mid-air would be nonsense.
+          if (a.rise) {
+            if (this.atkT === a.startup) { this.vy = a.rise; this.y -= 0.01; }
+            if (!this.grounded) {
+              this.applyGravity();
+              if (this.grounded) {
+                this.y = C().GROUND_Y;
+                this.vy = 0;
+                this.state = 'idle';
+                this.atkName = null;
+                break;
+              }
+            }
           }
           // Cancel a connected normal into a special: that is the whole
           // combo engine. Only once it has hit, so a whiffed poke stays
@@ -356,10 +397,10 @@ window.DD = window.DD || {};
     attackHitbox() {
       let a = null, t = 0;
       if (this.state === 'attack' && this.atkName !== 'special') {
-        a = A()[this.atkName];
+        a = this.move(this.atkName);
         t = this.atkT;
       } else if (this.state === 'airatk') {
-        a = A()[this.atkName];
+        a = this.move(this.atkName);
         t = this.atkT;
       }
       if (!a || !a.box) return null;
@@ -373,6 +414,45 @@ window.DD = window.DD || {};
         x1: Math.max(xA, xB), y1: this.y + b.y + b.h,
         data: a,
       };
+    }
+
+    // Off the ground and backwards. Without `toss` this is the shove the
+    // game always had: a horizontal speed that decays away in a few
+    // frames, worth about seven times itself in distance.
+    //
+    // With it, the hit throws them a stated number of *screen pixels* -
+    // the screen is 320 wide, so 80 is a quarter of it - and the arc
+    // follows from the distance rather than being tuned beside it. Launch
+    // at 45 degrees and the whole thing falls out of one number: a body
+    // thrown that way covers `g*T*T/2`, so the time in the air is
+    // `sqrt(2*range/g)` and the speeds are what carry it that far. 80px
+    // lifts them 20 and lands them in 26 frames; 320 lifts them 80 and
+    // takes 52. The big throw looks big because it *is* big, not because
+    // a second constant says so.
+    //
+    // Horizontal speed holds while they are in the air and only decays
+    // once they touch down, which is both what a thrown body does and the
+    // only way the distance comes out as asked.
+    launch(dir, data, vy) {
+      this.kbVx = dir * data.kb;
+      this.vy = vy === undefined ? -2.0 : vy;
+      this.tossT = 0;
+      this.tossing = false;
+      if (data.toss) {
+        const g = C().GRAVITY;
+        this.vy = -Math.sqrt(data.toss * g / 2);
+        // The flight is stepped a frame at a time, so the horizontal
+        // speed has to be the distance over the frames it will actually
+        // take, not over the continuous time it would take. Counting them
+        // here is a dozen iterations and means the throw lands where it
+        // said it would rather than a few percent short.
+        let n = 0, y = -0.01, v = this.vy;
+        while (y < 0 && n < 600) { v += g; y += v; n++; }
+        this.kbVx = dir * (data.toss / Math.max(1, n));
+        this.tossT = n;
+        this.tossing = true;
+      }
+      this.y -= 0.01;   // "airborne" this frame, so gravity takes over
     }
 
     // dir: direction the defender gets pushed (+1 = to the right)
@@ -395,9 +475,7 @@ window.DD = window.DD || {};
         }
         this.state = 'down';
         this.crouching = false;
-        this.kbVx = dir * data.kb;
-        this.vy = -2.4;
-        this.y -= 0.01;
+        this.launch(dir, data, -2.4);
         this.downT = C().KNOCKDOWN_LIE;
         DD.audio.play('hit');
         return 'throw';
@@ -427,12 +505,10 @@ window.DD = window.DD || {};
         this.y -= 0.01;
         return 'ko';
       }
-      if (data.knockdown) {
+      if (data.knockdown || data.toss) {
         this.state = 'down';
         this.crouching = false;
-        this.kbVx = dir * data.kb;
-        this.vy = -2.0;
-        this.y -= 0.01;
+        this.launch(dir, data);
         this.downT = C().KNOCKDOWN_LIE;
         DD.audio.play('hit');
         return 'hit';
@@ -455,7 +531,7 @@ window.DD = window.DD || {};
       // drawings with hit at 1 - the shape every move had before any of
       // them got a strip - lands exactly where it used to.
       const atkFrame = (an) => {
-        const a = DD.ATTACKS[this.atkName];
+        const a = this.move(this.atkName);
         const fr = an.atk;
         const hit = Math.min(fr.length - 1, an.hit === undefined ? 1 : an.hit);
         const span = (from, to, t, dur) => {

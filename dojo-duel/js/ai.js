@@ -144,7 +144,7 @@ window.DD = window.DD || {};
       // is coming is a low. A CPU that always blocks correctly is no fun.
       if (opp.state === 'attack' && dist < 80 && Math.random() < 0.4) {
         pad[away] = true;
-        const move = DD.ATTACKS[opp.atkName];
+        const move = opp.move(opp.atkName);
         if (move && move.low) pad.down = true;
         return pad;
       }

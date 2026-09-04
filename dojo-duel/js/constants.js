@@ -74,6 +74,14 @@ DD.C = {
 // `crouch: true`  - performed from a crouch, and keeps the low hurtbox.
 // `low: true`     - can only be blocked by a crouching opponent.
 // `knockdown`     - puts the opponent on the floor instead of in hitstun.
+// `kb`            - a shove: knockback that decays away over a few frames.
+// `toss`          - the other kind, in *pixels of screen*. The screen is
+//                   320 wide, so 80 is a quarter of it and 320 is all of
+//                   it. They leave the ground on a 45-degree arc and land
+//                   there, which is why a toss always knocks down: nobody
+//                   is thrown across the arena and stays on their feet.
+// `rise`          - the attacker leaves the ground too, at this upward
+//                   speed, and the move ends when they come back down.
 DD.ATTACKS = {
   punch: {
     startup: 5, active: 4, recovery: 10,
@@ -165,7 +173,7 @@ DD.ATTACKS = {
     startup: 10, active: 20, recovery: 20,
     dmg: 15, chip: 3, stun: 28, blockstun: 16, kb: 3.2,
     box: { x: 0, y: -58, w: 32, h: 46 },
-    sfx: 'fireball', knockdown: true, rush: 3.1,
+    sfx: 'fireball', knockdown: true, rush: 3.1, toss: 320,
   },
   // The super. Same charge as the rush, but it hits four times on the way
   // through and cannot be interrupted while it starts up - a full meter
@@ -185,21 +193,42 @@ DD.ATTACKS = {
   },
 };
 
+// Per-fighter overrides on the shared move table, the same idea as
+// DD.PROJECTILES below: an entry names only what differs for that fighter
+// and is merged over DD.ATTACKS. Without it every fighter's uppercut is
+// the same uppercut, which is fine until one of them is drawn leaving the
+// ground and the other two are not.
+DD.CHAR_ATTACKS = {
+  antoine: {
+    // His sheet draws the uppercut as a leap - he coils, rises with the
+    // flaming fist and comes down spinning - so the move leaves the
+    // ground to match, and what it catches goes half a screen with him.
+    // Klaus and Maxim keep the grounded version, because their art for it
+    // is a standing punch and a fighter rising out of a standing pose
+    // reads as a bug rather than a move.
+    uppercut: { rise: -5.4, toss: 160 },
+  },
+};
+
 // Projectiles fly differently per fighter, and the difference is what you
 // have to answer with. Klaus throws a fireball flat down the screen: it
 // never goes over a crouching head, so the only answers are to block it,
 // to jump it, or to throw your own. The other two lob, and a lob passes
 // over a crouch for part of its flight - which is the whole reason to
 // crouch at all, and why their range is short in exchange.
+// `toss` here works exactly as it does on a move: Klaus's fireball and
+// Maxim's molotov put you a quarter of the screen away, Antoine's grenade
+// keeps the shove it had - it goes off at your feet rather than hitting
+// you like a truck, and it is the one of the three that lands short.
 DD.PROJECTILES = {
-  klaus: { vx: 2.4, vy: 0, gravity: 0 },
+  klaus: { vx: 2.4, vy: 0, gravity: 0, toss: 80 },
   antoine: { vx: 2.1, vy: -2.6, gravity: 0.13, ground: true },
   // A bottle is heavier than a grenade: it comes down sooner, so Maxim's
   // molotov covers less ground than Antoine's lob. It used to be flatter
   // too, which left a 7px stretch where a crouch cleared it - not a
   // window, an accident. Thrown higher and falling slower it keeps its
   // short range and gains a stretch you can actually duck in.
-  maxim: { vx: 2.3, vy: -2.7, gravity: 0.135, ground: true },
+  maxim: { vx: 2.3, vy: -2.7, gravity: 0.135, ground: true, toss: 80 },
   hanzo: { vx: 2.4, vy: 0, gravity: 0 },
 };
 

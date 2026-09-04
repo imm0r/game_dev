@@ -200,6 +200,49 @@ implements. Every milestone ends in a playable build.
 - [ ] Juggle rules, so air combos cannot run forever once there is
       anything that launches high enough to matter
 
+### M6c – A special throws you across the room
+Distances asked for in screen widths, so that is the unit they are written
+in: the screen is 320 wide.
+- [x] **Two kinds of knockback.** A normal *shoves* - a horizontal nudge
+      that decays away in a few frames, worth about seven times itself in
+      ground covered, exactly as before. A special *throws*: off the
+      ground on a 45-degree arc, a stated number of screen pixels back,
+      landing there
+- [x] The arc is not tuned beside the distance, it falls out of it. A body
+      launched at 45 degrees covers `2v²/g`, so the distance fixes the
+      speed, the speed fixes the height and the height fixes the hang
+      time. 80px lifts them 20 and lands in 26 frames; 320px lifts them 80
+      and takes 52
+- [x] The flight is stepped a frame at a time, so the horizontal speed is
+      the distance over the frames it will *actually* take, counted in a
+      dozen iterations at launch. Deriving it from continuous time landed
+      every throw 1-4% short
+- [x] Landing ends the throw rather than adding a skid on top of it - a
+      quarter screen was coming out at 105px before that
+- [x] Rushing special: **a full screen**, all three fighters
+- [x] Antoine's uppercut: **half a screen**, and it takes him off the
+      ground with it, because his sheet draws it as a leap. Klaus and
+      Maxim keep the grounded version - their art for it is a standing
+      punch, and a fighter rising out of a standing pose reads as a bug
+- [x] Klaus's fireball and Maxim's molotov: **a quarter screen**.
+      Antoine's grenade keeps its shove, which suits the one of the three
+      that goes off at your feet
+- [x] A toss always knocks down, because nobody is thrown across an arena
+      and stays on their feet. That makes a fireball a knockdown where it
+      used to be hitstun - the trade for the distance is that it buys room
+      rather than pressure
+- [x] **Moves can differ per fighter now.** `DD.CHAR_ATTACKS` merges over
+      the shared table the same way `DD.PROJECTILES` already gave each
+      fighter their own thing to throw, and everything reads a move
+      through `fighter.move(name)` rather than off `DD.ATTACKS`. Without
+      it "Antoine's uppercut" was not a thing that could exist
+- [x] Antoine's uppercut animation drops the two standing drawings his
+      sheet carries and holds the airborne spin instead. Clamping to the
+      last drawing then covers the descent, rather than showing a fighter
+      at attention while falling
+- [x] Nine checks state the distances in screen widths, and pin that a
+      sweep, a plain uppercut and a throw still only shove
+
 ### M6b – The specials are drawn
 Six more sheets from the project owner, two per fighter. Every special was
 one pose shown three times before this - `uppercut` was literally a punch

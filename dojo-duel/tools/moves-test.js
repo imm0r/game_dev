@@ -603,6 +603,75 @@ function check(name, cond, extra) {
   });
   check('you can jump over the other fighter', r.crossed, `${r.me} vs ${r.opp}`);
 
+  // --- how far a special throws you ----------------------------------------
+  // Stated in screen widths rather than in knockback units, because that
+  // is how they were asked for: the screen is 320 wide, so a quarter is
+  // 80 and a full one is 320. The tolerance is a few pixels because the
+  // arc is stepped a frame at a time and the last frame is partial.
+  r = await run(() => {
+    const R = window.__rig, G = window.__DOJO.game, C = DD.C;
+    const thrown = (pick, mv, gap) => {
+      G.pick = [pick, 0];
+      G.startMatch(1);
+      const [a, d] = G.fighters;
+      // far from both walls, or the arena clamps the throw short
+      a.reset(300, 1); d.reset(300 + gap, -1);
+      a.state = 'idle'; d.state = 'idle';
+      G.hitstop = 0; G.projectiles = []; G.state = 'fight';
+      const x0 = d.x, hp0 = d.hp;
+      a.startAttack(mv);
+      let peak = C.GROUND_Y, rose = C.GROUND_Y;
+      for (let f = 0; f < 400; f++) {
+        if (G.hitstop > 0) { G.hitstop--; continue; }
+        a.update(G, DD.input.emptyPad(), d); d.update(G, DD.input.emptyPad(), a);
+        G.pushBodies(a, d); G.checkAttacks(a, d); G.updateProjectiles();
+        peak = Math.min(peak, d.y); rose = Math.min(rose, a.y);
+      }
+      return { d: Math.round(d.x - x0), arc: Math.round(C.GROUND_Y - peak),
+               rose: Math.round(C.GROUND_Y - rose), hit: d.hp < hp0 };
+    };
+    return {
+      rush: thrown(0, 'rush', 40),
+      antoineUpper: thrown(1, 'uppercut', 30),
+      klausUpper: thrown(0, 'uppercut', 30),
+      sweep: thrown(0, 'sweep', 30),
+      proj: ['klaus', 'antoine', 'maxim'].reduce((o, who, i) => {
+        G.pick = [i, 0]; G.startMatch(1);
+        const [a, d] = G.fighters;
+        a.reset(200, 1); d.reset(290, -1);
+        a.state = 'idle'; d.state = 'idle';
+        G.hitstop = 0; G.projectiles = []; G.state = 'fight';
+        const x0 = d.x, hp0 = d.hp;
+        a.startAttack('special');
+        for (let f = 0; f < 400; f++) {
+          if (G.hitstop > 0) { G.hitstop--; continue; }
+          a.update(G, DD.input.emptyPad(), d); d.update(G, DD.input.emptyPad(), a);
+          G.pushBodies(a, d); G.checkAttacks(a, d); G.updateProjectiles();
+        }
+        o[who] = { d: Math.round(d.x - x0), hit: d.hp < hp0 };
+        return o;
+      }, {}),
+    };
+  });
+  const near = (got, want, tol) => Math.abs(got - want) <= (tol || 4);
+  check('a rushing special throws a full screen', near(r.rush.d, 320),
+    `${r.rush.d}px of a 320px screen`);
+  check('...in an arc, not a shove', r.rush.arc > 40, `arc ${r.rush.arc}px`);
+  check("Klaus's fireball throws a quarter screen", near(r.proj.klaus.d, 80),
+    `${r.proj.klaus.d}px`);
+  check("Maxim's molotov throws a quarter screen", near(r.proj.maxim.d, 80),
+    `${r.proj.maxim.d}px`);
+  check("Antoine's grenade keeps its shove", r.proj.antoine.hit && r.proj.antoine.d < 40,
+    `${r.proj.antoine.d}px`);
+  check("Antoine's uppercut throws half a screen", near(r.antoineUpper.d, 160),
+    `${r.antoineUpper.d}px`);
+  check('...and takes him off the ground with it', r.antoineUpper.rose > 40,
+    `he rose ${r.antoineUpper.rose}px`);
+  check('nobody else uppercuts off the ground', r.klausUpper.rose === 0,
+    `Klaus rose ${r.klausUpper.rose}px`);
+  check('a plain knockdown is still a shove', r.sweep.d < 30 && r.klausUpper.d < 40,
+    `sweep ${r.sweep.d}px, uppercut ${r.klausUpper.d}px`);
+
   // --- the CPU has more than one idea ---------------------------------------
   // Antoine comes forward, Maxim wants the gap. Run each of them against
   // the same still opponent and the average distance has to separate them,
