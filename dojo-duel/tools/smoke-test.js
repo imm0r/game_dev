@@ -262,6 +262,33 @@ function check(name, cond, extra) {
     audio.stages.join(', '));
   check('a round ends in silence', audio.roundend === null, `got ${audio.roundend}`);
 
+  // --- a music file beats the pattern --------------------------------------
+  // Served, `sfx/One_Life_Remaining.mp3` should take over the fight music.
+  // Off disk a browser will not fetch it, and the point of the fallback is
+  // that the game still has music - so the assertion is "something is
+  // playing", and "it is the file" only where a fetch can work at all.
+  const mfile = await page.evaluate(async () => {
+    const G = window.__DOJO.game, A = window.DD.audio;
+    A.unlock();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const served = location.protocol.startsWith('http');
+    G.stageIndex = 0; G.state = 'fight'; G.updateMusic();
+    await wait(served ? 2500 : 300);
+    const fight = { track: A.track, file: A.fromFile, on: A.running };
+    G.state = 'title'; G.updateMusic();
+    await wait(300);
+    const title = { track: A.track, file: A.fromFile, on: A.running };
+    G.state = 'roundend'; G.updateMusic();
+    return { served, fight, title };
+  });
+  check('the fight always has music, file or pattern', mfile.fight.on,
+    JSON.stringify(mfile.fight));
+  check('a track with a file plays the file',
+    !mfile.served || mfile.fight.file,
+    `served=${mfile.served} fromFile=${mfile.fight.file}`);
+  check('a track without one falls back to the pattern',
+    mfile.title.on && !mfile.title.file, JSON.stringify(mfile.title));
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 5).join(' | '));
 
   await browser.close();

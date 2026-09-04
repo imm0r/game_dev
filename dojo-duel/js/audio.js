@@ -158,6 +158,70 @@ window.DD = window.DD || {};
   // Which track a stage index gets, in the order the stages are listed.
   const STAGE_SONGS = ['tokyo', 'temple', 'neon'];
 
+  // Real music beats a synthesized pattern, the same way a hand-drawn
+  // sheet in assets/ beats the generated art. Drop an audio file in
+  // `sfx/`, name it against a track here, and it plays instead - the
+  // pattern above stays as the fallback for whatever has no file yet, and
+  // for opening the page straight off disk, where a browser will not let
+  // it fetch one.
+  const MUSIC_FILES = {
+    tokyo: 'One_Life_Remaining.mp3',
+    temple: 'One_Life_Remaining.mp3',
+    neon: 'One_Life_Remaining.mp3',
+  };
+  // Filled by the single-file build, which has no `sfx/` to fetch from.
+  DD.MUSIC = DD.MUSIC || {};
+
+  const buffers = {};      // decoded audio, by file name
+  const failed = {};       // ...and the ones not worth asking for again
+  let source = null;       // the file currently looping, if any
+
+  function fileFor(name) {
+    const f = MUSIC_FILES[name];
+    return f && !failed[f] ? f : null;
+  }
+
+  function stopFile() {
+    if (source) { try { source.stop(); } catch (e) { /* already done */ } source = null; }
+  }
+
+  function playFile(file) {
+    stopFile();
+    const buf = buffers[file];
+    if (!buf || !ctx) return;
+    source = ctx.createBufferSource();
+    source.buffer = buf;
+    source.loop = true;
+    source.connect(musicBus);
+    source.start();
+  }
+
+  // Fetch and decode once, then keep it. A failure is remembered so the
+  // fallback takes over for good rather than retrying every frame.
+  function loadFile(file, then) {
+    if (buffers[file] || failed[file]) { then(); return; }
+    const url = DD.MUSIC[file] || `sfx/${file}`;
+    // Opened straight off disk there is nothing to fetch - a browser
+    // blocks a file:// request from a file:// page - so do not ask and
+    // spill a CORS error into everybody's console. The single-file build
+    // carries the track as a data: URI and is fine either way.
+    if (!/^data:/.test(url) && location.protocol === 'file:') {
+      failed[file] = true;
+      console.log(`[dojo] ${file} needs a server; using the synthesized track`);
+      then();
+      return;
+    }
+    fetch(url)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
+      .then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no)))
+      .then((buf) => { buffers[file] = buf; then(); })
+      .catch(() => {
+        failed[file] = true;
+        console.log(`[dojo] no music file ${url}, using the synthesized track`);
+        then();
+      });
+  }
+
   // How long a note actually lasts: itself plus every `-` after it.
   function held(voice, i, spb) {
     let n = 1;
@@ -166,6 +230,7 @@ window.DD = window.DD || {};
   }
 
   let wanted = null;      // the track that should be playing
+  let trackName = null;   // ...by name, for looking up its file
   let song = null;        // ...and the one that is
   let step = 0;
   let nextT = 0;
@@ -205,7 +270,7 @@ window.DD = window.DD || {};
       step = 0;
       nextT = Math.max(nextT, ctx.currentTime + 0.05);
     }
-    if (!song) return;
+    if (!song || fileFor(trackName) || muted) return;
     const spb = 60 / song.bpm / 4;
     if (nextT < ctx.currentTime) nextT = ctx.currentTime + 0.05;
     while (nextT < ctx.currentTime + LOOKAHEAD) {
@@ -232,7 +297,21 @@ window.DD = window.DD || {};
     const next = name ? SONGS[name] || null : null;
     if (next === wanted) return;
     wanted = next;
+    trackName = next ? name : null;
+    stopFile();
     if (!next) { song = null; stopClock(); return; }
+    const file = fileFor(name);
+    if (file && ctx) {
+      // Start the pattern meanwhile, so a track that has to be fetched
+      // does not leave a silent hole; the file takes over on arrival, and
+      // if it never arrives the pattern simply keeps going.
+      startClock();
+      loadFile(file, () => {
+        if (trackName !== name) return;         // switched away while loading
+        if (buffers[file]) { stopClock(); song = null; playFile(file); }
+      });
+      return;
+    }
     if (ctx) startClock();
   }
 
@@ -241,7 +320,13 @@ window.DD = window.DD || {};
     play: (name) => { if (sfx[name]) sfx[name](); },
     music,
     stageSong: (i) => STAGE_SONGS[i] || STAGE_SONGS[0],
-    toggleMute: () => { muted = !muted; return muted; },
+    toggleMute: () => {
+      muted = !muted;
+      // The sequencer just stops scheduling, but a file is already
+      // playing, so it needs the bus turned down.
+      if (musicBus) musicBus.gain.value = muted ? 0 : 0.6;
+      return muted;
+    },
     get muted() { return muted; },
     // What the game has asked for, which is a different question from
     // whether a note is sounding: a browser will not start an
@@ -250,7 +335,8 @@ window.DD = window.DD || {};
     get track() {
       return wanted ? Object.keys(SONGS).find((k) => SONGS[k] === wanted) : null;
     },
-    get running() { return !!timer; },
+    get running() { return !!timer || !!source; },
+    get fromFile() { return !!source; },
     SONGS,
   };
 })();

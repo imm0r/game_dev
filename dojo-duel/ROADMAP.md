@@ -484,6 +484,19 @@ symptoms and one cause.
       bars, and each track is rendered offline to prove it makes a sound
       at all. Verified both catch a real break: a bad note and a
       three-quarter-bar drum pattern each fail the suite
+- [x] **A real track beats the pattern.** The synthesized songs turned out
+      to be aiming somewhere else entirely - the reference the project
+      owner had in mind is 136bpm, major, wall-to-wall dense and bright,
+      where all four of mine are minor and leave holes. Rather than chase
+      it by ear I cannot use, an audio file dropped in `sfx/` and named in
+      one table now plays instead, exactly the way a hand-drawn sheet in
+      `assets/` beats the generated art. What has no file keeps its
+      pattern
+- [x] ...and so does the whole game opened straight off disk, where a
+      browser blocks the fetch. It does not even try there, because the
+      attempt spills a CORS error into every player's console
+- [x] The single-file build embeds `sfx/` as well, so the one-file copy
+      carries the music
 - [ ] Not done: the music does not react to the fight. A last-round
       tempo lift, or a low-health sting, would be the next thing
 
