@@ -11,6 +11,7 @@ window.DD = window.DD || {};
   let muted = false;
 
   function unlock() {
+    const fresh = !ctx;
     if (!ctx) {
       try {
         ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -25,7 +26,9 @@ window.DD = window.DD || {};
       } catch (e) { /* the game still works without audio */ }
     }
     if (ctx && ctx.state === 'suspended') ctx.resume();
-    if (ctx && wanted && !timer) startClock();
+    // Once - on the keypress that finally gave us a context - and again
+    // any time the music has fallen silent with a track still requested.
+    if (ctx && trackName && (fresh || (!timer && !source))) apply(trackName);
   }
 
   // A single retro "blip": oscillator with a frequency slide. `at` is an
@@ -165,6 +168,7 @@ window.DD = window.DD || {};
   // for opening the page straight off disk, where a browser will not let
   // it fetch one.
   const MUSIC_FILES = {
+    title: 'One_Life_Remaining.mp3',
     tokyo: 'One_Life_Remaining.mp3',
     temple: 'One_Life_Remaining.mp3',
     neon: 'One_Life_Remaining.mp3',
@@ -175,6 +179,7 @@ window.DD = window.DD || {};
   const buffers = {};      // decoded audio, by file name
   const failed = {};       // ...and the ones not worth asking for again
   let source = null;       // the file currently looping, if any
+  let playingFile = null;  // ...and which one it is
 
   function fileFor(name) {
     const f = MUSIC_FILES[name];
@@ -183,6 +188,7 @@ window.DD = window.DD || {};
 
   function stopFile() {
     if (source) { try { source.stop(); } catch (e) { /* already done */ } source = null; }
+    playingFile = null;
   }
 
   function playFile(file) {
@@ -194,12 +200,16 @@ window.DD = window.DD || {};
     source.loop = true;
     source.connect(musicBus);
     source.start();
+    playingFile = file;
   }
 
   // Fetch and decode once, then keep it. A failure is remembered so the
   // fallback takes over for good rather than retrying every frame.
+  const inflight = {};
   function loadFile(file, then) {
     if (buffers[file] || failed[file]) { then(); return; }
+    if (inflight[file]) return;      // one fetch is enough
+    inflight[file] = true;
     const url = DD.MUSIC[file] || `sfx/${file}`;
     // Opened straight off disk there is nothing to fetch - a browser
     // blocks a file:// request from a file:// page - so do not ask and
@@ -207,6 +217,7 @@ window.DD = window.DD || {};
     // carries the track as a data: URI and is fine either way.
     if (!/^data:/.test(url) && location.protocol === 'file:') {
       failed[file] = true;
+      delete inflight[file];
       console.log(`[dojo] ${file} needs a server; using the synthesized track`);
       then();
       return;
@@ -214,9 +225,10 @@ window.DD = window.DD || {};
     fetch(url)
       .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(r.status)))
       .then((b) => new Promise((ok, no) => ctx.decodeAudioData(b, ok, no)))
-      .then((buf) => { buffers[file] = buf; then(); })
+      .then((buf) => { buffers[file] = buf; delete inflight[file]; then(); })
       .catch(() => {
         failed[file] = true;
+        delete inflight[file];
         console.log(`[dojo] no music file ${url}, using the synthesized track`);
         then();
       });
@@ -293,38 +305,63 @@ window.DD = window.DD || {};
   // `music(name)` starts or switches a track; `music(null)` stops. Naming
   // the track that is already playing does nothing, so calling it every
   // frame from a game state is fine.
-  function music(name) {
-    const next = name ? SONGS[name] || null : null;
-    if (next === wanted) return;
-    wanted = next;
-    trackName = next ? name : null;
+  // Put the requested track on the air. Split out of `music` because it
+  // also has to run from `unlock`: a browser refuses to make an
+  // AudioContext before the first keypress, so the track the title screen
+  // asks for on load is requested when there is nothing to play it with,
+  // and something has to go back for it once there is.
+  function apply(name) {
+    const before = playingFile;
+    const file = name ? fileFor(name) : null;
+    // One file mapped to several tracks is one piece of music: walking
+    // from the menu into a fight should not restart it at the top.
+    if (source && file && file === before) return;
     stopFile();
-    if (!next) { song = null; stopClock(); return; }
-    const file = fileFor(name);
-    if (file && ctx) {
-      // Start the pattern meanwhile, so a track that has to be fetched
-      // does not leave a silent hole; the file takes over on arrival, and
-      // if it never arrives the pattern simply keeps going.
-      startClock();
-      loadFile(file, () => {
-        if (trackName !== name) return;         // switched away while loading
-        if (buffers[file]) { stopClock(); song = null; playFile(file); }
-      });
-      return;
-    }
-    if (ctx) startClock();
+    if (!wanted) { song = null; stopClock(); return; }
+    if (!ctx) return;
+    // Start the pattern meanwhile, so a track that has to be fetched does
+    // not leave a silent hole; the file takes over on arrival, and if it
+    // never arrives the pattern simply keeps going.
+    startClock();
+    if (!file) return;
+    loadFile(file, () => {
+      if (trackName !== name) return;           // switched away while loading
+      if (buffers[file]) { stopClock(); song = null; playFile(file); }
+    });
+  }
+
+  function music(name) {
+    const want = name || null;
+    if (want === trackName) return;
+    trackName = want;
+    wanted = want ? SONGS[want] || null : null;
+    apply(want);
+  }
+
+  // A K.O. wants the music out of the way, not gone: a 100-second track
+  // that stopped and restarted every round would only ever play its first
+  // thirty seconds. Step it back instead and it keeps its place.
+  let ducked = false;
+  function duck(on) {
+    if (on === ducked) return;
+    ducked = on;
+    if (!musicBus) return;
+    const to = muted ? 0 : (on ? 0.10 : 0.6);
+    musicBus.gain.setTargetAtTime(to, ctx.currentTime, on ? 0.05 : 0.25);
   }
 
   DD.audio = {
     unlock,
     play: (name) => { if (sfx[name]) sfx[name](); },
     music,
+    duck,
+    get ducked() { return ducked; },
     stageSong: (i) => STAGE_SONGS[i] || STAGE_SONGS[0],
     toggleMute: () => {
       muted = !muted;
       // The sequencer just stops scheduling, but a file is already
       // playing, so it needs the bus turned down.
-      if (musicBus) musicBus.gain.value = muted ? 0 : 0.6;
+      if (musicBus) musicBus.gain.value = muted ? 0 : (ducked ? 0.10 : 0.6);
       return muted;
     },
     get muted() { return muted; },
@@ -332,11 +369,12 @@ window.DD = window.DD || {};
     // whether a note is sounding: a browser will not start an
     // AudioContext before the first keypress, and the answer here has to
     // be the same either way or the state wiring cannot be checked.
-    get track() {
-      return wanted ? Object.keys(SONGS).find((k) => SONGS[k] === wanted) : null;
-    },
+    get track() { return trackName; },
     get running() { return !!timer || !!source; },
     get fromFile() { return !!source; },
+    // Which half is making the noise - the answer to "why am I still
+    // hearing the sequencer", which took a play-through to find.
+    get seqRunning() { return !!timer; },
     SONGS,
   };
 })();

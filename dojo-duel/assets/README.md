@@ -541,11 +541,17 @@ track in `MUSIC_FILES` in `js/audio.js`:
 
 ```js
 const MUSIC_FILES = {
+  title:  'One_Life_Remaining.mp3',
   tokyo:  'One_Life_Remaining.mp3',
   temple: 'One_Life_Remaining.mp3',
   neon:   'One_Life_Remaining.mp3',
 };
 ```
+
+One file against several tracks is treated as one piece of music: walking
+from the menu into a fight does not restart it at the top, and a round
+ending steps it back rather than stopping it, so a long track is heard
+past its first thirty seconds.
 
 The track names are the four the sequencer knows — `tokyo`, `temple` and
 `neon` for the three stages, `title` for the menu. Anything without a file

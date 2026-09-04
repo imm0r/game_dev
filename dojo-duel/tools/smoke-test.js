@@ -250,6 +250,9 @@ function check(name, cond, extra) {
     out.title = track('title');
     out.stages = [0, 1, 2].map((i) => track('fight', i));
     out.roundend = track('roundend');
+    out.duckedAtRoundEnd = A.ducked;
+    track('fight', 0);
+    out.duckedInFight = A.ducked;
     G.state = was.state; G.stageIndex = was.stage; G.updateMusic();
     return out;
   });
@@ -260,7 +263,9 @@ function check(name, cond, extra) {
   check('each stage has its own track',
     new Set(audio.stages).size === 3 && !audio.stages.includes(null),
     audio.stages.join(', '));
-  check('a round ends in silence', audio.roundend === null, `got ${audio.roundend}`);
+  check('the music steps back for a K.O., rather than restarting every round',
+    audio.duckedAtRoundEnd && !audio.duckedInFight,
+    `ducked at round end: ${audio.duckedAtRoundEnd}, in the fight: ${audio.duckedInFight}`);
 
   // --- a music file beats the pattern --------------------------------------
   // Served, `sfx/One_Life_Remaining.mp3` should take over the fight music.
@@ -278,6 +283,8 @@ function check(name, cond, extra) {
     G.state = 'title'; G.updateMusic();
     await wait(300);
     const title = { track: A.track, file: A.fromFile, on: A.running };
+    // A track with no file mapped must still play, from the pattern.
+    A.music('nosuchtrack'); A.music('temple');
     G.state = 'roundend'; G.updateMusic();
     return { served, fight, title };
   });
@@ -286,8 +293,9 @@ function check(name, cond, extra) {
   check('a track with a file plays the file',
     !mfile.served || mfile.fight.file,
     `served=${mfile.served} fromFile=${mfile.fight.file}`);
-  check('a track without one falls back to the pattern',
-    mfile.title.on && !mfile.title.file, JSON.stringify(mfile.title));
+  check('one file mapped to several tracks keeps playing across them',
+    !mfile.served || (mfile.title.file && mfile.title.track === 'title'),
+    JSON.stringify(mfile.title));
 
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 5).join(' | '));
 

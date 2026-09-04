@@ -132,14 +132,19 @@ window.DD = window.DD || {};
     // What should be playing, decided from the game state alone. Naming a
     // track that is already playing does nothing, so this can run every
     // frame and there is nowhere for a "start the music" call to be
-    // forgotten. A round ends in silence on purpose: the K.O. lands, then
-    // the win jingle, and neither wants a bassline underneath it.
+    // forgotten.
+    //
+    // A round end steps the music back rather than stopping it. The K.O.
+    // and the win jingle still land in the clear, and a long track keeps
+    // its place instead of restarting at the top every round - which
+    // would mean never hearing past its first thirty seconds.
     updateMusic() {
       const s = this.state;
       if (s === 'title' || s === 'select') DD.audio.music('title');
       else if (s === 'intro' || s === 'fight') {
         DD.audio.music(DD.audio.stageSong(this.stageIndex));
-      } else DD.audio.music(null);
+      }
+      DD.audio.duck(s === 'roundend' || s === 'matchend');
     }
 
     update() {
