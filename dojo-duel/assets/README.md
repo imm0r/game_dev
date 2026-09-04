@@ -566,3 +566,30 @@ trimmed to a whole number of bars.
 `index.html` a browser will not fetch the file and the pattern plays
 instead; the single-file build (`node tools/build-single.mjs --embed`)
 carries the audio inline and works either way.
+
+---
+
+## `assets/baked/` — the import, run once
+
+The importer is not cheap: it decodes about 22 MB of PNG, keys out the
+background, finds every pose as a connected shape, aligns them on a foot
+line and scales the sheet down — all to produce roughly 1 MB of sprites,
+on every single page load. The source sheets are about eight times the
+resolution the game ever draws.
+
+So run it once and keep the result:
+
+```bash
+python3 -m http.server 8000        # in dojo-duel/
+node tools/bake-sprites.js http://localhost:8000/
+```
+
+That writes one atlas per fighter plus `index.json` into `assets/baked/`,
+about 1 MB in total instead of 22. The game loads it when it is there and
+imports live when it is not, so **forgetting to re-bake breaks nothing** —
+you simply keep seeing the old art until you do. Delete the folder to go
+back to importing.
+
+Re-run it after changing any sheet. The sheet suite guards this: it throws
+the atlas away, imports for real, and fails if the two disagree on a
+single pixel — so a stale atlas is a failing test rather than a mystery.

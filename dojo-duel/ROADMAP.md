@@ -497,8 +497,26 @@ symptoms and one cause.
       attempt spills a CORS error into every player's console
 - [x] The single-file build embeds `sfx/` as well, so the one-file copy
       carries the music
+- [x] One track per stage, three files
+- [x] **The sprite import is baked.** It ran on every page load: decode
+      22MB of PNG, key out the background, label connected components,
+      align on a foot line and scale down - to produce about 1MB of
+      sprites. `tools/bake-sprites.js` runs it once and writes one atlas
+      per fighter plus a manifest into `assets/baked/`; the game loads
+      that and falls back to importing when it is not there, which is the
+      shape of every other "a file beats the generated thing" here
+- [x] 21x smaller: 21.78MB of source sheets to 1.03MB of atlas. That is
+      what made room for three music tracks - the artifact preview would
+      have been 22MB against a 16MB cap, and came out at 12.11
+- [x] The atlas is verified against the importer rather than trusted: the
+      sheet suite throws it away, imports for real and compares poses,
+      animation tables and pixels. Confirmed it catches a stale atlas by
+      shifting one pose's rectangle two pixels and watching it fail
 - [ ] Not done: the music does not react to the fight. A last-round
       tempo lift, or a low-health sting, would be the next thing
+- [ ] Not done: the portraits are still embedded whole (1.5MB of base64)
+      and get keyed and scaled at load like the sheets used to. Baking
+      them the same way is the next easy MB if it ever gets tight
 
 ### M8 – Release polish
 - [x] Character select screen: both sides choose at once, each with their

@@ -309,6 +309,66 @@ function check(name, cond, extra) {
   check('a drawn box leaves no bar behind in the sprite', skirt.worst < 6,
     `longest field-hued run ${skirt.worst}px at ${skirt.where}`);
 
+  // --- the baked atlas is the import, or it is a lie -----------------------
+  // Once `assets/baked/` exists the game stops importing, so every other
+  // check here would keep passing on a stale atlas or a broken importer.
+  // Throw the atlas away, import for real, and compare: same poses, same
+  // animation tables, same pixels. Nothing to check when there is no
+  // atlas - the game is importing live and the rest of this file covers
+  // it.
+  const bake = await p.evaluate(async () => {
+    const S = window.DD.sprites;
+    const chars = Object.keys(window.DD.spritesheet.SHEET_ORDER);
+    const snap = () => {
+      const out = {};
+      for (const c of chars) {
+        const skin = Object.keys(S.frames[c])[0];
+        const set = S.frames[c][skin];
+        const names = Object.keys(set).sort();
+        const cv = document.createElement('canvas');
+        cv.width = 900; cv.height = Math.ceil(names.length / 10) * 80;
+        const g = cv.getContext('2d');
+        g.imageSmoothingEnabled = false;
+        names.forEach((n, i) => {
+          const im = set[n].right;
+          g.drawImage(im, (i % 10) * 90, Math.floor(i / 10) * 80 + (80 - im.height));
+        });
+        out[c] = { names: names.join(','),
+                   anims: JSON.stringify(S.CHARS[c].anims),
+                   px: cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data };
+      }
+      return out;
+    };
+    if (!window.DD.BAKED && !document.querySelector('link[data-baked]')) {
+      // served: is there an atlas at all?
+      const r = await fetch('assets/baked/index.json').catch(() => null);
+      if (!r || !r.ok) return { skipped: true };
+    }
+    const before = snap();
+    for (const c of chars) for (const k of Object.keys(S.frames[c])) S.frames[c][k] = {};
+    S.buildAll();
+    window.DD.spritesheet.importAll();
+    await new Promise((r) => setTimeout(r, 6000));
+    const after = snap();
+    const bad = [];
+    for (const c of chars) {
+      if (before[c].names !== after[c].names) bad.push(`${c}: poses differ`);
+      if (before[c].anims !== after[c].anims) bad.push(`${c}: anims differ`);
+      let diff = 0;
+      const A = before[c].px, B = after[c].px;
+      if (A.length !== B.length) { bad.push(`${c}: size differs`); continue; }
+      for (let i = 0; i < A.length; i++) if (A[i] !== B[i]) diff++;
+      if (diff) bad.push(`${c}: ${(diff / A.length * 100).toFixed(3)}% of channels differ`);
+    }
+    return { bad };
+  });
+  if (bake.skipped) {
+    console.log('  --  no baked atlas; the game is importing live');
+  } else {
+    check('the baked atlas is exactly what importing produces',
+      bake.bad.length === 0, bake.bad.join(' | '));
+  }
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await b.close();

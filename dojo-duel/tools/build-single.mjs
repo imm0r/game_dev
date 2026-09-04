@@ -31,7 +31,7 @@ function dataUri(name, dir, mime) {
   const p = join(dir || ASSETS, name);
   if (!existsSync(p)) return null;
   const b64 = readFileSync(p).toString('base64');
-  const where = (dir === SFX ? 'sfx' : 'assets');
+  const where = dir === SFX ? 'sfx' : dir && dir !== ASSETS ? 'assets/baked' : 'assets';
   console.log(`embedded: ${where}/${name} (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
   return `data:${mime || 'image/png'};base64,${b64}`;
 }
@@ -45,15 +45,34 @@ if (embed) {
     const uri = dataUri(`stage-${n}.png`);
     if (uri) stages.push(`${n}: '${uri}'`);
   }
+  // A baked atlas, if `tools/bake-sprites.js` has been run. It is the
+  // whole ball game for size: the source sheets are about eight times the
+  // resolution the game draws, so embedding them costs ~29 MB of base64
+  // to deliver ~1.4 MB of sprites. With the atlas the source sheets are
+  // left out of the build entirely.
+  const bakedIndex = join(ASSETS, 'baked', 'index.json');
+  const haveBaked = existsSync(bakedIndex);
+  const bakedPng = [];
+  if (haveBaked) {
+    for (const file of readdirSync(join(ASSETS, 'baked')).sort()) {
+      if (!/\.png$/i.test(file)) continue;
+      const uri = dataUri(file, join(ASSETS, 'baked'));
+      if (uri) bakedPng.push(`'${file.replace(/\.png$/i, '')}': '${uri}'`);
+    }
+  }
+
   // Every PNG in assets/ that is not a stage: the fighters' sprite sheets
   // and the select-screen portraits, keyed by file name. Read the folder
   // rather than a list here, so adding a character to the roster never
   // means remembering to edit the build script too. The keys are quoted
-  // because a portrait's is `portrait-klaus`.
+  // because a portrait's is `portrait-klaus`. With a baked atlas the
+  // sheets are skipped and only the portraits come along - nothing reads
+  // a sheet once the atlas is there.
   const sheets = [];
   for (const file of readdirSync(ASSETS).sort()) {
     if (!/^(?!stage-).+\.png$/i.test(file)) continue;
     const who = file.replace(/\.png$/i, '');
+    if (haveBaked && !who.startsWith('portrait-')) continue;
     const uri = dataUri(file);
     if (uri) sheets.push(`'${who}': '${uri}'`);
   }
@@ -74,6 +93,10 @@ if (embed) {
   if (stages.length) parts.push(`DD.ASSETS = { ${stages.join(', ')} };`);
   if (sheets.length) parts.push(`DD.SHEETS = { ${sheets.join(', ')} };`);
   if (music.length) parts.push(`DD.MUSIC = { ${music.join(', ')} };`);
+  if (haveBaked) {
+    parts.push(`DD.BAKED = ${readFileSync(bakedIndex, 'utf8')};`);
+    parts.push(`DD.BAKED_PNG = { ${bakedPng.join(', ')} };`);
+  }
   if (parts.length) {
     assetScript = `<script>\nwindow.DD = window.DD || {};\n${parts.join('\n')}\n</script>\n`;
   }
