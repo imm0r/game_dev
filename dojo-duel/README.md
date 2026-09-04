@@ -94,13 +94,30 @@ duck. The same button, three different problems.
 | --- | --- |
 | ![Jumping over a fireball](docs/screenshots/doc-jumpover.png) | ![Anti-air uppercut](docs/screenshots/doc-antiair.png) |
 
-| Uppercut catching a jump-in | Antoine's cannonball |
+**The specials are drawn, not held.** Each of them used to be one pose
+shown three times — an uppercut was literally a punch frame with a
+different name. They now play five or six drawings apiece off two more
+sheets per fighter, spread over the move's own frame data, with the
+contact drawing held through the hit window. Klaus gathers a fireball and
+lets it go; Antoine coils and rises through a flaming uppercut, or spins
+into a tornado kick; Maxim strikes a match, lights the bottle and throws
+it, or goes up in flames and charges.
+
+| Klaus gathers a fireball | Antoine's spinning kick |
+| --- | --- |
+| ![Fireball](docs/screenshots/doc-fireball.png) | ![Spin kick](docs/screenshots/doc-spinkick.png) |
+
+| Maxim lights the bottle | Maxim goes up in flames |
+| --- | --- |
+| ![Molotov](docs/screenshots/doc-molotov.png) | ![Flaming charge](docs/screenshots/doc-flamerush.png) |
+
+| Uppercut catching a jump-in | Klaus's charge |
 | --- | --- |
 | ![Uppercut](docs/screenshots/doc-uppercut.png) | ![Rush](docs/screenshots/doc-rush.png) |
 
-| The throw, grab through slam | Maxim's molotov |
-| --- | --- |
-| ![Throw](docs/screenshots/doc-throw.png) | ![Molotov](docs/screenshots/doc-molotov.png) |
+| The throw, grab through slam |
+| --- |
+| ![Throw](docs/screenshots/doc-throw.png) |
 
 That sweep is the whole reason to crouch. Blocking a low while standing
 does not work — hold back **and** down, or you end up on the floor. On the
@@ -157,16 +174,29 @@ a K.O.
   picture of its own, and that is what the game puts in the air.
 - **Animation sheets.** A pose per movement is a switch, not an animation,
   so movement comes on extra sheets, `assets/<fighter>-<move>.png`, whose
-  poses beat the main sheet's. All three fighters have two: about 21
-  figures covering the idle, walk, punch, kick and hit reaction, and about
-  10 more for the jump and both air attacks. Each brings its own timing
-  along with its drawings, and an attack plays as many drawings as it has
-  — the one the arm is fully out in is held through the whole hit window.
+  poses beat the main sheet's. All three fighters have four: about 21
+  figures covering the idle, walk, punch, kick and hit reaction, about 10
+  more for the jump and both air attacks, and two more carrying a special
+  apiece — the fireball, the flaming charge, the rising uppercut, the
+  spinning kick, the molotov. Each brings its own timing along with its
+  drawings, and an attack plays as many drawings as it has — the one the
+  arm is fully out in is held through the whole hit window.
 
   No two came back with the same figure counts, which is what
   `SHEET_ORDER` is for: a spare guard, a second drawing of a kick already
   fully out, three hit-reaction poses on a sheet that never asked for
   them. `null` drops each of those in one line.
+
+  Nor do they always come back in *order*. That costs nothing either: the
+  order list says which figure is which pose and the animation names the
+  sequence, so a sheet that draws the wind-up after the release is one
+  reordered line. Two of the six special sheets needed it.
+
+  And a strip does not have to be self-contained. The pose Antoine lands
+  the spinning kick in never made it into the generation, so the recovery
+  borrows `kick4` off his moves sheet — the foot coming back down after a
+  high kick, which is the shape that was missing. By the time an animation
+  reads a pose, every sheet a fighter owns is on the same table.
 - **Single-player vs CPU**, and the three of them do not play alike. The
   AI holds a **stance** for a couple of seconds rather than rerolling a
   table of moves every few frames, which is the difference between having

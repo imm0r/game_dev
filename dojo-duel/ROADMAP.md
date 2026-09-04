@@ -200,6 +200,53 @@ implements. Every milestone ends in a playable build.
 - [ ] Juggle rules, so air combos cannot run forever once there is
       anything that launches high enough to matter
 
+### M6b – The specials are drawn
+Six more sheets from the project owner, two per fighter. Every special was
+one pose shown three times before this - `uppercut` was literally a punch
+frame under a different name.
+- [x] Klaus: gathering and releasing the fireball (6 drawings), and the
+      flaming charge (5)
+- [x] Antoine: the rising uppercut (5) and the spinning kick (6)
+- [x] Maxim: the molotov - match, light, throw (5) - and going up in
+      flames (6)
+- [x] `super` plays its fighter's charge rather than a held pose, which is
+      what the move already was in the game's own description
+- [x] **A sheet out of order costs a reordered line, not a regeneration.**
+      The order list says which figure is which pose and `atk` names the
+      sequence, so a generator drawing the wind-up after the release is
+      absorbed the same way a miscount is. Two of the six needed it
+- [x] **A strip does not have to be self-contained.** The pose Antoine
+      lands the spinning kick in never made it into the generation, so the
+      recovery borrows `kick4` off his moves sheet. By the time an
+      animation reads a pose, every sheet a fighter owns is on one table
+- [x] **Maxim's molotov is drawn art now**, and nobody asked for it: the
+      bottles already in flight on his throw sheet came loose as poses of
+      their own once the box around them was cut properly, and two of them
+      are the projectile. Klaus had this from his main sheet; Maxim was
+      still using a grid typed out in code
+
+**The importer rule the special sheets needed**
+- [x] **A drawn box leaves a skirt, and removing the line is not enough.**
+      A box is drawn *over* the field, so the pixels along its edge are a
+      blend: darker than the field, pointing almost its way, and so
+      neither the field colour, nor the line colour, nor a cast shadow.
+      Every colour test let them through and a one-pixel purple bar
+      survived at the top and bottom of the cut sprite
+- [x] The answer is not a looser colour test - that would eat dark red and
+      purple artwork. A skirt only exists against the line it came from,
+      so it grows out of the condemned line pixels, takes a neighbour only
+      if it is a darkened field colour in a soft cone, and stops after two
+      steps. It cannot run into the drawing, because reaching the drawing
+      means crossing pixels that are not a darkened field colour
+- [x] Pinned by a check on the real sheet rather than a drawn one, and
+      that is not laziness: a canvas stroke blends to an almost exact
+      darkening of the field, which the cast-shadow rule already catches.
+      It takes a generator's noise to land a blend in the gap between the
+      two tests. Measured as the longest *run* of field-hued pixels on a
+      row - 12px before the fix, 3px after, with every other sheet
+      unchanged, because a run on its own is not wrong: the flames round
+      Maxim's boots make honest 16px ones
+
 ### M4b – The jump, the anti-air, and a CPU with more than one idea
 Everything below came out of one report: *"springen fühlt sich unnütz an -
 durch einen Sprung gewinnt man keine Vorteile"*. It was four separate

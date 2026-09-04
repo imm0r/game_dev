@@ -258,6 +258,57 @@ function check(name, cond, extra) {
     ruled.after === ruled.before,
     `${ruled.before} poses without the rule, ${ruled.after} with it`);
 
+  // --- the skirt a drawn box leaves behind ---------------------------------
+  // A frame box is drawn *over* the field, so the pixels along its edge are
+  // a blend of the two: darker than the field, pointing almost its way, and
+  // neither the line colour nor the field colour. Every colour test in the
+  // importer let those through, and what survived was a one-pixel coloured
+  // bar at the top or bottom of the cut frame.
+  //
+  // This runs on the real sheet rather than a drawn one, and that is not
+  // laziness - a synthetic box does not reproduce it. Painted with a
+  // canvas stroke the blend comes out an almost exact darkening of the
+  // field, which `isShade` already catches, and the line's core is too
+  // clean a colour for the "used for nothing but lines" pass to have
+  // anything to bite on. It takes a generator's noise to land a blend in
+  // the gap between those two tests, so the case is pinned where it
+  // actually happens.
+  //
+  // The measure is the longest *run* of field-hued pixels on any row, not
+  // a count: a leftover box edge is a bar, while dark artwork of a similar
+  // hue is scattered. Only this sheet is asserted, because a run is not
+  // wrong by itself - the flames around Maxim's boots on `maxim-rush` make
+  // honest 16px runs and always have.
+  const skirt = await p.evaluate(async () => {
+    const url = 'assets/maxim-special.png';
+    const S = window.DD.spritesheet;
+    const key = await S.keysOf(url);
+    const frames = await S.inspect(url);
+    const f0 = key.field, km = Math.hypot(f0[0], f0[1], f0[2]);
+    let worst = 0, where = '';
+    frames.forEach((f, k) => {
+      const t = document.createElement('canvas');
+      t.width = f.width; t.height = f.height;
+      const tc = t.getContext('2d', { willReadFrequently: true });
+      tc.drawImage(f, 0, 0);
+      const d = tc.getImageData(0, 0, f.width, f.height).data;
+      for (let y = 0; y < f.height; y++) {
+        let run = 0;
+        for (let x = 0; x < f.width; x++) {
+          const i = (y * f.width + x) * 4;
+          const m = Math.hypot(d[i], d[i + 1], d[i + 2]);
+          const hue = d[i + 3] > 24 && m > 1 && m / km <= 0.9
+            && (d[i] * f0[0] + d[i + 1] * f0[1] + d[i + 2] * f0[2]) / (m * km) >= 0.93;
+          run = hue ? run + 1 : 0;
+          if (run > worst) { worst = run; where = `frame ${k} row ${y}`; }
+        }
+      }
+    });
+    return { n: frames.length, worst, where };
+  });
+  check('a drawn box leaves no bar behind in the sprite', skirt.worst < 6,
+    `longest field-hued run ${skirt.worst}px at ${skirt.where}`);
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   await b.close();
