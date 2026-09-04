@@ -30,15 +30,108 @@ the point. Use the server.
 | Kick       | G        | L        |
 | Special    | H        | J        |
 | **Block**  | *hold back while the opponent attacks* | same |
+| **Dash**   | *tap a direction twice* | same |
+| Pick fighter | A / D then F *(on the select screen)* | ← / → then K |
 
-Jump + kick = flying kick. Chip damage on block is in, but (unlike the
-big classics) it cannot score a K.O.
+| Move | Input | What it does |
+| ---- | ----- | ------------ |
+| Straight punch | punch | fast, safe poke |
+| High kick | kick | slower, hurts more |
+| Crouching punch | down + punch | the fastest thing you have |
+| **Sweep** | down + kick | slow, **must be blocked low**, knocks them down |
+| Flying kick | jump + kick | your way in — the longer reach |
+| Flying punch | jump + punch | the other way in: faster, shorter |
+| Dash | tap forward or back twice | covers ground, but you cannot act during it |
+| Projectile | special, or ↓ ↘ → + punch | fireball (Klaus), grenade (Antoine), molotov (Maxim) |
+| **Uppercut** | → ↓ ↘ + punch | anti-air: tall, hits hard, 26 frames of regret if it whiffs |
+| **Rushing special** | ↓ ↘ → + kick | Klaus charges in flames, Antoine becomes a cannonball, Maxim comes in swinging |
+| **Super** | ↓ ↘ → + special, at full meter | four hits, and nothing touches you while it starts |
+| **Throw** | walk into them + punch | goes straight through a block |
+
+The two motions are the classics: a quarter circle forward for the
+projectile, the rush and the super, the dragon-punch motion for the
+uppercut. They are read leniently — you have to pass through the directions
+in order and inside 20 frames, not hit each one cleanly. The special button
+stays as a shortcut for the projectile, so nothing is behind a motion you
+cannot do.
+
+**Cancels.** A normal that *connects* can be cancelled straight into a
+special — punch, then quarter-circle kick, and the rush comes out before
+they recover. That is the combo engine, and it only works on a hit: a
+whiffed poke stays as punishable as it looks.
+
+**Meter** builds from damage you deal, damage you take and chip you block,
+so losing a round still charges it, and it carries between rounds. Full, it
+flashes under your health bar.
+
+**Throws** are the answer to someone who only blocks. Walk into them and
+press punch: guard does not stop it, they land behind you on the floor. Out
+of range the same input is just a punch. The catch is that anyone who
+pressed punch in the last six frames shrugs the grab off — so mashing throw
+at a mashing opponent loses, which is the point.
+
+**The jump is a read, and the whole game hangs off it.** From about frame
+13 to frame 31 of a 44-frame jump your feet are above a fireball — so
+jumping a projectile is a real answer, and a badly timed one lands you
+straight into it. That is what makes throwing one a question rather than
+free damage: they might be over it before it arrives.
+
+**And the answer to the jump is the uppercut.** → ↓ ↘ + punch, invulnerable
+through its whole hit window, reaching exactly as far as a flying kick. Get
+it out while they are coming down and it beats the jump-in clean; get it
+out late and you eat the kick anyway, standing in 26 frames of recovery.
+Fireball, jump, anti-air: each one beats the one before it, and that
+triangle is the game.
+
+Klaus throws his fireball flat down the whole screen — it never passes over
+a crouching head, so it can only be blocked, jumped or answered with one of
+your own. Antoine lobs his grenade and it goes off where it lands. Maxim's
+molotov is heavier: it comes down sooner and covers less ground. Both lobs
+sail over a crouch for part of their flight, which is the other reason to
+duck. The same button, three different problems.
+
+| A jump clearing a fireball | An uppercut answering the jump |
+| --- | --- |
+| ![Jumping over a fireball](docs/screenshots/doc-jumpover.png) | ![Anti-air uppercut](docs/screenshots/doc-antiair.png) |
+
+| Uppercut catching a jump-in | Antoine's cannonball |
+| --- | --- |
+| ![Uppercut](docs/screenshots/doc-uppercut.png) | ![Rush](docs/screenshots/doc-rush.png) |
+
+| The throw, grab through slam | Maxim's molotov |
+| --- | --- |
+| ![Throw](docs/screenshots/doc-throw.png) | ![Molotov](docs/screenshots/doc-molotov.png) |
+
+That sweep is the whole reason to crouch. Blocking a low while standing
+does not work — hold back **and** down, or you end up on the floor. On the
+way down you are untouchable, so a knockdown resets the round rather than
+starting a loop.
+
+| Standing through it | Blocking it low |
+| ------------------- | --------------- |
+| ![Sweep](docs/screenshots/doc-sweep.png) | ![Low block](docs/screenshots/doc-lowblock.png) |
+
+Chip damage on block is in, but (unlike the big classics) it cannot score
+a K.O.
 
 **Menu / general:** Enter = start/confirm · ↑↓ = pick mode ·
-←→ = pick stage · P = pause · M = sound on/off
+←→ = pick stage · Esc = back · P = pause · M = sound on/off
 
 ## What's already in
 
+- **A character select screen.** Both sides choose at once, arcade style:
+  each moves along the row with their own left/right and locks in with
+  their own punch key, and the match starts when both have. Against the
+  CPU only player one chooses and the machine takes somebody else, so a
+  mirror match is something you ask for rather than something you get.
+
+  ![Character select](docs/screenshots/doc-select.png)
+
+  The portraits are one image per fighter, `assets/portrait-<name>.png`,
+  painted on the same flat field as the sprite sheets and keyed out the
+  same way. The victory splash uses them too. Without one, a panel falls
+  back to that fighter's own victory pose, so both screens work before any
+  portrait art exists.
 - **The roster**, drawn as sprite sheets and imported straight from
   `assets/` (see [Bring your own art](#bring-your-own-art)):
   - **KLAUS VÖLKER** (MMA, Germany): bare torso, black-and-gold trunks
@@ -47,17 +140,46 @@ big classics) it cannot score a K.O.
     ![Klaus frames](docs/screenshots/klaus-frames.png)
   - **ANTOINE MOREAU** (judo/GIGN, France): heavier, olive uniform with
     rolled-up sleeves, French flag patch on the shoulder, fingerless
-    gloves, heavy boots, full beard. His special hurls a **grenade**.
+    gloves, heavy boots, full beard. Drawn smaller and finer than the other
+    two, which is what caught the importer out (see below). His special
+    hurls a **grenade**.
     ![Antoine frames](docs/screenshots/antoine-frames.png)
+  - **MAXIM** (the old man, and the one you underestimate): field jacket,
+    grey beard, a bottle in his fist in every single pose. His special
+    throws a lit **molotov**.
+    ![Maxim frames](docs/screenshots/maxim-frames.png)
   - **HANZO**, the karate fighter from the first prototype, remains as a
-    bonus set (roster mapping is configurable in `js/constants.js`)
+    bonus set (the roster itself is a list in `js/constants.js`)
 
-  Each sheet carries 20 poses. Fifteen are on screen today; the uppercut,
-  the two crouching attacks, the second special and the running stride are
-  drawn and imported, waiting for the moves that use them.
-- **Single-player vs CPU** (the AI keeps its distance, blocks, dodges
-  projectiles — and is deliberately beatable) plus **local two-player
-  mode** on one keyboard
+  Each sheet carries 22 to 24 poses and all of them are on screen — the
+  grab, the lift and the slam included, so a throw is drawn rather than
+  borrowed from another move. Klaus's sheet even carries his fireball as a
+  picture of its own, and that is what the game puts in the air.
+- **Animation sheets.** A pose per movement is a switch, not an animation,
+  so movement comes on extra sheets, `assets/<fighter>-<move>.png`, whose
+  poses beat the main sheet's. All three fighters have two: about 21
+  figures covering the idle, walk, punch, kick and hit reaction, and about
+  10 more for the jump and both air attacks. Each brings its own timing
+  along with its drawings, and an attack plays as many drawings as it has
+  — the one the arm is fully out in is held through the whole hit window.
+
+  No two came back with the same figure counts, which is what
+  `SHEET_ORDER` is for: a spare guard, a second drawing of a kick already
+  fully out, three hit-reaction poses on a sheet that never asked for
+  them. `null` drops each of those in one line.
+- **Single-player vs CPU**, and the three of them do not play alike. The
+  AI holds a **stance** for a couple of seconds rather than rerolling a
+  table of moves every few frames, which is the difference between having
+  a plan and having an average. Antoine comes forward and stays there —
+  his grenade dies at 107px, so he has no long game and does not pretend
+  to. Klaus and Maxim will hold the gap, back-dash out of your reach and
+  throw from range, and two of them at it is a corner-to-corner fireball
+  war. Falling behind on health, or on the clock, pushes any of them
+  forward. It is still deliberately beatable.
+
+  ![Two zoners at range](docs/screenshots/doc-zoning.png)
+
+  Plus **local two-player mode** on one keyboard.
 - **3 scrolling stages**, each an 832px-wide painted panorama from
   `assets/`, with a camera that follows the fighters:
 
@@ -77,14 +199,24 @@ big classics) it cannot score a K.O.
 
 - Health bars with red damage trails, a 99-second timer, best-of-3
   rounds, K.O. and time-over logic, victory pose
-- Hit sparks, hitstop (a brief freeze on impact), screen shake on K.O. —
-  the small things that make it feel "arcade"
+- **Impact.** Hitstop freezes the moment of contact; hit sparks are drawn
+  bursts scaled by damage, with their own palette for a hit, a block and a
+  super; a K.O. drops to a third speed for a moment so you get to watch it;
+  dashes and rushing specials leave motion trails; landing raises dust; a
+  super flashes the screen and dims the stage under the fighters. It all
+  lives in `js/fx.js`, so the game loop only says what happened
+- Victory splash: the winner's select-screen portrait, framed against a
+  turning sunburst — or, without one, their own victory pose blown up
 - Synthesized chiptune sound effects (WebAudio, no audio files)
 - A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 
 ![Tokyo Street](docs/screenshots/doc-stage1.png)
 ![Wind Temple](docs/screenshots/doc-stage2.png)
 ![Neon Crossing](docs/screenshots/doc-stage3.png)
+
+| Impact | A dash | Victory |
+| ------ | ------ | ------- |
+| ![Impact](docs/screenshots/doc-impact.png) | ![Dash](docs/screenshots/doc-trail.png) | ![Victory](docs/screenshots/doc-victory.png) |
 
 ## Bring your own art
 
@@ -96,7 +228,9 @@ import step, no atlas to rebuild, no metadata file to keep in sync.
   scaled once to 180px height and becomes the scrolling world (up to 832px
   wide, about 2.6 screens).
 - **A fighter** is one sheet with the poses laid out next to each other on
-  a flat background, `klaus.png` / `antoine.png` / `hanzo.png`. The
+  a flat background, `klaus.png` / `antoine.png` / `maxim.png`, plus one
+  optional strip per movement, `<fighter>-<move>.png`, that gives that
+  movement its in-between frames. The
   importer finds each pose as a connected shape — so the rows may even
   overlap, and a drawn grid around the poses is found and removed — keys
   the background out with a soft edge, lines every pose up on its feet and
@@ -115,14 +249,16 @@ are in [`assets/README.md`](assets/README.md).
 
 | File | Job |
 | ---- | --- |
-| `js/constants.js` | All tuning knobs: physics, attack frame data, damage, roster |
+| `js/constants.js` | All tuning knobs: physics, attack frame data, damage, the roster |
 | `js/spritesheet.js` | **The fighters.** Imports the sprite sheets from `assets/` |
+| `js/portraits.js` | Select-screen faces, split out of `assets/portraits.png` |
 | `js/sprites.js` | Fallback pixel art: every frame a text grid, every character a pixel |
 | `tools/rig.py` | Skeleton rig that generates those fallback frames |
 | `js/font.js` | 3x5 pixel font |
 | `js/stage.js` | The three procedural stages + panorama pipeline |
 | `js/fighter.js` | Fighter state machine, hitboxes, hit logic, animation resolve |
-| `js/ai.js` | CPU opponent |
+| `js/ai.js` | CPU opponent (blocks lows low, sweeps, dashes in) |
+| `js/fx.js` | Impact: bursts, dust, trails, flashes |
 | `js/game.js` | Round flow, camera, collisions, projectiles, particles |
 | `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
 | `js/audio.js` | Synthesized sound effects |
@@ -133,7 +269,7 @@ are in [`assets/README.md`](assets/README.md).
 
 Two ways, and the game does not care which a frame came from.
 
-**Imported from a sheet** — what Klaus and Antoine use. `js/spritesheet.js`
+**Imported from a sheet** — what the whole roster uses. `js/spritesheet.js`
 labels the connected regions of `assets/<fighter>.png`, so a pose is found
 as a shape rather than by cutting the image into strips; that is what lets
 the sheets have several rows and lets those rows overlap. Each pose is then
@@ -160,6 +296,17 @@ a limb, and it floats free of any body. Both tests together separate it
 from the gold trim on a pair of trunks, which is every bit as thin but
 never floats. Where a line was drawn *across* a figure, the slit it leaves
 is painted over from the artwork on either side.
+
+*"Thinner than a limb" is not a fixed number.* Generators do not all draw
+at the same size, and "erase everything thinner than a limb" needs to know
+how thick this sheet's limbs are. An erase wide enough to dissolve a 2px
+box on a sheet drawn large also dissolves a head on a sheet drawn small —
+and a dissolved head floats free of the shoulders exactly like a box edge
+floats free of everything, so it is condemned and the fighter imports
+decapitated. Antoine's sheet is drawn about half as thick as the other
+two, and that is precisely what happened to him. The threshold is measured
+per sheet now: the radius at which half the artwork has eroded away, which
+tracks limb thickness and ignores everything else.
 
 *The background is not one color.* The field itself is read as the most
 common color in the sheet rather than off the corners, because a grid
@@ -214,10 +361,10 @@ node tools/build-single.mjs --embed   # + every PNG in assets/ inlined
 
 produces `dist/dojo-duel.html` — the whole game in one file, handy for
 sharing or uploading (e.g. itch.io). `--embed` is the version that runs
-anywhere, straight off disk, with the real art; it also weighs as much as
-that art does (~14 MB today, a third of it panoramas nobody will ever see
-at more than 832×180). Shrink the PNGs in `assets/` first if the file has
-to travel.
+anywhere, straight off disk, with the real art; it inlines every PNG in
+`assets/`, so it weighs as much as that art does (~17 MB today, more than
+half of it panoramas nobody will ever see at more than 832×180). Shrink
+the PNGs in `assets/` first if the file has to travel.
 
 ## Tests
 
@@ -232,6 +379,37 @@ import, which a page opened off disk cannot do:
 npm install playwright                            # once, anywhere
 node tools/smoke-test.js                          # straight off disk
 node tools/smoke-test.js http://localhost:8000/   # served, with the real art
+```
+
+`tools/moves-test.js` is the second suite. It drives the fighters' state
+machine with scripted pads instead of keystrokes, so it can assert the
+rules directly — that a sweep knocks down, that a standing block loses to
+a low and a crouching one does not, that a downed fighter cannot be hit,
+that a dash outruns a walk, and that every frame an animation asks for
+actually exists.
+
+It also holds down the numbers the fight is balanced on, because those are
+the ones that break quietly. A jump has to clear a fireball **and not for
+its whole length**; an uppercut has to reach as far as a flying kick and
+beat a jump-in clean when it is timed right and lose when it is late; a
+lob has to pass over a crouch and a flat fireball must never; the three
+CPUs have to hold visibly different distances. Every one of those was
+wrong at some point and none of it showed up as a bug report — it showed
+up as "jumping feels pointless", which is a much harder thing to find.
+
+```bash
+node tools/moves-test.js
+```
+
+`tools/sheet-test.js` is the third. It covers the art import: that every
+pose a `SHEET_ORDER` lists is actually found, that drawn frame lines and
+drawn ground rules are recognised, that a light background works as well as
+a dark one, and that keying still works when the background color also
+appears inside the drawing — a patch of it walled in by artwork stays, one
+open to the outside goes. It needs a served copy.
+
+```bash
+node tools/sheet-test.js http://localhost:8000/
 ```
 
 ## Roadmap

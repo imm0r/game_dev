@@ -54,12 +54,39 @@ function check(name, cond, extra) {
   await page.keyboard.press('ArrowRight'); // back to stage 1
   await page.waitForTimeout(200);
 
-  // start two-player mode (deterministic, no AI)
+  // two-player mode (deterministic, no AI) opens the character select
+  const roster = await page.evaluate(() => window.__DOJO.DD.C.ROSTER.map((r) => r.char));
   await page.keyboard.press('Digit2');
+  await page.waitForTimeout(300);
+  const selState = await page.evaluate(() => window.__DOJO.game.state);
+  check('starting a match opens the character select', selState === 'select',
+    'state=' + selState);
+  await page.screenshot({ path: SHOTS + '/select.png' });
+
+  // each side moves along the row with its own left/right
+  await page.keyboard.press('KeyD');
+  await page.waitForTimeout(150);
+  const p1Pick = await page.evaluate(() => window.__DOJO.game.pick[0]);
+  check('P1 moves along the roster', p1Pick === 1 % roster.length, 'pick=' + p1Pick);
+  await page.keyboard.press('KeyA');
+  await page.waitForTimeout(150);
+  const p1Back = await page.evaluate(() => window.__DOJO.game.pick[0]);
+  check('and back again', p1Back === 0, 'pick=' + p1Back);
+
+  // locking in: only when both sides have chosen does the match start
+  await page.keyboard.press('KeyF');
+  await page.waitForTimeout(150);
+  const half = await page.evaluate(() => ({
+    state: window.__DOJO.game.state, locked: window.__DOJO.game.locked.slice(),
+  }));
+  check('one side locked in does not start the match',
+    half.state === 'select' && half.locked[0] && !half.locked[1],
+    JSON.stringify(half));
+  await page.keyboard.press('KeyK');
   await page.waitForTimeout(400);
   await page.screenshot({ path: SHOTS + '/round-intro.png' });
   await page.waitForFunction(() => window.__DOJO.game.state === 'fight', null, { timeout: 6000 });
-  check('round intro -> fight phase', true);
+  check('both locked in -> round intro -> fight phase', true);
   await page.screenshot({ path: SHOTS + '/fight-start.png' });
 
   // P1 walks towards P2

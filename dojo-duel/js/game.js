@@ -12,11 +12,14 @@ window.DD = window.DD || {};
       this.state = 'title';
       this.stageIndex = 0;
       this.menuMode = 0;          // 0 = vs CPU, 1 = two players
+      this.pick = [C().P1_PICK, C().P2_PICK];    // entries in C().ROSTER
+      this.locked = [false, false];              // ...confirmed on select
       this.fighters = [];
       this.projectiles = [];
       this.particles = [];
       this.hitstop = 0;
       this.shake = 0;
+      this.slowmo = 0;
       this.paused = false;
       this.round = 1;
       this.timeFrames = C().ROUND_TIME * 60;
@@ -26,6 +29,7 @@ window.DD = window.DD || {};
       this.seqLabel = '';
       DD.sprites.buildAll();
       DD.spritesheet.load();   // hand-made sheets override the generated art
+      DD.portraits.load();     // select-screen art, if any
       DD.stage.init();
       this.cam = 0;
       this.worldW = DD.stage.worldW(this.stageIndex);
@@ -44,17 +48,24 @@ window.DD = window.DD || {};
       this.cam += (target - this.cam) * 0.12;
     }
 
+    // who each side picked, as the roster entry itself
+    fighterPick(side) {
+      const r = C().ROSTER;
+      return r[((this.pick[side] % r.length) + r.length) % r.length];
+    }
+
     // title screen only – real fighters are created on match start
     spawnTitleFighters() {
-      this.fighters = [
-        new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null),
-        new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null),
-      ];
+      this.fighters = [0, 1].map((side) => {
+        const p = this.fighterPick(side);
+        return new DD.Fighter(side, p.char, p.skin, p.name, null);
+      });
     }
 
     startMatch(mode) {
-      const p1 = new DD.Fighter(0, C().P1_CHAR, C().P1_SKIN, C().P1_NAME, null);
-      const p2 = new DD.Fighter(1, C().P2_CHAR, C().P2_SKIN, C().P2_NAME, null);
+      const a = this.fighterPick(0), b = this.fighterPick(1);
+      const p1 = new DD.Fighter(0, a.char, a.skin, a.name, null);
+      const p2 = new DD.Fighter(1, b.char, b.skin, b.name, null);
       p1.controller = new HumanController(Input.P1_KEYS);
       p2.controller = mode === 1
         ? new HumanController(Input.P2_KEYS)
@@ -69,9 +80,10 @@ window.DD = window.DD || {};
       this.refreshWorld();
       const cx = this.worldW / 2;
       const [p1, p2] = this.fighters;
-      const w1 = p1.wins, w2 = p2.wins;
-      p1.reset(cx - 60, 1); p1.wins = w1;
-      p2.reset(cx + 60, -1); p2.wins = w2;
+      // wins and meter carry across rounds; everything else starts fresh
+      const w1 = p1.wins, w2 = p2.wins, m1 = p1.meter, m2 = p2.meter;
+      p1.reset(cx - 60, 1); p1.wins = w1; p1.meter = m1;
+      p2.reset(cx + 60, -1); p2.wins = w2; p2.meter = m2;
       this.cam = Math.max(0, Math.min(this.worldW - DD.C.VIEW_W, cx - DD.C.VIEW_W / 2));
       p1.state = 'intro'; p2.state = 'intro';
       this.projectiles = [];
@@ -79,6 +91,8 @@ window.DD = window.DD || {};
       this.timeFrames = C().ROUND_TIME * 60;
       this.hitstop = 0;
       this.shake = 0;
+      this.slowmo = 0;
+      DD.fx.reset();
       this.pendingWinner = null;
       this.state = 'intro';
       this.seqT = 0;
@@ -90,11 +104,15 @@ window.DD = window.DD || {};
     }
 
     spawnFireball(f) {
+      const spec = DD.PROJECTILES[f.char] || DD.PROJECTILES.klaus;
       this.projectiles.push({
         owner: f,
         x: f.x + f.facing * 28,
         y: f.y - 42,
-        vx: f.facing * C().FIREBALL_SPEED,
+        vx: f.facing * spec.vx,
+        vy: spec.vy,
+        gravity: spec.gravity,
+        ground: spec.ground,   // goes off where it lands instead of flying on
         t: 0,
         dead: false,
       });
@@ -102,19 +120,8 @@ window.DD = window.DD || {};
       DD.audio.play('fireball');
     }
 
-    spawnSparks(x, y, kind) {
-      const cols = kind === 'block'
-        ? ['#88c8f8', '#f8f8f8', '#4890d8']
-        : ['#f8f8f8', '#f8d020', '#f88020'];
-      for (let i = 0; i < 9; i++) {
-        this.particles.push({
-          x, y,
-          vx: (Math.random() - 0.5) * 4,
-          vy: (Math.random() - 0.7) * 3,
-          life: 10 + Math.random() * 8,
-          col: cols[i % cols.length],
-        });
-      }
+    spawnSparks(x, y, kind, power) {
+      DD.fx.burst(x, y, kind, power);
     }
 
     overlap(a, b) {
@@ -124,9 +131,19 @@ window.DD = window.DD || {};
     update() {
       this.t++;
       if (Input.wasPressed('KeyM')) DD.audio.toggleMute();
+      DD.fx.update();
+
+      // A K.O. runs at a third speed for a moment, so the hit that ended
+      // the round is something you get to watch rather than something you
+      // find out about afterwards.
+      if (this.slowmo > 0) {
+        this.slowmo--;
+        if (this.slowmo % 3) { Input.endFrame(); return; }
+      }
 
       switch (this.state) {
         case 'title': this.updateTitle(); break;
+        case 'select': this.updateSelect(); break;
         case 'intro': this.updateIntro(); break;
         case 'fight': this.updateFight(); break;
         case 'roundend': this.updateRoundEnd(); break;
@@ -159,9 +176,74 @@ window.DD = window.DD || {};
         this.stageIndex = (this.stageIndex + 1) % DD.stage.count;
         DD.audio.play('select');
       }
-      if (Input.wasPressed('Digit1')) { this.startMatch(0); return; }
-      if (Input.wasPressed('Digit2')) { this.startMatch(1); return; }
-      if (Input.wasPressed('Enter')) this.startMatch(this.menuMode);
+      if (Input.wasPressed('Digit1')) { this.openSelect(0); return; }
+      if (Input.wasPressed('Digit2')) { this.openSelect(1); return; }
+      if (Input.wasPressed('Enter')) this.openSelect(this.menuMode);
+    }
+
+    openSelect(mode) {
+      this.menuMode = mode;
+      this.locked = [false, false];
+      this.state = 'select';
+      DD.audio.play('select');
+    }
+
+    // Both sides choose at once. Each moves along the row with their own
+    // left/right and locks in with their own punch key; against the CPU
+    // only player one chooses, and the machine takes somebody else.
+    updateSelect() {
+      this.refreshWorld();
+      this.cam = ((1 - Math.cos(this.t / 300)) / 2) * (this.worldW - DD.C.VIEW_W);
+      const n = C().ROSTER.length;
+
+      const move = (side, keys) => {
+        if (this.locked[side]) return;
+        const step = (Input.wasPressed(keys.left) ? -1 : 0)
+                   + (Input.wasPressed(keys.right) ? 1 : 0);
+        if (!step) return;
+        this.pick[side] = (this.pick[side] + step + n) % n;
+        this.spawnTitleFighters();
+        DD.audio.play('select');
+      };
+      move(0, Input.P1_KEYS);
+      if (this.menuMode === 1) move(1, Input.P2_KEYS);
+
+      // the stage moves to up/down here, so left/right belongs to the row
+      if (Input.wasPressed(Input.P1_KEYS.up) || Input.wasPressed(Input.P2_KEYS.up)) {
+        this.stageIndex = (this.stageIndex + DD.stage.count - 1) % DD.stage.count;
+        DD.audio.play('select');
+      }
+      if (Input.wasPressed(Input.P1_KEYS.down) || Input.wasPressed(Input.P2_KEYS.down)) {
+        this.stageIndex = (this.stageIndex + 1) % DD.stage.count;
+        DD.audio.play('select');
+      }
+
+      if (Input.wasPressed('Escape')) {
+        this.state = 'title';
+        this.spawnTitleFighters();
+        DD.audio.play('select');
+        return;
+      }
+
+      const lock = (side, key) => {
+        if (this.locked[side] || !Input.wasPressed(key)) return;
+        this.locked[side] = true;
+        DD.audio.play('round');
+      };
+      lock(0, Input.P1_KEYS.punch);
+      lock(0, 'Enter');                        // and the menu key, either way
+      if (this.menuMode === 1) lock(1, Input.P2_KEYS.punch);
+      else if (this.locked[0] && !this.locked[1]) {
+        // The machine picks somebody who is not you, so a mirror match is
+        // something you have to ask for rather than something you get.
+        const others = [];
+        for (let i = 0; i < n; i++) if (i !== this.pick[0]) others.push(i);
+        this.pick[1] = others.length
+          ? others[(Math.random() * others.length) | 0] : this.pick[0];
+        this.locked[1] = true;
+        this.spawnTitleFighters();
+      }
+      if (this.locked[0] && this.locked[1]) this.startMatch(this.menuMode);
     }
 
     updateIntro() {
@@ -178,11 +260,20 @@ window.DD = window.DD || {};
       if (Input.wasPressed('KeyP')) this.paused = !this.paused;
       if (this.paused) return;
 
-      if (this.hitstop > 0) { this.hitstop--; return; }
-
       const [p1, p2] = this.fighters;
       const pad1 = p1.controller.read();
       const pad2 = p2.controller.read();
+
+      // Hitstop freezes the fight, but not the stick. Buffering a cancel
+      // during the freeze is exactly when a player does it, so the motion
+      // buffers keep reading even though nobody moves.
+      if (this.hitstop > 0) {
+        this.hitstop--;
+        p1.motion.feed(pad1, p1.facing);
+        p2.motion.feed(pad2, p2.facing);
+        return;
+      }
+
       p1.update(this, pad1, p2);
       p2.update(this, pad2, p1);
 
@@ -203,6 +294,7 @@ window.DD = window.DD || {};
       if (!a.grounded || !b.grounded) return;
       if (a.state === 'kolie' || b.state === 'kolie') return;
       if (a.state === 'kofall' || b.state === 'kofall') return;
+      if (a.state === 'down' || b.state === 'down') return;   // walk over them
       const d = b.x - a.x;
       const dist = Math.abs(d);
       if (dist >= C().PUSH_DIST) return;
@@ -218,21 +310,63 @@ window.DD = window.DD || {};
       if (!hb) return;
       const dbox = def.hurtbox();
       if (!this.overlap(hb, dbox)) return;
+      const a = hb.data;
       att.hasHit = true;
+      att.hitCount++;
+      att.hitCd = a.hitGap || 0;
+      // A multi-hit move that knocks down on every hit would launch them
+      // out of its own remaining hits.
+      const last = att.hitCount >= (a.hits || 1);
+      const data = a.knockdown === 'last' && !last
+        ? Object.assign({}, a, { knockdown: false })
+        : a;
+
       const dir = def.x >= att.x ? 1 : -1;
       const cx = (Math.max(hb.x0, dbox.x0) + Math.min(hb.x1, dbox.x1)) / 2;
       const cy = (Math.max(hb.y0, dbox.y0) + Math.min(hb.y1, dbox.y1)) / 2;
-      const result = def.receiveHit(this, hb.data, dir);
-      this.afterHit(att, def, result, cx, cy);
+      const wasStunned = def.state === 'hitstun';
+      const result = def.receiveHit(this, data, dir);
+
+      if (result === 'throw') {
+        // over the shoulder: they land behind you, facing back at you
+        const m = C().WALL_MARGIN;
+        def.x = Math.max(m, Math.min(this.worldW - m, att.x - att.facing * 24));
+        def.facing = att.facing;
+        att.combo = 1;
+        att.comboT = C().COMBO_SHOW;
+        att.gainMeter(data.dmg * C().METER_DEALT);
+        def.gainMeter(data.dmg * C().METER_TAKEN);
+      } else if (result === 'tech') {
+        // both shoved apart, nobody hurt
+        att.kbVx = -att.facing * 1.6;
+        def.kbVx = att.facing * 1.6;
+        att.state = 'hitstun'; att.timer = 10; att.stunMax = 10;
+        def.state = 'hitstun'; def.timer = 10; def.stunMax = 10;
+      } else if (result === 'hit' || result === 'ko') {
+        att.combo = wasStunned ? att.combo + 1 : 1;
+        att.comboT = C().COMBO_SHOW;
+        att.gainMeter(data.dmg * C().METER_DEALT);
+        def.gainMeter(data.dmg * C().METER_TAKEN);
+      } else if (result === 'block') {
+        def.gainMeter(data.chip * C().METER_BLOCK);
+      }
+      this.afterHit(att, def, result, cx, cy, data);
     }
 
-    afterHit(att, def, result, cx, cy) {
+    afterHit(att, def, result, cx, cy, data) {
       if (result === 'none') return;
-      this.spawnSparks(cx, cy, result === 'block' ? 'block' : 'hit');
+      // a jab and a super should not throw the same spark
+      const power = 0.6 + ((data && data.dmg) || 6) / 9;
+      const kind = result === 'block' || result === 'tech' ? 'block'
+        : (att && att.atkName === 'super' ? 'super' : 'hit');
+      this.spawnSparks(cx, cy, kind, power);
       this.hitstop = C().HITSTOP;
+      this.shake = Math.max(this.shake, Math.round(power * 3));
       if (result === 'ko') {
         this.hitstop = C().HITSTOP + 8;
         this.shake = 20;
+        this.slowmo = C().KO_SLOWMO;    // the moment gets to land
+        DD.fx.flash = 6;
         this.pendingWinner = att;
         this.seqLabel = 'K.O.!';
         this.state = 'roundend';
@@ -247,7 +381,15 @@ window.DD = window.DD || {};
         if (p.dead) continue;
         p.t++;
         p.x += p.vx;
+        if (p.gravity) { p.vy += p.gravity; p.y += p.vy; }
         if (p.x < -30 || p.x > this.worldW + 30) { p.dead = true; continue; }
+        // a lobbed grenade goes off where it lands
+        if (p.ground && p.y >= C().GROUND_Y - 6) {
+          p.dead = true;
+          this.spawnSparks(p.x, C().GROUND_Y - 6, 'hit');
+          DD.audio.play('hit');
+          continue;
+        }
         const box = { x0: p.x - F.w / 2, y0: p.y - F.h / 2, x1: p.x + F.w / 2, y1: p.y + F.h / 2 };
         // projectile vs projectile: both dissolve
         for (const q of this.projectiles) {
@@ -265,7 +407,7 @@ window.DD = window.DD || {};
           p.dead = true;
           const dir = def.x >= p.owner.x ? 1 : -1;
           const result = def.receiveHit(this, F, dir);
-          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y);
+          this.afterHit(p.owner, def, result, p.x + p.vx * 2, p.y, F);
         }
       }
       this.projectiles = this.projectiles.filter((p) => !p.dead);
@@ -334,6 +476,13 @@ window.DD = window.DD || {};
         ctx.restore();
         return;
       }
+      if (this.state === 'select') {
+        DD.ui.drawSelect(ctx, this, this.t);
+        ctx.restore();
+        return;
+      }
+
+      DD.fx.drawTint(ctx, DD.C.VIEW_W, DD.C.VIEW_H);
 
       // world layer: everything here scrolls with the camera
       ctx.save();
@@ -349,18 +498,14 @@ window.DD = window.DD || {};
         DD.sprites.draw(ctx, p.owner.char, p.owner.skin, frame, p.vx >= 0 ? 1 : -1, p.x, p.y + 8, 0);
       }
 
-      for (const s of this.particles) {
-        ctx.globalAlpha = Math.min(1, s.life / 8);
-        ctx.fillStyle = s.col;
-        ctx.fillRect(Math.round(s.x), Math.round(s.y), 2, 2);
-      }
-      ctx.globalAlpha = 1;
+      DD.fx.drawWorld(ctx);
 
       ctx.restore();
 
       // foreground silhouettes (scroll faster than the fighters)
       DD.stage.drawFg(ctx, this.stageIndex, this.t, cam);
 
+      DD.fx.drawScreen(ctx, DD.C.VIEW_W, DD.C.VIEW_H);
       DD.ui.drawHUD(ctx, this);
 
       if (this.state === 'intro') {

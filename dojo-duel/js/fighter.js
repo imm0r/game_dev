@@ -29,12 +29,34 @@ window.DD = window.DD || {};
       this.atkName = null;
       this.atkT = 0;
       this.hasHit = false;
+      this.hitCount = 0;          // hits this attack has landed
+      this.hitCd = 0;             // frames until it may hit again
+      this.meter = 0;             // super meter, 0..METER_MAX
+      this.combo = 0;             // hits in the current combo
+      this.comboT = 0;            // frames the counter stays on screen
       this.airAttackUsed = false;
       this.fireCd = 0;
       this.kbVx = 0;              // knockback
+      this.crouching = false;     // this attack came out of a crouch
+      this.techT = 0;             // frames left in which a grab would break
+      this.dashT = 0;             // frames left in a dash
+      this.dashDir = 0;
+      this.downT = 0;             // frames left lying / getting up after a sweep
+      this.stunMax = 0;           // the stun this hit started with
       this.pad = DD.input.emptyPad();
       this.animT = 0;             // frames in the current state (for sequences)
       this.prevState = 'idle';
+      this.motion = new DD.input.MotionBuffer();
+      this.trail = [];            // ghost frames left by a dash or a rush
+    }
+
+    // Anything that covers ground fast enough to smear leaves a trail.
+    get streaking() {
+      if (this.state === 'dash') return true;
+      if (this.state !== 'attack') return false;
+      const a = A()[this.atkName];
+      return !!a.rush && this.atkT >= a.startup
+        && this.atkT < a.startup + a.active;
     }
 
     get grounded() { return this.y >= C().GROUND_Y; }
@@ -49,14 +71,82 @@ window.DD = window.DD || {};
       this.atkName = name;
       this.atkT = 0;
       this.hasHit = false;
+      this.hitCount = 0;
+      this.hitCd = 0;
+      this.crouching = !!A()[name].crouch;
+      if (name === 'super') this.meter = 0;
       DD.audio.play(A()[name].sfx);
+    }
+
+    gainMeter(amount) {
+      this.meter = Math.min(C().METER_MAX, this.meter + amount);
+    }
+
+    // A grab reaches about an arm's length, needs you walking into them,
+    // and will not pick someone out of hitstun - that would be a loop.
+    canThrow(opp) {
+      if (!opp || !opp.grounded || !this.grounded) return false;
+      if (Math.abs(opp.x - this.x) > C().THROW_RANGE) return false;
+      const fwd = this.facing > 0 ? this.pad.right : this.pad.left;
+      if (!fwd) return false;
+      return opp.controllable || opp.state === 'block';
+    }
+
+    // Invulnerable during a super's start-up: that is what the meter buys.
+    get invulnerable() {
+      if (this.state !== 'attack') return false;
+      const a = A()[this.atkName];
+      return !!a.invuln && this.atkT < a.invuln;
+    }
+
+    startDash(dir) {
+      this.state = 'dash';
+      this.dashT = C().DASH_FRAMES + C().DASH_RECOVER;
+      this.dashDir = dir;
+      DD.audio.play('jump');
+    }
+
+    // Anything crouching stays low, hitbox and hurtbox alike.
+    get low() {
+      if (this.state === 'crouch') return true;
+      return this.crouching && (this.state === 'attack' || this.state === 'getup'
+        || this.state === 'block');
+    }
+
+    // The specials, in the order they get to claim a button press: the
+    // harder motion first, so a dragon punch is never read as a fireball.
+    trySpecial(game, pad) {
+      const w = C().MOTION_WINDOW, M = DD.MOTIONS;
+      if (pad.special && this.meter >= C().METER_MAX && this.motion.has(M.qcf, w)) {
+        this.motion.clear();
+        this.startAttack('super');
+        DD.fx.flash = 8;                       // the screen announces it
+        DD.fx.tint = A().super.invuln + 6;     // and everything else dims
+        return true;
+      }
+      if (pad.punch && this.motion.has(M.dp, w)) {
+        this.motion.clear(); this.startAttack('uppercut'); return true;
+      }
+      if (pad.kick && this.motion.has(M.qcf, w)) {
+        this.motion.clear(); this.startAttack('rush'); return true;
+      }
+      if (pad.punch && this.motion.has(M.qcf, w)
+          && this.fireCd === 0 && !game.hasProjectile(this)) {
+        this.motion.clear(); this.startAttack('special'); return true;
+      }
+      return false;
     }
 
     update(game, pad, opp) {
       this.pad = pad;
+      this.motion.feed(pad, this.facing);
       if (this.state === this.prevState) this.animT++;
       else { this.animT = 0; this.prevState = this.state; }
       if (this.fireCd > 0) this.fireCd--;
+      if (this.comboT > 0 && --this.comboT === 0) this.combo = 0;
+      // pressing punch leaves a short window in which a grab breaks
+      if (pad.punch) this.techT = C().THROW_TECH;
+      else if (this.techT > 0) this.techT--;
       // display HP slowly trails the real value
       if (this.showHp > this.hp) this.showHp = Math.max(this.hp, this.showHp - 0.6);
 
@@ -79,6 +169,14 @@ window.DD = window.DD || {};
             this.state = 'jump';
             this.airAttackUsed = false;
             DD.audio.play('jump');
+          } else if (this.trySpecial(game, pad)) {
+            /* a motion claimed the button */
+          } else if (pad.punch && this.canThrow(opp)) {
+            this.startAttack('throw');        // walk into them and punch
+          } else if (pad.down && pad.punch) {
+            this.startAttack('cpunch');       // down+attack fires at once,
+          } else if (pad.down && pad.kick) {  // no need to already be crouching
+            this.startAttack('sweep');
           } else if (pad.down) {
             this.state = 'crouch';
           } else if (pad.punch) {
@@ -87,6 +185,8 @@ window.DD = window.DD || {};
             this.startAttack('kick');
           } else if (pad.special && this.fireCd === 0 && !game.hasProjectile(this)) {
             this.startAttack('special');
+          } else if (pad.dashL || pad.dashR) {
+            this.startDash(pad.dashR ? 1 : -1);
           } else {
             const dir = (pad.right ? 1 : 0) - (pad.left ? 1 : 0);
             if (dir !== 0) {
@@ -99,26 +199,56 @@ window.DD = window.DD || {};
         }
 
         case 'crouch':
-          if (!pad.down) this.state = 'idle';
-          else if (pad.punch) this.startAttack('punch');
-          else if (pad.kick) this.startAttack('kick');
+          if (this.trySpecial(game, pad)) break;   // a motion can end crouched
+          if (pad.punch) this.startAttack('cpunch');
+          else if (pad.kick) this.startAttack('sweep');
+          else if (!pad.down) this.state = 'idle';
+          break;
+
+        case 'dash': {
+          // The burst is over before the recovery is: you travel, then you
+          // stand there for a moment, which is what makes it a commitment.
+          if (this.dashT > C().DASH_RECOVER) this.x += this.dashDir * C().DASH_SPEED;
+          if (--this.dashT <= 0) this.state = 'idle';
+          break;
+        }
+
+        case 'down': {
+          this.x += this.kbVx;
+          this.kbVx *= 0.88;
+          if (!this.grounded) {
+            this.applyGravity();
+            if (this.grounded) { this.y = C().GROUND_Y; this.downT = C().KNOCKDOWN_LIE; }
+          } else if (--this.downT <= 0) {
+            this.state = 'getup';
+            this.downT = C().KNOCKDOWN_GETUP;
+            this.crouching = true;
+          }
+          break;
+        }
+
+        case 'getup':
+          if (--this.downT <= 0) { this.state = 'idle'; this.crouching = false; }
           break;
 
         case 'jump': {
           this.applyGravity();
-          if (pad.kick && !this.airAttackUsed) {
+          // One attack per jump, either one. The kick reaches further, the
+          // punch comes out sooner.
+          const air = pad.kick ? 'airkick' : pad.punch ? 'airpunch' : null;
+          if (air && !this.airAttackUsed) {
             this.airAttackUsed = true;
-            this.state = 'airkick';
-            this.atkName = 'airkick';
+            this.state = 'airatk';
+            this.atkName = air;
             this.atkT = 0;
             this.hasHit = false;
-            DD.audio.play('kick');
+            DD.audio.play(A()[air].sfx);
           }
           if (this.grounded) this.land();
           break;
         }
 
-        case 'airkick':
+        case 'airatk':
           this.applyGravity();
           this.atkT++;
           if (this.grounded) this.land();
@@ -126,9 +256,23 @@ window.DD = window.DD || {};
 
         case 'attack': {
           this.atkT++;
+          if (this.hitCd > 0) this.hitCd--;
           const a = A()[this.atkName];
           if (this.atkName === 'special' && this.atkT === a.startup) {
             game.spawnFireball(this);
+          }
+          // Cancel a connected normal into a special: that is the whole
+          // combo engine. Only once it has hit, so a whiffed poke stays
+          // as punishable as it looks.
+          if (a.cancel && this.hasHit && this.atkT >= a.startup
+              && this.trySpecial(game, pad)) break;
+          // A rushing special travels while it is active. A single-hit one
+          // stops dead on contact, or it would drag them across the arena;
+          // a multi-hit one has to keep going, or it never lands its
+          // second hit.
+          if (a.rush && (a.hits > 1 || !this.hasHit)
+              && this.atkT >= a.startup && this.atkT < a.startup + a.active) {
+            this.x += this.facing * a.rush;
           }
           if (this.atkT >= a.startup + a.active + a.recovery) {
             this.state = 'idle';
@@ -169,6 +313,14 @@ window.DD = window.DD || {};
       // arena bounds (world width comes from the current stage)
       const m = C().WALL_MARGIN;
       this.x = Math.max(m, Math.min(game.worldW - m, this.x));
+
+      if (this.streaking) {
+        const { f } = this.resolveFrame();
+        this.trail.unshift({ x: this.x, y: this.y, facing: this.facing, f });
+        this.trail.length = Math.min(this.trail.length, C().TRAIL);
+      } else if (this.trail.length) {
+        this.trail.pop();
+      }
     }
 
     applyGravity() {
@@ -186,14 +338,17 @@ window.DD = window.DD || {};
       this.vx = 0;
       this.state = 'idle';
       this.atkName = null;
+      DD.fx.puff(this.x, C().GROUND_Y, 6);
     }
 
     // body box (where you can be hit), world coordinates
     hurtbox() {
       if (this.state === 'kolie' || this.state === 'kofall') return null;
+      if (this.state === 'down') return null;          // floored = untouchable
+      if (this.invulnerable) return null;              // super start-up
       let top = 71, h = 71;
-      if (this.state === 'crouch') { top = 47; h = 47; }
-      if (this.state === 'jump' || this.state === 'airkick') { top = 40; h = 40; }
+      if (this.low) { top = 47; h = 47; }
+      if (this.state === 'jump' || this.state === 'airatk') { top = 40; h = 40; }
       return { x0: this.x - 11, y0: this.y - top, x1: this.x + 11, y1: this.y - top + h };
     }
 
@@ -203,11 +358,12 @@ window.DD = window.DD || {};
       if (this.state === 'attack' && this.atkName !== 'special') {
         a = A()[this.atkName];
         t = this.atkT;
-      } else if (this.state === 'airkick') {
-        a = A().airkick;
+      } else if (this.state === 'airatk') {
+        a = A()[this.atkName];
         t = this.atkT;
       }
-      if (!a || !a.box || this.hasHit) return null;
+      if (!a || !a.box) return null;
+      if (this.hitCount >= (a.hits || 1) || this.hitCd > 0) return null;
       if (t < a.startup || t >= a.startup + a.active) return null;
       const b = a.box;
       const xA = this.x + this.facing * b.x;
@@ -222,11 +378,39 @@ window.DD = window.DD || {};
     // dir: direction the defender gets pushed (+1 = to the right)
     receiveHit(game, data, dir) {
       if (this.state === 'kolie' || this.state === 'kofall') return 'none';
+      if (this.state === 'down' || this.state === 'getup') return 'none';
+
+      // A grab ignores guard entirely - that is the point of it - but
+      // whoever pressed punch a moment ago shrugs it off.
+      if (data.grab) {
+        if (this.techT > 0) { DD.audio.play('block'); return 'tech'; }
+        this.hp -= data.dmg;
+        if (this.hp <= 0) {
+          this.hp = 0;
+          this.state = 'kofall';
+          this.kbVx = dir * 1.8;
+          this.vy = -2.6;
+          this.y -= 0.01;
+          return 'ko';
+        }
+        this.state = 'down';
+        this.crouching = false;
+        this.kbVx = dir * data.kb;
+        this.vy = -2.4;
+        this.y -= 0.01;
+        this.downT = C().KNOCKDOWN_LIE;
+        DD.audio.play('hit');
+        return 'throw';
+      }
 
       const away = dir > 0 ? this.pad.right : this.pad.left;
-      const canBlock = this.grounded && (this.controllable);
+      const canBlock = this.grounded && this.controllable
+        // A low has to be blocked low. Standing there holding back is
+        // exactly what a sweep is for.
+        && (!data.low || this.state === 'crouch');
       if (canBlock && away) {
         this.hp = Math.max(1, this.hp - data.chip); // chip damage cannot K.O.
+        this.crouching = this.state === 'crouch';   // block low, stay low
         this.state = 'block';
         this.timer = data.blockstun;
         this.kbVx = dir * data.kb * 0.7;
@@ -243,8 +427,19 @@ window.DD = window.DD || {};
         this.y -= 0.01;
         return 'ko';
       }
+      if (data.knockdown) {
+        this.state = 'down';
+        this.crouching = false;
+        this.kbVx = dir * data.kb;
+        this.vy = -2.0;
+        this.y -= 0.01;
+        this.downT = C().KNOCKDOWN_LIE;
+        DD.audio.play('hit');
+        return 'hit';
+      }
       this.state = 'hitstun';
       this.timer = data.stun;
+      this.stunMax = data.stun;
       this.kbVx = dir * data.kb;
       DD.audio.play('hit');
       return 'hit';
@@ -253,6 +448,29 @@ window.DD = window.DD || {};
     // resolve frame + y offset from the character's animation tables
     resolveFrame() {
       const anims = DD.sprites.CHARS[this.char].anims;
+
+      // The drawings spread over the move's own frame data: whatever comes
+      // before `hit` plays through the wind-up, `hit` itself is held for
+      // the whole hit window, and the rest plays out the recovery. Three
+      // drawings with hit at 1 - the shape every move had before any of
+      // them got a strip - lands exactly where it used to.
+      const atkFrame = (an) => {
+        const a = DD.ATTACKS[this.atkName];
+        const fr = an.atk;
+        const hit = Math.min(fr.length - 1, an.hit === undefined ? 1 : an.hit);
+        const span = (from, to, t, dur) => {
+          const lo = Math.max(0, from), hi = Math.min(fr.length - 1, to);
+          if (hi <= lo) return fr[Math.min(lo, fr.length - 1)];
+          const n = hi - lo + 1;
+          return fr[lo + Math.min(n - 1, Math.floor((t / Math.max(1, dur)) * n))];
+        };
+        return this.atkT < a.startup
+          ? span(0, hit - 1, this.atkT, a.startup)
+          : this.atkT < a.startup + a.active
+            ? fr[hit]
+            : span(hit + 1, fr.length - 1,
+              this.atkT - a.startup - a.active, a.recovery);
+      };
 
       const seqPick = (anim, reverse) => {
         const total = anim.seq.reduce((s, e) => s + e[1], 0);
@@ -270,21 +488,27 @@ window.DD = window.DD || {};
         case 'walkF': return seqPick(anims.walk);
         case 'walkB': return seqPick(anims.walk, true);
         case 'crouch': return { f: anims.crouch, yo: 0 };
+        case 'dash': return { f: anims.dash, yo: 0 };
+        case 'getup': return { f: anims.getup, yo: 0 };
+        case 'down': return { f: anims.down, yo: 0 };
         case 'jump': {
           const fr = anims.jump.vel;
           const f = this.vy < -0.8 ? fr[0] : this.vy < 0.8 ? fr[1] : fr[2];
           return { f, yo: 0 };
         }
-        case 'attack': {
-          const a = DD.ATTACKS[this.atkName];
-          const fr = anims[this.atkName].atk;
-          const f = this.atkT < a.startup ? fr[0]
-            : this.atkT < a.startup + a.active ? fr[1] : fr[2];
-          return { f, yo: 0 };
+        case 'attack': return { f: atkFrame(anims[this.atkName]), yo: 0 };
+        case 'airatk': return { f: atkFrame(anims[this.atkName]), yo: 0 };
+        case 'block': return { f: this.crouching ? anims.cblock : anims.block, yo: 0 };
+        case 'hitstun': {
+          // Spread over the stun as it runs down, so a hit plays out
+          // instead of holding one drawing until it ends. Different moves
+          // stun for different lengths, so it goes by how much of *this*
+          // one is left.
+          const fr = anims.hurt.hit;
+          const max = this.stunMax || this.timer || 1;
+          const gone = Math.max(0, max - this.timer) / max;
+          return { f: fr[Math.min(fr.length - 1, Math.floor(gone * fr.length))], yo: 0 };
         }
-        case 'airkick': return { f: anims.airkick.atk[1], yo: 0 };
-        case 'block': return { f: anims.block, yo: 0 };
-        case 'hitstun': return { f: anims.hurt.two[this.timer > 8 ? 0 : 1], yo: 0 };
         case 'kofall': return { f: this.vy < 0 ? anims.kofall.vel2[0] : anims.kofall.vel2[1], yo: 0 };
         case 'kolie': return { f: anims.ko, yo: 0 };
         case 'win': return seqPick(anims.win);
@@ -293,12 +517,20 @@ window.DD = window.DD || {};
     }
 
     draw(ctx) {
+      // ghosts first, oldest and faintest at the back
+      for (let i = this.trail.length - 1; i >= 1; i--) {
+        const g = this.trail[i];
+        ctx.globalAlpha = 0.5 * (1 - (i - 1) / C().TRAIL);
+        DD.sprites.draw(ctx, this.char, this.skin, g.f, g.facing, g.x, g.y, 0);
+      }
+      ctx.globalAlpha = 1;
       const { f, yo } = this.resolveFrame();
       DD.sprites.draw(ctx, this.char, this.skin, f, this.facing, this.x, this.y, yo);
     }
 
     drawShadow(ctx) {
       if (this.state === 'kolie') return;
+      if (this.state === 'down' && this.grounded) return;
       const air = Math.max(0, C().GROUND_Y - this.y);
       const w = Math.max(10, 30 - air * 0.35);
       ctx.fillStyle = 'rgba(0,0,0,0.35)';

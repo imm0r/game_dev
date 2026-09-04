@@ -14,10 +14,17 @@ window.DD = window.DD || {};
   const STAND_H = 66;         // height of the fighting stance, in game pixels
   const TOL = 46;             // background color tolerance (0-255 per channel)
   const EDGE_BAND = 6;        // how far a soft edge may reach into the pose
-  const THIN = 5;             // anything thinner than this is a drawn line,
-                              // not a limb
+  const THIN_MIN = 3;         // anything thinner than this is a drawn line,
+  const THIN_MAX = 8;         // not a limb - measured per sheet, see thinness()
+  const SHADE_MIN = 0.30;     // how dark a cast shadow of the field may get
+  const SHADE_HUE = 0.995;    // ...and how exactly it must keep its colour
+  const POCKET = 5;           // a wall thinner than twice this does not seal
+                              // a patch of background off from the outside
+  const HOLE_SHARE = 0.15;    // a walled-in patch of the key colour is only
+                              // artwork if it is this much of its figure
   const BRIDGE = 3;           // close gaps this wide when a removed line cut
-                              // a pose in two - wide enough for the line,
+                              // a pose in two - wide enough for a drawn rule
+                              // even where it crosses a figure's shins,
                               // narrow enough to keep two poses apart
 
   // Frames are mapped in reading order. The default follows the pose list
@@ -28,31 +35,176 @@ window.DD = window.DD || {};
     'idle0', 'walk1', 'pun1', 'kick1', 'sp1',
     'jmp1', 'crouch0', 'block0', 'hurt0', 'win0',
   ];
-  // Both roster sheets follow the 20-pose list in assets/README.md. `null`
-  // marks a pose that is drawn but that no move uses yet: the uppercut,
-  // the two crouching attacks and the second special are waiting for the
-  // moves themselves, and the run belongs to a dash the game does not have.
-  // A running stride mixed into a walk cycle reads as a stumble.
+  // The roster sheets, in the order each generator laid them out. See the
+  // pose list in assets/README.md; `null` is a frame no move uses.
+  //
+  // `fireballA` is not a pose at all: Klaus's sheet carries the projectile
+  // itself as its own picture, which is exactly what the game needs and
+  // better than the hand-drawn one it replaces. The other two draw their
+  // effect into the throwing pose, so they keep the drawn projectile.
   const SHEET_ORDER = {
-    // Klaus draws "walking steps" as two frames, so his sheet has 21.
     klaus: [
-      'idle0', 'idle1', 'walk1', 'walk2', null, 'pun1', null,
-      null, 'kick1', null, 'air0', 'sp1', null, null,
-      'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
+      'kick1', 'swp0', 'air0', 'sp1', 'fireballA', 'rush0', 'jmp1',
+      'crouch0', 'cblock0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
     ],
+    // Antoine's throw and the arc it leaves are one drawing in one box, so
+    // unlike Klaus he has no projectile picture of his own and keeps the
+    // drawn grenade.
     antoine: [
-      'idle0', 'idle1', 'walk1', null, 'pun1', null, null,
-      'kick1', null, 'air0', 'sp1', null, null,
-      'jmp1', 'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'upp0', 'cpun0',
+      'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'jmp1',
+      'crouch0', 'block0', 'hurt0', 'kof0', 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
     ],
+    // Maxim's molotov is thrown from pose 13 and the bottle is drawn with
+    // it, so that pose carries its own projectile. His slot 18 is dropped:
+    // the generator drew two figures in it, and a pose the game applies to
+    // one fighter cannot contain his opponent.
+    maxim: [
+      'idle0', 'idle1', 'walk1', 'run0', 'pun1', 'pun2', 'upp0',
+      'cpun0', 'kick1', 'swp0', 'air0', 'rush0', 'sp1', 'jmp1',
+      'crouch0', 'block0', 'hurt0', null, 'win0', 'ko0',
+      'grab0', 'lift0', 'slam0',
+    ],
+  };
+  // A sheet is scaled by one factor measured from the fighting stance, so
+  // every sheet needs a stance in it somewhere. A sheet of movements has
+  // one at the front purely to be measured against: `@anchor` says scale
+  // by this figure and do not install it, which keeps a strip from
+  // quietly replacing the main sheet's idle with a stance drawn in a
+  // different generation. A sheet that means its stance to *be* the idle
+  // just lists it as `idle0`.
+  const ANCHOR = '@anchor';
+
+  // Extra sheets that carry movement, `<fighter>-<move>.png`. A pose on
+  // one of these beats the same pose on the main sheet, so a movement is
+  // upgraded without the main sheet being touched, and each brings its own
+  // timing along with its drawings.
+  const STRIPS = {
+    klaus: {
+      // 22 figures: idle 4, walk 4, punch 6, kick 5, hit reaction 3. The
+      // punch came back as two punches back to back rather than one in
+      // five steps, so the arm goes out through the first and comes back
+      // through the tail of the second - the spare guard between them is
+      // dropped.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', null, 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
+        anims: {
+          idle: { seq: [['idle0', 12, 0], ['idle1', 12, 0], ['idle2', 12, 0], ['idle3', 12, 0]] },
+          walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
+        },
+      },
+      // 10 figures, all but the first off the ground: a stance to measure
+      // by, the jump arc, then the two air attacks.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          'apun0', 'apun1', 'apun2',
+          'air0', 'air1', 'air2',
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+    },
+
+    antoine: {
+      // 21 figures, exactly as asked: 4 / 4 / 5 / 5 / 3.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
+        anims: {
+          idle: { seq: [['idle0', 13, 0], ['idle1', 13, 0], ['idle2', 13, 0], ['idle3', 13, 0]] },
+          walk: { seq: [['walk0', 5, 0], ['walk1', 5, 0], ['walk2', 5, 0], ['walk3', 5, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
+        },
+      },
+      // 11: one spare tuck between the punch and the kick.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          'apun0', 'apun1', 'apun2',
+          null,
+          'air0', 'air1', 'air2',
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+    },
+
+    maxim: {
+      // 21 figures, exactly as asked: 4 / 4 / 5 / 5 / 3. The sheet came
+      // back in three rows fenced off by thick black bars - the line pass
+      // keys them out, so they cost nothing.
+      moves: {
+        order: [
+          'idle0', 'idle1', 'idle2', 'idle3',
+          'walk0', 'walk1', 'walk2', 'walk3',
+          'pun0', 'pun1', 'pun2', 'pun3', 'pun4',
+          'kick0', 'kick1', 'kick2', 'kick3', 'kick4',
+          'hurt0', 'hurt1', 'hurt2',
+        ],
+        anims: {
+          idle: { seq: [['idle0', 14, 0], ['idle1', 14, 0], ['idle2', 14, 0], ['idle3', 14, 0]] },
+          walk: { seq: [['walk0', 6, 0], ['walk1', 6, 0], ['walk2', 6, 0], ['walk3', 6, 0]] },
+          punch: { atk: ['pun0', 'pun1', 'pun2', 'pun3', 'pun4'], hit: 2 },
+          kick: { atk: ['kick0', 'kick1', 'kick2', 'kick3', 'kick4'], hit: 2 },
+          hurt: { hit: ['hurt0', 'hurt1', 'hurt2'] },
+        },
+      },
+      // 12: the air punch came back as two swings back to back, so the
+      // first one is the move and the second one is spare.
+      jump: {
+        order: [
+          ANCHOR,
+          'jmp0', 'jmp1', 'jmp2',
+          'apun0', 'apun1', 'apun2',
+          null, null,
+          'air0', 'air1', 'air2',
+        ],
+        anims: {
+          jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
+          airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
+          airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+    },
   };
   // Poses reused from an imported one, so a small sheet still animates.
   // Order matters: an entry may lean on one resolved above it.
   const ALIAS = {
     idle1: 'idle0', walk0: 'walk1', walk2: 'idle1', walk3: 'walk2',
     pun0: 'idle0', pun2: 'pun1', kick0: 'idle0', air0: 'kick1',
-    sp0: 'idle0', jmp0: 'jmp1', jmp2: 'jmp1',
-    kof0: 'hurt0', ko0: 'hurt0',
+    sp0: 'idle0', jmp0: 'jmp1', jmp2: 'jmp1', run0: 'walk1',
+    cpun0: 'crouch0', swp0: 'crouch0', upp0: 'pun1', rush0: 'sp1',
+    cblock0: 'crouch0',
+    grab0: 'pun1', lift0: 'win0', slam0: 'sp1',
+    kof0: 'hurt0', ko0: 'hurt0', fireballB: 'fireballA',
   };
 
   function pixels(img) {
@@ -86,6 +238,28 @@ window.DD = window.DD || {};
       r += data[i]; g += data[i + 1]; b += data[i + 2]; n++;
     }
     return n ? [Math.round(r / n), Math.round(g / n), Math.round(b / n)] : c;
+  }
+
+  // A cast shadow is the background with the light taken out of it: the
+  // same colour, darker. Generators draw one under a figure however firmly
+  // the prompt says not to, and it does real damage - a shadow bridges the
+  // two feet, which walls in the field between the legs so the flood fill
+  // cannot reach it, and that patch of pure background then survives into
+  // the sprite as a magenta wedge between the knees.
+  //
+  // Nothing in a drawing is the field colour scaled down by coincidence,
+  // so the test is exactly that: pointing the same way in RGB, and
+  // shorter. Anti-aliasing along an edge blends artwork *into* the field
+  // and so points somewhere else, which is why a soft edge survives this.
+  function isShade(data, i, field) {
+    if (data[i + 3] < 24) return false;
+    const fl = field[0] * field[0] + field[1] * field[1] + field[2] * field[2];
+    const cl = data[i] * data[i] + data[i + 1] * data[i + 1] + data[i + 2] * data[i + 2];
+    if (!fl || !cl) return false;
+    const k = Math.sqrt(cl / fl);
+    if (k < SHADE_MIN || k > 1) return false;
+    const dot = data[i] * field[0] + data[i + 1] * field[1] + data[i + 2] * field[2];
+    return dot / Math.sqrt(cl * fl) >= SHADE_HUE;
   }
 
   // Not artwork: fully transparent, or within TOL of one of the key colors
@@ -124,28 +298,116 @@ window.DD = window.DD || {};
   const erode = (m, w, h, r) => morph(m, w, h, r, true);
   const dilate = (m, w, h, r) => morph(m, w, h, r, false);
 
-  // Frame lines. Generators like to draw a grid or a box around each pose,
-  // and those lines are poison here: they run through several poses at
-  // once, so labelling would fuse the whole sheet into one region.
+  // How thick this sheet's artwork is drawn, as a radius.
   //
-  // Two things are true of a drawn line and of nothing else. It is thin -
-  // erase everything thinner than THIN and it vanishes, while a body color
-  // always has bulk behind it. And it floats on its own: a grid line runs
-  // across empty field, while every thin thing in the artwork - an outline,
-  // the gold trim on a pair of trunks, a strand of hair - is attached to
-  // the body it belongs to. The second test is what keeps this from
-  // dissolving the characters along with the grid.
-  function frameColors(data, w, h, bg) {
-    const fg = new Uint8Array(w * h);
-    for (let p = 0; p < w * h; p++) fg[p] = isBg(data, p * 4, [bg]) ? 0 : 1;
-    const thick = dilate(erode(fg, w, h, THIN), w, h, THIN);
-    const attached = dilate(thick, w, h, 3);
+  // The tests below tell a drawn line from a limb by eroding: whatever
+  // dissolves was thin. That threshold cannot be a fixed number of pixels,
+  // because generators do not all draw at the same size. An erode wide
+  // enough to dissolve a 2px box on a sheet drawn large also dissolves a
+  // whole head on a sheet drawn small - and a head that has dissolved
+  // floats free of the shoulders exactly like a box edge floats free of
+  // everything, so it is condemned and the fighter comes out decapitated.
+  //
+  // Measured as the radius at which half the artwork has eroded away.
+  // That tracks limb thickness and does not care how many poses are on
+  // the sheet or how much of it is background.
+  function thinness(drawn, w, h) {
+    let full = 0;
+    for (let p = 0; p < w * h; p++) full += drawn[p];
+    if (!full) return THIN_MIN;
+    for (let r = THIN_MIN; r < THIN_MAX; r++) {
+      const e = erode(drawn, w, h, r);
+      let left = 0;
+      for (let p = 0; p < w * h; p++) left += e[p];
+      if (left * 2 < full) return r;
+    }
+    return THIN_MAX;
+  }
 
+  // Drawn rules and boxes, found by shape rather than colour. Colour only
+  // works when the generator picks something that contrasts with the art;
+  // a dark box edge and a dark outline land in the same bucket, and then
+  // every box survives to become a pose of its own.
+  //
+  // What gives a drawn line away is that it is a long, straight hairline:
+  // clear space a few pixels above and below along its whole length. No
+  // part of a character is - a body always has something directly above or
+  // below it - and where a figure crosses the line, its pixels fail that
+  // test and stay, so the figure is not cut in two.
+  //
+  // Measuring runs rather than how much of the sheet a row covers is what
+  // makes this work for boxes as well as ground lines: one box edge is
+  // only a couple of hundred pixels long, but it is still unmistakably a
+  // drawn line.
+  function findRules(mask, w, h) {
+    const out = new Uint8Array(w * h);
+    const GAP = 4;         // clear space required to either side
+    const MIN_RUN = 60;    // shorter than this and it could be artwork
+
+    const scan = (n, m, at, axis) => {
+      // off the edge of the sheet counts as empty, so a rule drawn right
+      // against the border is found like any other
+      const empty = (i, j) => j < 0 || j >= m || !mask[at(i, j)];
+      const hair = (i, j) => !empty(i, j) && empty(i, j - GAP) && empty(i, j + GAP);
+      for (let j = 0; j < m; j++) {
+        let run = 0;
+        for (let i = 0; i <= n; i++) {
+          if (i < n && hair(i, j)) { run++; continue; }
+          if (run >= MIN_RUN) {
+            if (DD.spritesheet && DD.spritesheet.verbose) {
+              console.info(`[dojo] rule ${axis}=${j}, ${run}px from ${i - run}`);
+            }
+            for (let k = i - run; k < i; k++) {
+              for (let d = -2; d <= 2; d++) {
+                const y = j + d;
+                if (y < 0 || y >= m) continue;
+                const p = at(k, y);
+                if (mask[p]) out[p] = 1;
+              }
+            }
+          }
+          run = 0;
+        }
+      }
+    };
+    scan(w, h, (i, j) => j * w + i, 'y');
+    scan(h, w, (i, j) => i * w + j, 'x');
+    return out;
+  }
+
+  // Frame lines, decided per pixel. A drawn line floats: it is thin, and
+  // it is nowhere near anything with bulk. Every thin thing in the artwork
+  // - an outline, the gold trim on a pair of trunks, a strand of hair - is
+  // attached to the body it belongs to.
+  //
+  // Deciding this per colour instead is the obvious shortcut and it fails
+  // badly: a sheet whose box frames are drawn in the same dark tone as the
+  // characters' own outlines condemns the outlines with the boxes, and
+  // every figure falls apart into its interior colour patches.
+  function floatingLines(drawn, w, h, thin) {
+    const thick = dilate(erode(drawn, w, h, thin), w, h, thin);
+    const attached = dilate(thick, w, h, 3);
+    const out = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) out[p] = drawn[p] && !attached[p] ? 1 : 0;
+    return out;
+  }
+
+  // The same question asked of a whole colour rather than a pixel, which
+  // catches the stretch of a box that happens to pass close to a figure.
+  // It may only condemn a colour that is *essentially never* attached to a
+  // body: a sheet whose boxes are drawn in the characters' own outline tone
+  // would otherwise lose the outlines too, and every figure falls apart
+  // into its interior colour patches. Where a colour does both jobs there
+  // is nothing to decide per colour, and the per-pixel test above stands
+  // on its own.
+  function frameColors(data, drawn, w, h, r) {
+    const thick = dilate(erode(drawn, w, h, r), w, h, r);
+    const attached = dilate(thick, w, h, 3);
     const bin = (i) => ((data[i] >> 3) << 10) | ((data[i + 1] >> 3) << 5) | (data[i + 2] >> 3);
     const N = 1 << 15;
     const all = new Int32Array(N), thin = new Int32Array(N), stuck = new Int32Array(N);
     for (let p = 0; p < w * h; p++) {
-      if (!fg[p]) continue;
+      if (!drawn[p]) continue;
       const k = bin(p * 4);
       all[k]++;
       if (!thick[p]) thin[k]++;
@@ -155,7 +417,7 @@ window.DD = window.DD || {};
     for (let k = 0; k < N; k++) {
       if (thin[k] < 300) continue;                 // too little of it to matter
       if (thin[k] < all[k] * 0.7) continue;        // has bulk: it is body art
-      if (stuck[k] > all[k] * 0.35) continue;      // hangs off a body: not a line
+      if (stuck[k] > all[k] * 0.05) continue;      // does double duty: hands off
       found.push([((k >> 10) & 31) * 8 + 4, ((k >> 5) & 31) * 8 + 4, (k & 31) * 8 + 4]);
     }
     return found;
@@ -172,7 +434,6 @@ window.DD = window.DD || {};
     const { data } = pixels(img);
     const w = img.width, h = img.height;
     const bg = dominant(data);
-    const keys = [bg, ...frameColors(data, w, h, bg)];
 
     // Three masks, and the difference between them matters.
     //   art  - real artwork: neither field nor frame line. This is what
@@ -183,17 +444,165 @@ window.DD = window.DD || {};
     //          again. Only ever used to tell the poses apart: closing also
     //          fills the notch between a glove and a hip, and what it
     //          fills there is background, not art.
-    const art = new Uint8Array(w * h), line = new Uint8Array(w * h);
+    const field = new Uint8Array(w * h), drawn = new Uint8Array(w * h);
     for (let p = 0; p < w * h; p++) {
-      const i = p * 4;
-      if (isBg(data, i, [bg])) continue;             // the flat field
-      if (isBg(data, i, keys)) line[p] = 1;          // a frame line
-      else art[p] = 1;
+      if (isBg(data, p * 4, [bg]) || isShade(data, p * 4, bg)) field[p] = 1;
+      else drawn[p] = 1;
     }
-    const lines = keys.length > 1 ? dilate(line, w, h, 2) : line;
-    const solid = keys.length > 1
-      ? erode(dilate(art, w, h, BRIDGE), w, h, BRIDGE)
-      : art;
+
+    // Three tests, covering different lines. A box out in the open field
+    // floats free of everything. A ground line the figures stand on does
+    // not float at all, but is unmistakably a long straight hairline. And
+    // a colour used for nothing but lines condemns every last pixel of
+    // itself, including the stretch of a box that runs close to a figure
+    // and so looks attached.
+    const thin = thinness(drawn, w, h);
+    const line = floatingLines(drawn, w, h, thin);
+    const rules = findRules(drawn, w, h);
+    const keys = frameColors(data, drawn, w, h, thin);
+    for (let p = 0; p < w * h; p++) {
+      if (rules[p] || (keys.length && isBg(data, p * 4, keys))) line[p] = 1;
+      if (line[p]) drawn[p] = 0;
+    }
+
+    // Background is not "every pixel of the key color" - it is the key
+    // color the background can actually reach. Flood it in from the edges,
+    // through the frame lines as well as the field, and anything of that
+    // color left enclosed by artwork is artwork: the white of a flag patch
+    // on a white sheet, the white core of a flame. Without this, keying on
+    // a color the drawing also uses punches holes straight through it.
+    // A first pass at the artwork, used only to measure how thick the
+    // walls around a pocket are.
+    const art0 = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) art0[p] = line[p] || field[p] ? 0 : 1;
+
+    const outside = new Uint8Array(w * h);
+    {
+      const stack = [];
+      const push = (p) => {
+        if (outside[p] || !(field[p] || line[p])) return;
+        outside[p] = 1; stack.push(p);
+      };
+      for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+      while (stack.length) {
+        const p = stack.pop();
+        const x = p % w, y = (p / w) | 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            push(ny * w + nx);
+          }
+        }
+      }
+    }
+
+    // A pocket only counts as artwork if real bulk seals it. The rule
+    // above saves a patch of the key colour walled in by a drawing - the
+    // white of a flag patch on a white sheet - but the channel between a
+    // fist and a hip is walled in too, and that is background showing
+    // through, not artwork.
+    //
+    // So flood a second time through the drawing's *core*: erode the
+    // artwork, and anything thinner than the erode is simply not there
+    // any more, which lets the outside run through a hairline wall while
+    // a limb's worth of drawing still seals. Only field pixels are ever
+    // added, so eroding the artwork cannot eat into the artwork itself.
+    //
+    // Closing the outside instead is the obvious version and does not
+    // work: a closing opens the wall and then erodes the pocket away
+    // again, so raising its radius changes nothing at all.
+    {
+      const core = erode(art0, w, h, POCKET);
+      const seen = new Uint8Array(w * h);
+      const stack = [];
+      const push = (p) => { if (seen[p] || core[p]) return; seen[p] = 1; stack.push(p); };
+      for (let x = 0; x < w; x++) { push(x); push((h - 1) * w + x); }
+      for (let y = 0; y < h; y++) { push(y * w); push(y * w + w - 1); }
+      while (stack.length) {
+        const p = stack.pop();
+        const x = p % w, y = (p / w) | 0;
+        if (x > 0) push(p - 1);
+        if (x < w - 1) push(p + 1);
+        if (y > 0) push(p - w);
+        if (y < h - 1) push(p + w);
+      }
+      for (let p = 0; p < w * h; p++) if (seen[p] && field[p]) outside[p] = 1;
+    }
+
+    // An enclosed patch of the key colour counts as artwork - that is the
+    // rule that saves a white shirt on a white sheet, where the whole
+    // inside of the fighter is walled in by its own outline. A gap between
+    // a thigh and a chest is walled in exactly the same way and is not
+    // artwork at all, and left in it is the brightest artifact a keyer can
+    // produce: a magenta wedge at the crotch of every airborne frame.
+    //
+    // What tells them apart is not size but *share*. A garment is most of
+    // a figure; a gap is a few percent of one. So measure each pocket
+    // against the drawn region that encloses it. This also covers the two
+    // shapes that used to have rules of their own - a speck sealed by a
+    // wall that happened to be thick enough, and the long channel between
+    // a fist and a hip - because both are small in exactly this sense.
+    {
+      const host = new Int32Array(w * h).fill(-1);
+      const area = [];
+      const stack = [];
+      for (let p0 = 0; p0 < w * h; p0++) {
+        if (host[p0] >= 0 || !art0[p0]) continue;
+        const id = area.length;
+        let n = 0;
+        host[p0] = id; stack.push(p0);
+        while (stack.length) {
+          const p = stack.pop();
+          n++;
+          const x = p % w, y = (p / w) | 0;
+          const step = (q, ok) => {
+            if (!ok || host[q] >= 0 || !art0[q]) return;
+            host[q] = id; stack.push(q);
+          };
+          step(p - 1, x > 0); step(p + 1, x < w - 1);
+          step(p - w, y > 0); step(p + w, y < h - 1);
+        }
+        area.push(n);
+      }
+
+      const seen = new Uint8Array(w * h);
+      const px = [];
+      for (let p0 = 0; p0 < w * h; p0++) {
+        if (seen[p0] || !field[p0] || outside[p0]) continue;
+        px.length = 0;
+        let around = -1;
+        seen[p0] = 1; stack.push(p0);
+        while (stack.length) {
+          const p = stack.pop();
+          px.push(p);
+          const x = p % w, y = (p / w) | 0;
+          const step = (q, ok) => {
+            if (!ok) return;
+            if (host[q] >= 0 && area[host[q]] > (around < 0 ? -1 : area[around])) {
+              around = host[q];               // the biggest thing it touches
+            }
+            if (seen[q] || !field[q] || outside[q]) return;
+            seen[q] = 1; stack.push(q);
+          };
+          step(p - 1, x > 0); step(p + 1, x < w - 1);
+          step(p - w, y > 0); step(p + w, y < h - 1);
+        }
+        const big = around >= 0 && px.length >= area[around] * HOLE_SHARE;
+        if (!big) for (const p of px) outside[p] = 1;
+      }
+    }
+
+    const art = new Uint8Array(w * h);
+    for (let p = 0; p < w * h; p++) {
+      if (line[p]) continue;                          // frame lines never stay
+      art[p] = field[p] && outside[p] ? 0 : 1;
+    }
+    let ruled = 0;
+    for (let p = 0; p < w * h; p++) ruled += line[p];
+    const lines = ruled ? dilate(line, w, h, 2) : line;
+    const solid = ruled ? erode(dilate(art, w, h, BRIDGE), w, h, BRIDGE) : art;
 
     const label = new Int32Array(w * h).fill(-1);
     const blobs = [];
@@ -323,7 +732,7 @@ window.DD = window.DD || {};
     // side; a few pixels wide, it closes in a couple of passes and beats
     // both a magenta stripe and a transparent cut.
     if (left) {
-      for (let pass = 0; left && pass < THIN * 2; pass++) {
+      for (let pass = 0; left && pass < THIN_MAX * 2; pass++) {
         const fixed = [];
         for (let p = 0; p < iw * ih; p++) {
           if (!hole[p]) continue;
@@ -461,37 +870,51 @@ window.DD = window.DD || {};
     return out;
   }
 
-  function install(charKey, img) {
+  // What each pose was last written from, so load order does not decide
+  // the result: a strip's walk beats the main sheet's walk whichever
+  // image the browser finishes first.
+  const RANK = {};
+
+  function install(charKey, img, order, rank) {
     const frames = findFrames(img);
     if (!frames.length) return 0;
 
     const S = DD.sprites;
-    const order = SHEET_ORDER[charKey] || ORDER;
+    const strip = rank > 1;         // a strip does not run the aliases: its
+                                    // job is the movement it carries, not
+                                    // standing in for what a sheet lacks
 
     // One scale for the whole sheet, so the poses keep their relative
     // sizes - a crouch really does stay shorter than a stance. The
     // reference is the fighting stance, not the tallest frame: a special
     // wrapped in flames or trailing a rocket plume is far taller than the
     // fighter, and measuring against it would shrink everybody.
-    const stand = frames[order.indexOf('idle0')];
+    let at = order.indexOf('idle0');
+    if (at < 0) at = order.indexOf(ANCHOR);
+    const stand = frames[at];
     const ref = stand ? stand.bottom - stand.top + 1
       : Math.max(...frames.map((f) => f.bottom - f.top + 1));
     const scale = STAND_H / ref;
     const cut = {};
     frames.forEach((f, i) => {
       const pose = order[i];
-      if (!pose || cut[pose]) return;
+      if (!pose || pose === ANCHOR || cut[pose]) return;
       cut[pose] = cutFrame(img, f, scale);
     });
-    if (!cut.ko0 && (cut.hurt0 || cut.idle0)) {
-      cut.ko0 = toppled(cut.hurt0 || cut.idle0);
-    }
-    for (const [pose, from] of Object.entries(ALIAS)) {
-      if (!cut[pose] && cut[from]) cut[pose] = cut[from];
+    if (!strip) {
+      if (!cut.ko0 && (cut.hurt0 || cut.idle0)) {
+        cut.ko0 = toppled(cut.hurt0 || cut.idle0);
+      }
+      for (const [pose, from] of Object.entries(ALIAS)) {
+        if (!cut[pose] && cut[from]) cut[pose] = cut[from];
+      }
     }
 
+    const rankOf = RANK[charKey] || (RANK[charKey] = {});
     let n = 0;
     for (const [pose, cv] of Object.entries(cut)) {
+      if ((rankOf[pose] || 0) > rank) continue;
+      rankOf[pose] = rank;
       const pair = { right: cv, left: flip(cv) };
       for (const skin of Object.keys(S.frames[charKey])) {
         S.frames[charKey][skin][pose] = pair;
@@ -503,20 +926,32 @@ window.DD = window.DD || {};
     return n;
   }
 
+  // A strip brings its timing with it. Until the file is actually in and
+  // its drawings are cut, the character keeps the animation it had - so a
+  // missing strip is a character with a shorter punch, not a broken one.
+  function loadSheet(charKey, file, order, rank, label, anims) {
+    const src = (DD.SHEETS && DD.SHEETS[file]) || `assets/${file}.png`;
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const n = install(charKey, img, order, rank);
+        if (n && anims) Object.assign(DD.sprites.CHARS[charKey].anims, anims);
+        if (n) console.info(`[dojo] ${label}: ${n} frames from sprite sheet`);
+      } catch (e) {
+        console.warn(`[dojo] ${label}: sheet import failed`, e);
+      }
+    };
+    img.onerror = () => { /* no sheet: keep whatever is already there */ };
+    img.src = src;
+  }
+
   function load() {
-    for (const charKey of ['klaus', 'antoine', 'hanzo']) {
-      const src = (DD.SHEETS && DD.SHEETS[charKey]) || `assets/${charKey}.png`;
-      const img = new Image();
-      img.onload = () => {
-        try {
-          const n = install(charKey, img);
-          if (n) console.info(`[dojo] ${charKey}: ${n} frames from sprite sheet`);
-        } catch (e) {
-          console.warn(`[dojo] ${charKey}: sheet import failed`, e);
-        }
-      };
-      img.onerror = () => { /* no sheet: keep the generated art */ };
-      img.src = src;
+    for (const charKey of Object.keys(DD.sprites.CHARS)) {
+      loadSheet(charKey, charKey, SHEET_ORDER[charKey] || ORDER, 1, charKey);
+      for (const [move, strip] of Object.entries(STRIPS[charKey] || {})) {
+        loadSheet(charKey, `${charKey}-${move}`, strip.order, 2,
+          `${charKey} ${move}`, strip.anims);
+      }
     }
   }
 
@@ -544,13 +979,32 @@ window.DD = window.DD || {};
       const img = new Image();
       img.onload = () => {
         const { data } = pixels(img);
+        const w = img.width, h = img.height;
         const bg = dominant(data);
-        resolve([bg, ...frameColors(data, img.width, img.height, bg)]);
+        const drawn = new Uint8Array(w * h);
+        for (let p = 0; p < w * h; p++) {
+          drawn[p] = (isBg(data, p * 4, [bg]) || isShade(data, p * 4, bg)) ? 0 : 1;
+        }
+        const thin = thinness(drawn, w, h);
+        const floating = floatingLines(drawn, w, h, thin);
+        const rules = findRules(drawn, w, h);
+        const keys = frameColors(data, drawn, w, h, thin);
+        let f = 0, r = 0;
+        for (let p = 0; p < w * h; p++) { f += floating[p]; r += rules[p]; }
+        resolve({ field: bg, thinness: thin, floatingLinePixels: f,
+                  rulePixels: r, lineColors: keys });
       };
       img.onerror = reject;
       img.src = url;
     });
   }
 
-  DD.spritesheet = { load, inspect, keysOf, ORDER, SHEET_ORDER, STAND_H };
+  // `dominant` and `isBg` are what "background" means in this project.
+  // The select-screen portraits come off the same magenta field and have
+  // to agree with the sheets about that, so they borrow the decision
+  // rather than making a second one that can drift.
+  DD.spritesheet = {
+    load, inspect, keysOf, ORDER, SHEET_ORDER, STRIPS, ANCHOR, STAND_H,
+    pixels, dominant, isBg,
+  };
 })();
