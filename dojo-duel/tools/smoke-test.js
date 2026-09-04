@@ -188,6 +188,80 @@ function check(name, cond, extra) {
   }));
   check('round 2 starts, P1 has 1 win', r2.round === 2 && r2.wins1 === 1, JSON.stringify(r2));
 
+  // --- the soundtrack ------------------------------------------------------
+  // The patterns are strings, so a typo in one is a note that never plays
+  // and nothing else - no error, no crash, just a hole in the music. Parse
+  // them, and render one offline to prove the thing makes a sound at all.
+  const audio = await page.evaluate(async () => {
+    const A = window.DD.audio, out = { bad: [], quiet: [], songs: 0 };
+    const SEMI = { c: 0, 'c#': 1, d: 2, 'd#': 3, e: 4, f: 5, 'f#': 6,
+                   g: 7, 'g#': 8, a: 9, 'a#': 10, b: 11 };
+    for (const [name, s] of Object.entries(A.SONGS)) {
+      out.songs++;
+      for (const v of ['lead', 'bass']) {
+        for (const tok of s[v]) {
+          if (tok !== '.' && tok !== '-' && !/^[a-g]#?-?\d$/.test(tok)) {
+            out.bad.push(`${name}.${v}: ${tok}`);
+          }
+        }
+      }
+      for (const tok of s.drum) if (!'.-xsh'.includes(tok)) out.bad.push(`${name}.drum: ${tok}`);
+      // every voice a whole number of bars, or they drift out of phase
+      if (![s.lead, s.bass, s.drum].every((v) => v.length && v.length % 16 === 0)) {
+        out.bad.push(`${name}: voice lengths ${s.lead.length}/${s.bass.length}/${s.drum.length}`);
+      }
+      // render two seconds of the two pitched voices and measure the level
+      const oc = new OfflineAudioContext(1, 44100 * 2, 44100);
+      const spb = 60 / s.bpm / 4;
+      let step = 0, t = 0;
+      while (t < 2) {
+        for (const vn of ['lead', 'bass']) {
+          const v = s[vn], tok = v[step % v.length];
+          const m = /^([a-g]#?)(-?\d)$/.exec(tok);
+          if (m) {
+            const f = 440 * Math.pow(2, (SEMI[m[1]] + (Number(m[2]) - 4) * 12 - 9) / 12);
+            let n = 1;
+            while (v[(step + n) % v.length] === '-' && n < v.length) n++;
+            const o = oc.createOscillator(), g = oc.createGain();
+            o.type = vn === 'lead' ? 'square' : 'triangle';
+            o.frequency.setValueAtTime(f, t);
+            g.gain.setValueAtTime(0.25, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + n * spb * 0.92);
+            o.connect(g); g.connect(oc.destination);
+            o.start(t); o.stop(t + n * spb + 0.02);
+          }
+        }
+        t += spb; step++;
+      }
+      const d = (await oc.startRendering()).getChannelData(0);
+      let sum = 0;
+      for (let i = 0; i < d.length; i++) sum += d[i] * d[i];
+      const rms = Math.sqrt(sum / d.length);
+      if (rms < 0.01) out.quiet.push(`${name} rms ${rms.toFixed(4)}`);
+    }
+    // ...and that the game asks for the right one from each state
+    const G = window.__DOJO.game;
+    const was = { state: G.state, stage: G.stageIndex };
+    const track = (state, stage) => {
+      G.state = state; if (stage !== undefined) G.stageIndex = stage;
+      G.updateMusic();
+      return A.track;
+    };
+    out.title = track('title');
+    out.stages = [0, 1, 2].map((i) => track('fight', i));
+    out.roundend = track('roundend');
+    G.state = was.state; G.stageIndex = was.stage; G.updateMusic();
+    return out;
+  });
+  check('every music pattern parses', audio.bad.length === 0, audio.bad.join(' | '));
+  check('every track actually makes a sound', audio.quiet.length === 0,
+    audio.quiet.join(' | '));
+  check('the menu has its own theme', audio.title === 'title', `got ${audio.title}`);
+  check('each stage has its own track',
+    new Set(audio.stages).size === 3 && !audio.stages.includes(null),
+    audio.stages.join(', '));
+  check('a round ends in silence', audio.roundend === null, `got ${audio.roundend}`);
+
   check('no JavaScript errors', errors.length === 0, errors.slice(0, 5).join(' | '));
 
   await browser.close();

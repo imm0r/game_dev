@@ -261,7 +261,12 @@ a K.O.
   lives in `js/fx.js`, so the game loop only says what happened
 - Victory splash: the winner's select-screen portrait, framed against a
   turning sunburst — or, without one, their own victory pose blown up
-- Synthesized chiptune sound effects (WebAudio, no audio files)
+- **A synthesized chiptune soundtrack** — music and effects both, no audio
+  files at all. Four tracks (one per stage, one for the menu) play on a
+  step sequencer: three voices reading one token per sixteenth off a
+  string, so the whole soundtrack is a few hundred bytes of pattern rather
+  than a few megabytes of samples. The track follows the game state, and a
+  round ends in silence so the K.O. and the win jingle have the room
 - A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 
 ![Tokyo Street](docs/screenshots/doc-stage1.png)
@@ -315,7 +320,7 @@ are in [`assets/README.md`](assets/README.md).
 | `js/fx.js` | Impact: bursts, dust, trails, flashes |
 | `js/game.js` | Round flow, camera, collisions, projectiles, particles |
 | `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
-| `js/audio.js` | Synthesized sound effects |
+| `js/audio.js` | Synthesized effects, and a step sequencer for the music |
 | `js/ui.js` | HUD, title screen, announcements |
 | `js/main.js` | Fixed-step 60fps loop |
 
