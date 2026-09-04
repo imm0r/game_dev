@@ -168,10 +168,13 @@ window.DD = window.DD || {};
   // for opening the page straight off disk, where a browser will not let
   // it fetch one.
   const MUSIC_FILES = {
+    // The menu shares Tokyo Street's track on purpose: one file across
+    // two entries is one piece of music, so starting a fight on the
+    // default stage does not restart it at the top.
     title: 'One_Life_Remaining.mp3',
     tokyo: 'One_Life_Remaining.mp3',
-    temple: 'One_Life_Remaining.mp3',
-    neon: 'One_Life_Remaining.mp3',
+    temple: 'Final_Bout_At_The_Dojo.mp3',
+    neon: 'Round_Three_Decider.mp3',
   };
   // Filled by the single-file build, which has no `sfx/` to fetch from.
   DD.MUSIC = DD.MUSIC || {};

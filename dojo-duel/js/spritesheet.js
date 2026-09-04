@@ -1102,7 +1102,33 @@ window.DD = window.DD || {};
     img.src = src;
   }
 
-  function load() {
+  // Install one fighter's poses from a baked atlas: slice the rectangles
+  // the manifest names back out into canvases and put them where a live
+  // import would have. Aliases share a rectangle, so a second punch costs
+  // nothing beyond the entry pointing at the first punch's slice.
+  function useBaked(charKey, img, spec) {
+    const S = DD.sprites;
+    const cut = {};
+    for (const [pose, r] of Object.entries(spec.frames)) {
+      if (!r) continue;
+      const key = r.join(',');
+      if (!cut[key]) {
+        const cv = document.createElement('canvas');
+        cv.width = r[2]; cv.height = r[3];
+        cv.getContext('2d').drawImage(img, r[0], r[1], r[2], r[3], 0, 0, r[2], r[3]);
+        cut[key] = { right: cv, left: flip(cv) };
+      }
+      const pair = cut[key];
+      for (const skin of Object.keys(S.frames[charKey])) S.frames[charKey][skin][pose] = pair;
+      S.meta[charKey][pose] = { w: r[2], h: r[3], bottom: r[3] };
+    }
+    if (spec.anims) S.CHARS[charKey].anims = spec.anims;
+    S.CHARS[charKey].scale = spec.scale === undefined ? 1 : spec.scale;
+    return Object.keys(spec.frames).length;
+  }
+
+  // Import every sheet, live. What the bake below replaces.
+  function importAll() {
     for (const charKey of Object.keys(DD.sprites.CHARS)) {
       loadSheet(charKey, charKey, SHEET_ORDER[charKey] || ORDER, 1, charKey);
       for (const [move, strip] of Object.entries(STRIPS[charKey] || {})) {
@@ -1110,6 +1136,41 @@ window.DD = window.DD || {};
           `${charKey} ${move}`, strip.anims);
       }
     }
+  }
+
+  // A baked atlas beats importing, the way a file beats anything
+  // generated everywhere else here. It is worth a lot: the source sheets
+  // are about eight times the resolution the game draws, so the import
+  // decodes 22 MB of PNG and runs connected-component labelling over it
+  // to produce roughly 1 MB of sprites - on every single page load.
+  //
+  // `tools/bake-sprites.js` writes it. Forget to re-run that after
+  // changing a sheet and nothing breaks; you simply see the old art until
+  // you do, or delete `assets/baked/` and get the live import back.
+  function load() {
+    const baked = DD.BAKED || null;         // the single-file build inlines it
+    // Off disk there is nothing to fetch - a browser blocks a file://
+    // request from a file:// page - so do not ask and spill a CORS error
+    // into the console. Importing needs no fetch and works there.
+    if (!baked && location.protocol === 'file:') { importAll(); return; }
+    const idx = baked ? Promise.resolve(baked) : fetch('assets/baked/index.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)));
+    idx.then((spec) => Promise.all(Object.entries(spec).map(([charKey, s]) => {
+      if (!DD.sprites.CHARS[charKey]) return null;
+      return new Promise((ok, no) => {
+        const img = new Image();
+        img.onload = () => ok({ charKey, img, s });
+        img.onerror = no;
+        img.src = (DD.BAKED_PNG && DD.BAKED_PNG[charKey]) || `assets/baked/${charKey}.png`;
+      });
+    }))).then((list) => {
+      let n = 0;
+      for (const e of list) if (e) n += useBaked(e.charKey, e.img, e.s);
+      console.log(`[dojo] ${n} poses from the baked atlas`);
+    }).catch(() => {
+      console.log('[dojo] no baked atlas, importing the sheets');
+      importAll();
+    });
   }
 
   // `inspect` is for checking a new sheet: it returns the detected frames
@@ -1161,7 +1222,7 @@ window.DD = window.DD || {};
   // to agree with the sheets about that, so they borrow the decision
   // rather than making a second one that can drift.
   DD.spritesheet = {
-    load, inspect, keysOf, ORDER, SHEET_ORDER, STRIPS, ANCHOR, STAND_H,
-    pixels, dominant, isBg,
+    load, importAll, inspect, keysOf, ORDER, SHEET_ORDER, STRIPS, ANCHOR,
+    STAND_H, pixels, dominant, isBg,
   };
 })();
