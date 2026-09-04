@@ -455,8 +455,50 @@ symptoms and one cause.
       line pass already keys out a drawn frame box, and a bar between two
       rows is the same thing seen edge on
 
-### M7 – Sound & music
-- [ ] Chiptune tracks per stage (WebAudio sequencer), more SFX variants
+### M7 – Sound & music  *(done)*
+- [x] **A step sequencer**, because a chiptune is a grid: three voices
+      reading one token per sixteenth off a string. `a4` a note, `.` a
+      rest, `-` a hold, and `x`/`s`/`h` for the drum voice. Voices loop on
+      their own lengths, so a two-bar melody over a one-bar drum pattern
+      is two strings rather than the melody written out twice
+- [x] Four tracks: one per stage plus a menu theme. All minor keys,
+      because that is what an arcade sounded like. Tokyo Street drives at
+      138, Wind Temple breathes at 104, Neon Crossing runs at 152
+- [x] Scheduled ahead of the clock (150ms of lookahead, a 30ms wake-up)
+      rather than fired off frame by frame, which is the difference
+      between a bassline and a stutter
+- [x] Two buses under the master, so music sits below the effects without
+      either one having to know about the other
+- [x] **The track follows the game state and nothing else calls for it.**
+      Naming a track that is already playing does nothing, so the decision
+      runs every frame and there is nowhere a "start the music" call can
+      be forgotten. A round ends in silence on purpose: the K.O. lands,
+      then the win jingle, and neither wants a bassline underneath it
+- [x] Six effects for events that borrowed another sound or had none: a
+      dash and a jump were the same noise, a grab and a kick were the same
+      noise, and a super was a fireball. Plus a landing, an explosion for
+      a grenade going off, and the sound of being thrown across the room
+- [x] Five checks. The patterns are strings, so a typo in one is a note
+      that never plays and *nothing else* - no error, no crash, just a
+      hole in the music. They are parsed, every voice is checked for whole
+      bars, and each track is rendered offline to prove it makes a sound
+      at all. Verified both catch a real break: a bad note and a
+      three-quarter-bar drum pattern each fail the suite
+- [x] **A real track beats the pattern.** The synthesized songs turned out
+      to be aiming somewhere else entirely - the reference the project
+      owner had in mind is 136bpm, major, wall-to-wall dense and bright,
+      where all four of mine are minor and leave holes. Rather than chase
+      it by ear I cannot use, an audio file dropped in `sfx/` and named in
+      one table now plays instead, exactly the way a hand-drawn sheet in
+      `assets/` beats the generated art. What has no file keeps its
+      pattern
+- [x] ...and so does the whole game opened straight off disk, where a
+      browser blocks the fetch. It does not even try there, because the
+      attempt spills a CORS error into every player's console
+- [x] The single-file build embeds `sfx/` as well, so the one-file copy
+      carries the music
+- [ ] Not done: the music does not react to the fight. A last-round
+      tempo lift, or a low-health sting, would be the next thing
 
 ### M8 – Release polish
 - [x] Character select screen: both sides choose at once, each with their

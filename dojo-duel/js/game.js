@@ -129,10 +129,29 @@ window.DD = window.DD || {};
       return a && b && a.x0 < b.x1 && a.x1 > b.x0 && a.y0 < b.y1 && a.y1 > b.y0;
     }
 
+    // What should be playing, decided from the game state alone. Naming a
+    // track that is already playing does nothing, so this can run every
+    // frame and there is nowhere for a "start the music" call to be
+    // forgotten.
+    //
+    // A round end steps the music back rather than stopping it. The K.O.
+    // and the win jingle still land in the clear, and a long track keeps
+    // its place instead of restarting at the top every round - which
+    // would mean never hearing past its first thirty seconds.
+    updateMusic() {
+      const s = this.state;
+      if (s === 'title' || s === 'select') DD.audio.music('title');
+      else if (s === 'intro' || s === 'fight') {
+        DD.audio.music(DD.audio.stageSong(this.stageIndex));
+      }
+      DD.audio.duck(s === 'roundend' || s === 'matchend');
+    }
+
     update() {
       this.t++;
       if (Input.wasPressed('KeyM')) DD.audio.toggleMute();
       DD.fx.update();
+      this.updateMusic();
 
       // A K.O. runs at a third speed for a moment, so the hit that ended
       // the round is something you get to watch rather than something you
@@ -388,7 +407,7 @@ window.DD = window.DD || {};
         if (p.ground && p.y >= C().GROUND_Y - 6) {
           p.dead = true;
           this.spawnSparks(p.x, C().GROUND_Y - 6, 'hit');
-          DD.audio.play('hit');
+          DD.audio.play('boom');   // a grenade going off is not a jab
           continue;
         }
         const box = { x0: p.x - F.w / 2, y0: p.y - F.h / 2, x1: p.x + F.w / 2, y1: p.y + F.h / 2 };

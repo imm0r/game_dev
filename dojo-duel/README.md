@@ -261,7 +261,17 @@ a K.O.
   lives in `js/fx.js`, so the game loop only says what happened
 - Victory splash: the winner's select-screen portrait, framed against a
   turning sunburst — or, without one, their own victory pose blown up
-- Synthesized chiptune sound effects (WebAudio, no audio files)
+- **Music and sound effects.** The effects are synthesized outright — no
+  audio files. So is the music, as a fallback: four tracks (one per stage,
+  one for the menu) on a step sequencer, three voices reading one token
+  per sixteenth off a string, which costs a few hundred bytes of pattern
+  rather than a few megabytes of samples. **A real track beats it**, the
+  same way a hand-drawn sheet in `assets/` beats the generated art: drop
+  an audio file in `sfx/`, name it in the track table in `js/audio.js`,
+  and it plays instead. Whatever has no file keeps its pattern, and so
+  does the whole thing when the page is opened off disk, where a browser
+  will not fetch one. The track follows the game state, and a round ends
+  in silence so the K.O. and the win jingle have the room
 - A custom 3x5 pixel font, CRT scanline effect (removable in `style.css`)
 
 ![Tokyo Street](docs/screenshots/doc-stage1.png)
@@ -315,7 +325,7 @@ are in [`assets/README.md`](assets/README.md).
 | `js/fx.js` | Impact: bursts, dust, trails, flashes |
 | `js/game.js` | Round flow, camera, collisions, projectiles, particles |
 | `js/input.js` | Keyboard (physical keys, QWERTZ-safe) |
-| `js/audio.js` | Synthesized sound effects |
+| `js/audio.js` | Synthesized effects, the music sequencer, and the `sfx/` player |
 | `js/ui.js` | HUD, title screen, announcements |
 | `js/main.js` | Fixed-step 60fps loop |
 

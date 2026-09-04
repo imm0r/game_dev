@@ -115,7 +115,7 @@ window.DD = window.DD || {};
       this.state = 'dash';
       this.dashT = C().DASH_FRAMES + C().DASH_RECOVER;
       this.dashDir = dir;
-      DD.audio.play('jump');
+      DD.audio.play('dash');
     }
 
     // Anything crouching stays low, hitbox and hurtbox alike.
@@ -379,6 +379,7 @@ window.DD = window.DD || {};
       this.vx = 0;
       this.state = 'idle';
       this.atkName = null;
+      DD.audio.play('land');
       DD.fx.puff(this.x, C().GROUND_Y, 6);
     }
 
@@ -510,7 +511,7 @@ window.DD = window.DD || {};
         this.crouching = false;
         this.launch(dir, data);
         this.downT = C().KNOCKDOWN_LIE;
-        DD.audio.play('hit');
+        DD.audio.play(data.toss ? 'launch' : 'hit');
         return 'hit';
       }
       this.state = 'hitstun';

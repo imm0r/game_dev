@@ -138,7 +138,7 @@ DD.ATTACKS = {
     startup: 2, active: 3, recovery: 20,
     dmg: 14, chip: 0, stun: 0, blockstun: 0, kb: 1.0,
     box: { x: 4, y: -60, w: 24, h: 44 },
-    sfx: 'kick', grab: true, knockdown: true,
+    sfx: 'throw', grab: true, knockdown: true,
   },
   // Anti-air. Tall rather than long, so it beats someone coming down on
   // you and loses to anyone standing back — and the 26 frames of recovery
@@ -182,7 +182,7 @@ DD.ATTACKS = {
     startup: 12, active: 34, recovery: 26,
     dmg: 7, chip: 2, stun: 20, blockstun: 12, kb: 1.4,
     box: { x: -2, y: -66, w: 38, h: 56 },
-    sfx: 'fireball', rush: 2.8, hits: 4, hitGap: 8, invuln: 12,
+    sfx: 'super', rush: 2.8, hits: 4, hitGap: 8, invuln: 12,
     knockdown: 'last',   // only the fourth hit puts them down
   },
   special: {

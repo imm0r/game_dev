@@ -531,3 +531,38 @@ reports what it decided is background: the flat field first, then every
 frame-line color it found. Setting `DD.spritesheet.verbose = true` before
 either call also logs any ground rule it strips, with the row or column it
 found it on.
+
+---
+
+## Music
+
+Audio files go in `sfx/`, not here. Drop one in and name it against a
+track in `MUSIC_FILES` in `js/audio.js`:
+
+```js
+const MUSIC_FILES = {
+  title:  'One_Life_Remaining.mp3',
+  tokyo:  'One_Life_Remaining.mp3',
+  temple: 'One_Life_Remaining.mp3',
+  neon:   'One_Life_Remaining.mp3',
+};
+```
+
+One file against several tracks is treated as one piece of music: walking
+from the menu into a fight does not restart it at the top, and a round
+ending steps it back rather than stopping it, so a long track is heard
+past its first thirty seconds.
+
+The track names are the four the sequencer knows — `tokyo`, `temple` and
+`neon` for the three stages, `title` for the menu. Anything without a file
+keeps playing its synthesized pattern, so a half-finished soundtrack is
+not a silent game.
+
+Any format the browser decodes works: mp3, ogg, m4a, wav. It loops
+seamlessly from end to start, so a track that is meant to loop should be
+trimmed to a whole number of bars.
+
+**It needs a server**, like the sprite sheets do. Opened by double-clicking
+`index.html` a browser will not fetch the file and the pattern plays
+instead; the single-file build (`node tools/build-single.mjs --embed`)
+carries the audio inline and works either way.

@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ASSETS = join(root, 'assets');
+const SFX = join(root, 'sfx');
 const html = readFileSync(join(root, 'index.html'), 'utf8');
 const embed = process.argv.includes('--embed');
 
@@ -26,13 +27,16 @@ const bundle = scripts
   .join('\n');
 
 // Inline one asset as a data URI, or return null if it is not there.
-function dataUri(name) {
-  const p = join(ASSETS, name);
+function dataUri(name, dir, mime) {
+  const p = join(dir || ASSETS, name);
   if (!existsSync(p)) return null;
   const b64 = readFileSync(p).toString('base64');
-  console.log(`embedded: assets/${name} (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
-  return `data:image/png;base64,${b64}`;
+  const where = (dir === SFX ? 'sfx' : 'assets');
+  console.log(`embedded: ${where}/${name} (${(b64.length / 1024 / 1024).toFixed(2)} MB as base64)`);
+  return `data:${mime || 'image/png'};base64,${b64}`;
 }
+
+const MIME = { mp3: 'audio/mpeg', ogg: 'audio/ogg', wav: 'audio/wav', m4a: 'audio/mp4' };
 
 let assetScript = '';
 if (embed) {
@@ -53,9 +57,23 @@ if (embed) {
     const uri = dataUri(file);
     if (uri) sheets.push(`'${who}': '${uri}'`);
   }
+  // ...and any music dropped in sfx/, which the page would otherwise
+  // fetch by path. Keyed by file name, because that is what the track
+  // table in js/audio.js names.
+  const music = [];
+  if (existsSync(SFX)) {
+    for (const file of readdirSync(SFX).sort()) {
+      const ext = (file.split('.').pop() || '').toLowerCase();
+      if (!MIME[ext]) continue;
+      const uri = dataUri(file, SFX, MIME[ext]);
+      if (uri) music.push(`'${file}': '${uri}'`);
+    }
+  }
+
   const parts = [];
   if (stages.length) parts.push(`DD.ASSETS = { ${stages.join(', ')} };`);
   if (sheets.length) parts.push(`DD.SHEETS = { ${sheets.join(', ')} };`);
+  if (music.length) parts.push(`DD.MUSIC = { ${music.join(', ')} };`);
   if (parts.length) {
     assetScript = `<script>\nwindow.DD = window.DD || {};\n${parts.join('\n')}\n</script>\n`;
   }
