@@ -18,6 +18,8 @@ window.DD = window.DD || {};
   const THIN_MAX = 8;         // not a limb - measured per sheet, see thinness()
   const SHADE_MIN = 0.30;     // how dark a cast shadow of the field may get
   const SHADE_HUE = 0.995;    // ...and how exactly it must keep its colour
+  const SKIRT_HUE = 0.93;     // the softer cone a line's anti-aliased skirt keeps
+  const SKIRT = 2;            // how far that skirt may reach from the line
   const POCKET = 5;           // a wall thinner than twice this does not seal
                               // a patch of background off from the outside
   const HOLE_SHARE = 0.15;    // a walled-in patch of the key colour is only
@@ -120,6 +122,33 @@ window.DD = window.DD || {};
           airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
         },
       },
+      // The fireball, drawn from the gather to the release. 8 figures: the
+      // last is the orb on its own, which the importer finds as a pose
+      // like any other - but his main sheet already carries the same orb
+      // as `fireballA`, so this one is a `null`.
+      special: {
+        order: [
+          ANCHOR,
+          'ksp0', 'ksp1', 'ksp2', 'ksp3', 'ksp4', 'ksp5',
+          null,
+        ],
+        anims: {
+          special: { atk: ['ksp0', 'ksp1', 'ksp2', 'ksp3', 'ksp4', 'ksp5'], hit: 4 },
+        },
+      },
+      // The flaming charge. The flames only ever grow across the sheet, so
+      // there is no drawing of them dying down - the lunge with the
+      // smallest flame plays the recovery, which reads as one.
+      rush: {
+        order: [
+          ANCHOR,
+          'krsh0', 'krsh4', 'krsh1', 'krsh2', 'krsh3',
+        ],
+        anims: {
+          rush: { atk: ['krsh0', 'krsh1', 'krsh2', 'krsh3', 'krsh4'], hit: 3 },
+          super: { atk: ['krsh0', 'krsh1', 'krsh2', 'krsh3', 'krsh4'], hit: 3 },
+        },
+      },
     },
 
     antoine: {
@@ -153,6 +182,36 @@ window.DD = window.DD || {};
           jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
           airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
           airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+      // The rising uppercut, and the sheet does not hand it over in
+      // order: the coil is drawn fourth, after two neutral stances that
+      // belong at the end as he comes down. The order list says which
+      // figure is which pose, `atk` says the sequence - so a sheet laid
+      // out oddly costs a reordered line and nothing else.
+      uppercut: {
+        order: [
+          ANCHOR,
+          'aupp4', 'aupp3', 'aupp0', 'aupp1', 'aupp2',
+        ],
+        anims: {
+          uppercut: { atk: ['aupp0', 'aupp1', 'aupp2', 'aupp3', 'aupp4'], hit: 1 },
+        },
+      },
+      // The spinning kick. Five drawings and no sixth: the pose he lands
+      // in went missing from the generation, so the recovery borrows
+      // `kick4` off his moves sheet - the foot coming back down after a
+      // high kick, which is exactly the shape this needs. A strip does not
+      // have to be self-contained; every pose a fighter owns is on the
+      // same table by the time an animation reads it.
+      rush: {
+        order: [
+          ANCHOR,
+          'arsh0', 'arsh1', 'arsh2', 'arsh3', 'arsh4',
+        ],
+        anims: {
+          rush: { atk: ['arsh0', 'arsh1', 'arsh2', 'arsh3', 'arsh4', 'kick4'], hit: 4 },
+          super: { atk: ['arsh0', 'arsh1', 'arsh2', 'arsh3', 'arsh4', 'kick4'], hit: 4 },
         },
       },
     },
@@ -191,6 +250,41 @@ window.DD = window.DD || {};
           jump: { vel: ['jmp0', 'jmp1', 'jmp2'] },
           airkick: { atk: ['air0', 'air1', 'air2'], hit: 1 },
           airpunch: { atk: ['apun0', 'apun1', 'apun2'], hit: 1 },
+        },
+      },
+      // Going up in flames, in order for once: they start at his boots and
+      // climb until he is a bonfire with a bottle in each hand.
+      rush: {
+        order: [
+          ANCHOR,
+          'mrsh0', 'mrsh1', 'mrsh2', 'mrsh3', 'mrsh4', 'mrsh5',
+        ],
+        anims: {
+          rush: { atk: ['mrsh0', 'mrsh1', 'mrsh2', 'mrsh3', 'mrsh4', 'mrsh5'], hit: 4 },
+          super: { atk: ['mrsh0', 'mrsh1', 'mrsh2', 'mrsh3', 'mrsh4', 'mrsh5'], hit: 4 },
+        },
+      },
+      // Strike the match, light it, throw it. Out of order again, and with
+      // a spare: the generator drew the wind-up after the release and a
+      // neutral two-bottle stance in the middle of it.
+      //
+      // 12 figures for 7 poses, because the lit bottles he has already let
+      // go of are their own shapes - and two of them are the molotov in
+      // flight, which is drawn art where the game was using a grid typed
+      // out in code. Same trick as Klaus's fireball, except nobody asked
+      // for it: it came off the throw sheet on its own.
+      special: {
+        order: [
+          ANCHOR,
+          'msp0', 'msp1', 'msp3',
+          null,
+          'msp2',
+          null, 'fireballA', 'fireballB', null,
+          'msp4',
+          null,
+        ],
+        anims: {
+          special: { atk: ['msp0', 'msp1', 'msp2', 'msp3', 'msp4'], hit: 3 },
         },
       },
     },
@@ -260,6 +354,61 @@ window.DD = window.DD || {};
     if (k < SHADE_MIN || k > 1) return false;
     const dot = data[i] * field[0] + data[i + 1] * field[1] + data[i + 2] * field[2];
     return dot / Math.sqrt(cl * fl) >= SHADE_HUE;
+  }
+
+  // The skirt a drawn line leaves behind. A frame box is drawn *over* the
+  // field, so the pixels along its edge are neither: they are a blend of
+  // the two, darker than the field and pointing almost but not quite its
+  // way. `isShade` deliberately will not have them - its cone is tight
+  // because it has to tell a cast shadow from dark artwork with nothing
+  // else to go on - and they are not the line colour either, so every
+  // colour test in the importer lets them through. What is left is a
+  // one-pixel purple bar at the top or bottom of a cut frame, which is
+  // what a box edge looks like once the frame is cropped away from it.
+  //
+  // The way out is not a looser colour test, which would start eating dark
+  // red and purple artwork. It is that a skirt only exists *against the
+  // line it came from*: grow out of the condemned line pixels, take a
+  // neighbour only if it is a darkened field colour in a soft cone, and
+  // stop after two steps. Nothing can run away into the drawing, because
+  // reaching the drawing means passing through pixels that are not a
+  // darkened field colour. Note this grows out of `line` alone and never
+  // out of `field` - the anti-aliased rim of the *character* touches the
+  // field everywhere, and a dark red glove blended into magenta sits well
+  // inside this cone.
+  function lineSkirt(data, line, field, w, h, bg) {
+    const fl = bg[0] * bg[0] + bg[1] * bg[1] + bg[2] * bg[2];
+    if (!fl) return 0;
+    const blend = (p) => {
+      const i = p * 4;
+      if (data[i + 3] < 24) return false;
+      const cl = data[i] * data[i] + data[i + 1] * data[i + 1] + data[i + 2] * data[i + 2];
+      if (!cl) return false;
+      const k = Math.sqrt(cl / fl);
+      if (k < SHADE_MIN || k > 1) return false;
+      const dot = data[i] * bg[0] + data[i + 1] * bg[1] + data[i + 2] * bg[2];
+      return dot / Math.sqrt(cl * fl) >= SKIRT_HUE;
+    };
+    let front = [];
+    for (let p = 0; p < w * h; p++) if (line[p]) front.push(p);
+    let found = 0;
+    for (let step = 0; step < SKIRT && front.length; step++) {
+      const next = [];
+      for (const p of front) {
+        const x = p % w, y = (p / w) | 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+            const q = ny * w + nx;
+            if (line[q] || field[q] || !blend(q)) continue;
+            line[q] = 1; found++; next.push(q);
+          }
+        }
+      }
+      front = next;
+    }
+    return found;
   }
 
   // Not artwork: fully transparent, or within TOL of one of the key colors
@@ -462,8 +611,11 @@ window.DD = window.DD || {};
     const keys = frameColors(data, drawn, w, h, thin);
     for (let p = 0; p < w * h; p++) {
       if (rules[p] || (keys.length && isBg(data, p * 4, keys))) line[p] = 1;
-      if (line[p]) drawn[p] = 0;
     }
+    // ...and the blend along each line's edge, which is neither the line
+    // colour nor the field and so survived all three tests above.
+    lineSkirt(data, line, field, w, h, bg);
+    for (let p = 0; p < w * h; p++) if (line[p]) drawn[p] = 0;
 
     // Background is not "every pixel of the key color" - it is the key
     // color the background can actually reach. Flood it in from the edges,

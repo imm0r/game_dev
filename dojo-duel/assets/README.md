@@ -437,6 +437,32 @@ one, and check the strip against it before wiring it up: **colours,
 build, and any marking** — a tattoo that only exists on the strip appears
 and vanishes with the movement.
 
+**A box drawn around each pose is fine, and so is its edge.** Generators
+love to fence each figure off, and the box itself has been handled for a
+long time — by colour where the line has one of its own, by shape where a
+rule runs under a row. What went unnoticed until the special sheets is
+that removing a line is not enough: a box is drawn *over* the field, so
+the pixels along its edge are a blend of the two. They are darker than the
+field and point almost its way, which makes them neither the field colour,
+nor the line colour, nor a cast shadow — every colour test in the importer
+let them through, and what survived was a one-pixel purple bar at the top
+or bottom of the cut sprite.
+
+The fix is not a looser colour test, which would start eating dark red and
+purple artwork. It is that a skirt like this only exists *against the line
+it came from*: grow out of the condemned line pixels, take a neighbour
+only if it is a darkened field colour in a soft cone, stop after two
+steps. Nothing can run away into the drawing, because reaching the drawing
+means crossing pixels that are not a darkened field colour.
+
+Worth knowing because it has a visible side effect: cutting a box away
+completely also cuts whatever was only attached to the figure *through*
+it. On Maxim's throw sheet the lit bottles already in flight came loose
+and turned into five poses of their own — and two of them are the molotov
+in mid-air, which is drawn projectile art the game had been faking with a
+grid typed out in code. A sheet coming back with more figures than it has
+poses is not always a problem to solve.
+
 **What the importer does about a cast shadow.** It removes it, however
 firmly the prompt asked for none. A shadow is the background colour with
 the light taken out of it — same colour, darker — and nothing in a drawing
